@@ -1,0 +1,18 @@
+<svg width="100%" height="100%" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="CyberShield360 By Mujtaba">
+  <defs>
+    <linearGradient id="csgrad" x1="6" y1="3" x2="58" y2="61" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#19E3B1"/>
+      <stop offset="1" stop-color="#7C5CFC"/>
+    </linearGradient>
+  </defs>
+  <!-- Shield -->
+  <path d="M32 2.5 56.5 12.3V31c0 16.3-11.1 26.6-24.5 30.7C18.6 57.6 7.5 47.3 7.5 31V12.3L32 2.5Z" fill="url(#csgrad)"/>
+  <!-- Inner panel -->
+  <path d="M32 9 50.5 16.4V31c0 12.4-8.3 20.6-18.5 24-10.2-3.4-18.5-11.6-18.5-24V16.4L32 9Z" fill="#0B1221" fill-opacity="0.92"/>
+  <!-- 360 orbit ring (open arc) -->
+  <path d="M44 24a14 14 0 1 1-7-6" fill="none" stroke="url(#csgrad)" stroke-width="3.2" stroke-linecap="round"/>
+  <!-- Orbit node -->
+  <circle cx="44" cy="18.5" r="3" fill="#19E3B1"/>
+  <!-- Checkmark -->
+  <path d="M25 33.5 30.5 39 41 26.5" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,14 @@
+node_modules
+clientapp/node_modules
+bin
+obj
+.vs
+.git
+dist
+clientapp/dist
+src/CyberShield360.API/appsettings.json
+src/CyberShield360.API/appsettings.Development.json
+appsettings.json
+appsettings.Development.json
+.env
+docker-compose.override.yml

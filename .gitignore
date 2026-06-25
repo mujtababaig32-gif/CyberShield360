@@ -1,0 +1,46 @@
+﻿# Secrets / config
+.env
+.env.*
+appsettings.json
+appsettings.Development.json
+src/CyberShield360.API/appsettings.json
+src/CyberShield360.API/appsettings.Development.json
+launchSettings.json
+
+# Frontend
+node_modules/
+clientapp/node_modules/
+dist/
+clientapp/dist/
+.vite/
+
+# Backend build output
+bin/
+obj/
+**/bin/
+**/obj/
+
+# IDE / OS
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.log
+.DS_Store
+Thumbs.db
+
+# Git / Docker local override
+.git/
+docker-compose.override.yml
+
+# Local/install/build leftovers
+AzureCLI.msi
+build-error.txt
+*.tsbuildinfo
+frontend/
+
+# Local files
+AzureCLI.msi
+build-error.txt
+*.tsbuildinfo

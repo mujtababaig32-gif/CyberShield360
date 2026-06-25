@@ -1,0 +1,35 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Your_strong_Pass123"
+      MSSQL_PID: "Developer"
+    ports:
+      - "14330:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -No -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      retries: 10
+      start_period: 30s
+
+  api:
+    build:
+      context: .
+      dockerfile: src/CyberShield360.API/Dockerfile
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=master;User Id=sa;Password=Your_strong_Pass123;TrustServerCertificate=True;Encrypt=False"
+      Jwt__Secret: "CHANGE_THIS_TO_A_LONG_RANDOM_SECRET_OF_AT_LEAST_32_CHARS"
+      SeedOnStartup: "true"
+      EnableSwagger: "true"
+    ports:
+      - "8080:8080"
+
+volumes:
+  sql_data:

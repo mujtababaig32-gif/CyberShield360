@@ -1,0 +1,34 @@
+# Example only. For real production, prefer Azure App Service / Azure Container Apps
+# and set these values in the hosting dashboard as environment variables.
+services:
+  api:
+    build:
+      context: .
+      dockerfile: src/CyberShield360.API/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "REPLACE_WITH_HOSTED_SQL_CONNECTION_STRING"
+      Jwt__Issuer: "CyberShield360"
+      Jwt__Audience: "CyberShield360"
+      Jwt__Secret: "REPLACE_WITH_64_PLUS_CHARACTER_RANDOM_SECRET"
+      Cors__Origins__0: "https://YOUR-VERCEL-FRONTEND.vercel.app"
+      Smtp__Host: "smtp.gmail.com"
+      Smtp__Port: "587"
+      Smtp__Username: "REPLACE_WITH_SMTP_USERNAME"
+      Smtp__Password: "REPLACE_WITH_SMTP_APP_PASSWORD"
+      Smtp__FromEmail: "REPLACE_WITH_VERIFIED_SENDER_EMAIL"
+      Smtp__FromName: "CyberShield360"
+      Smtp__EnableSsl: "true"
+      GoogleAuth__ClientId: "REPLACE_WITH_GOOGLE_CLIENT_ID"
+      GoogleAuth__ClientSecret: ""
+      OpenAI__ApiKey: ""
+      OpenAI__Model: "gpt-4.1-mini"
+      LemonSqueezy__ApiKey: ""
+      LemonSqueezy__StoreId: ""
+      LemonSqueezy__VariantId: ""
+      LemonSqueezy__WebhookSecret: ""
+      SeedOnStartup: "false"
+      EnableSwagger: "false"
+    ports:
+      - "8080:8080"
