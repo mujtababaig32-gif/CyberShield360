@@ -1873,3 +1873,25 @@ table {
 .login-eyebrow {
   box-sizing: border-box !important;
 }
+
+/* Google login button reliability fix */
+.google-button-wrap {
+  position: relative !important;
+  width: 100% !important;
+  min-height: 3.15rem !important;
+  height: auto !important;
+  overflow: visible !important;
+  border-radius: 1rem !important;
+}
+
+.google-button-wrap > div,
+.google-button-wrap iframe {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.google-hidden-click {
+  position: static !important;
+  opacity: 1 !important;
+  z-index: auto !important;
+}
