@@ -1143,3 +1143,98 @@ select option {
   }
 }
 
+
+/* =========================================================
+   CyberShield360 Mobile Login Final Layout
+   Header top, login card centered, copyright footer bottom.
+   Keep this section LAST so it overrides older mobile rules.
+========================================================= */
+
+@media screen and (max-width: 767px) {
+  .login-shell {
+    min-height: 100dvh !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .login-page {
+    display: flex !important;
+    min-height: 100dvh !important;
+    height: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    flex-direction: column !important;
+    grid-template-columns: unset !important;
+    overflow: visible !important;
+  }
+
+  .login-hero {
+    display: block !important;
+    height: auto !important;
+    min-height: auto !important;
+    flex: 0 0 auto !important;
+    padding: calc(0.9rem + env(safe-area-inset-top)) 1rem 0 !important;
+  }
+
+  .login-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.75rem !important;
+  }
+
+  .login-hero-main,
+  .login-copy,
+  .login-eyebrow,
+  .login-highlight-grid,
+  .auth-3d-scene,
+  .login-footer {
+    display: none !important;
+  }
+
+  .login-form-side {
+    position: relative !important;
+    display: flex !important;
+    width: 100% !important;
+    min-height: calc(100dvh - 5rem) !important;
+    height: auto !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: visible !important;
+    padding: 1rem 1rem calc(4.25rem + env(safe-area-inset-bottom)) !important;
+    box-sizing: border-box !important;
+  }
+
+  .login-card {
+    width: 100% !important;
+    max-width: 23rem !important;
+    margin: auto !important;
+    border-radius: 1.55rem !important;
+    padding: 1.35rem 1.25rem !important;
+    background: rgba(15, 23, 42, 0.82) !important;
+    box-shadow:
+      0 24px 70px rgba(0, 0, 0, 0.42),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+    box-sizing: border-box !important;
+  }
+
+  .login-mobile-footer {
+    position: absolute !important;
+    left: 1rem !important;
+    right: 1rem !important;
+    bottom: calc(1rem + env(safe-area-inset-bottom)) !important;
+    display: block !important;
+    padding: 0 !important;
+    color: #64748b !important;
+    font-size: 0.72rem !important;
+    line-height: 1.45 !important;
+    text-align: center !important;
+  }
+
+  .login-mobile-footer br {
+    display: none !important;
+  }
+}
