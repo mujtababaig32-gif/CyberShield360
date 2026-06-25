@@ -774,11 +774,6 @@ select option {
 
 /* Mobile login polish */
 
-/* =========================================================
-   CyberShield360 Mobile Polish
-   Fixes login preview + dashboard/mobile pages
-========================================================= */
-
 @media (max-width: 767px) {
   html,
   body,
@@ -796,7 +791,6 @@ select option {
       #050816;
   }
 
-  /* Login mobile layout */
   .login-shell {
     min-height: 100dvh;
     height: auto;
@@ -804,24 +798,29 @@ select option {
     overflow-y: auto;
   }
 
+  /* KEY FIX: collapse the two-column grid into a true single column */
   .login-page {
     display: flex;
-    min-height: 100dvh;
-    height: auto;
+    flex-direction: column;
     width: 100%;
     max-width: 100%;
-    flex-direction: column;
+    min-height: 100dvh;
+    height: auto;
     overflow: visible;
   }
 
   .login-hero {
     height: auto;
     min-height: auto;
-    padding: 1rem 1rem 0;
+    padding: 1rem 1.25rem 0;
+    width: 100%;
   }
 
   .login-header {
+    display: flex;
     align-items: center;
+    justify-content: space-between;
+    width: 100%;
     gap: 0.75rem;
   }
 
@@ -855,14 +854,15 @@ select option {
   }
 
   .login-status-pill {
-    max-width: 6.8rem;
-    padding: 0.45rem 0.65rem;
-    font-size: 0.55rem;
-    line-height: 1.15;
+    max-width: 7rem;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.58rem;
+    line-height: 1.25;
     text-align: center;
+    white-space: normal;
   }
 
-  /* Hide big desktop marketing content on mobile */
+  /* Hide desktop marketing content */
   .login-hero-main,
   .login-copy,
   .login-eyebrow,
@@ -874,56 +874,70 @@ select option {
     display: none !important;
   }
 
+  /* KEY FIX: full-width centered form panel */
   .login-form-side {
     display: flex;
-    min-height: calc(100dvh - 4.8rem);
-    height: auto;
+    width: 100%;
+    flex: 1;
+    min-height: calc(100dvh - 5rem);
     align-items: center;
     justify-content: center;
+    padding: 1.25rem 1.25rem 2rem;
     overflow: visible;
-    padding: 0.9rem 1rem 1.2rem;
+    box-sizing: border-box;
   }
 
+  /* KEY FIX: card fills available width with auto margins */
   .login-card {
     width: 100%;
-    max-width: 24rem;
+    max-width: 26rem;
+    margin: 0 auto;
     border-radius: 1.55rem;
-    padding: 1.25rem;
+    padding: 1.5rem 1.25rem;
     background: rgba(15, 23, 42, 0.76);
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+    box-sizing: border-box;
+  }
+
+  .login-card-head {
+    text-align: center;
   }
 
   .login-card-logo {
-    width: 3.35rem;
-    height: 3.35rem;
-    border-radius: 1.05rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 1.1rem;
+    margin: 0 auto;
   }
 
   .login-card-logo img {
-    width: 2.45rem;
-    height: 2.45rem;
+    width: 2.5rem;
+    height: 2.5rem;
   }
 
   .login-card h2 {
     margin-top: 0.85rem;
-    font-size: 1.55rem;
+    font-size: 1.65rem;
     line-height: 1.05;
+    text-align: center;
   }
 
   .login-card-sub {
     font-size: 0.52rem;
     letter-spacing: 0.24em;
+    text-align: center;
   }
 
   .login-card p {
     margin-top: 0.6rem;
-    font-size: 0.78rem;
-    line-height: 1.5;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    text-align: center;
   }
 
   .login-actions {
-    gap: 0.62rem;
-    margin-top: 1rem;
+    gap: 0.65rem;
+    margin-top: 1.1rem;
   }
 
   .google-button-wrap {
@@ -948,37 +962,40 @@ select option {
 
   .btn-primary,
   .btn-ghost {
-    min-height: 2.75rem;
+    min-height: 2.85rem;
     width: 100%;
     border-radius: 0.9rem;
-    font-size: 0.86rem;
+    font-size: 0.9rem;
+    box-sizing: border-box;
   }
 
   .input {
-    min-height: 2.75rem;
+    min-height: 2.85rem;
     border-radius: 0.9rem;
     font-size: 0.9rem;
+    box-sizing: border-box;
   }
 
   .login-divider {
     gap: 0.55rem;
-    font-size: 0.68rem;
+    font-size: 0.7rem;
   }
 
   .login-error {
     padding: 0.65rem;
-    font-size: 0.78rem;
+    font-size: 0.8rem;
+    border-radius: 0.85rem;
   }
 
   .login-mobile-footer {
     display: block;
-    padding: 0.3rem 1rem 1rem;
+    padding: 0.5rem 1rem 1.25rem;
     color: #64748b;
     font-size: 0.68rem;
     text-align: center;
   }
 
-  /* App/mobile dashboard polish */
+  /* Dashboard mobile */
   .page-shell {
     padding: 1rem !important;
   }
@@ -987,25 +1004,6 @@ select option {
   .glass-panel {
     border-radius: 1.1rem;
     padding: 1rem;
-  }
-
-  .section-title,
-  h1 {
-    font-size: 1.35rem;
-    line-height: 1.2;
-  }
-
-  .section-subtitle,
-  p {
-    font-size: 0.88rem;
-  }
-
-  .grid {
-    min-width: 0;
-  }
-
-  table {
-    width: 100%;
   }
 
   .overflow-x-auto,
