@@ -1503,3 +1503,220 @@ select option {
     text-align: center !important;
   }
 }
+
+/* =========================================================
+   CyberShield360 Responsive Safety Patch
+   Fixes layout crashes on other laptops / large screens.
+   Keep this section LAST so it overrides earlier responsive rules.
+========================================================= */
+
+/* Keep full logged-in app content controlled on very large screens */
+@media screen and (min-width: 1280px) {
+  .page-shell {
+    max-width: 1640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* Large desktop login should stay professional, not over-stretched */
+@media screen and (min-width: 1440px) {
+  .login-page {
+    max-width: 1500px !important;
+    grid-template-columns: minmax(0, 1.02fr) minmax(420px, 0.98fr) !important;
+  }
+
+  .login-copy h1 {
+    font-size: clamp(3rem, 4vw, 4.35rem) !important;
+  }
+
+  .auth-3d-scene {
+    height: clamp(245px, 25vh, 310px) !important;
+  }
+
+  .login-card {
+    max-width: 26rem !important;
+  }
+}
+
+/* Common laptop fix: 1366px / 125% scaling / minimized browser */
+@media screen and (min-width: 1024px) and (max-width: 1439px) {
+  .login-page {
+    max-width: 1180px !important;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 0.82fr) !important;
+  }
+
+  .login-hero {
+    padding: 1.35rem 1.75rem !important;
+  }
+
+  .login-brand-name {
+    font-size: 1.15rem !important;
+  }
+
+  .login-brand-sub {
+    font-size: 0.52rem !important;
+    letter-spacing: 0.24em !important;
+  }
+
+  .login-status-pill {
+    padding: 0.48rem 0.75rem !important;
+    font-size: 0.62rem !important;
+    white-space: nowrap !important;
+  }
+
+  .login-copy h1 {
+    margin-top: 0.85rem !important;
+    font-size: clamp(2.1rem, 3.5vw, 3.25rem) !important;
+    line-height: 1.04 !important;
+  }
+
+  .login-copy p {
+    max-width: 34rem !important;
+    font-size: 0.9rem !important;
+    line-height: 1.55 !important;
+  }
+
+  .login-highlight-grid {
+    margin-top: 1rem !important;
+    gap: 0.65rem !important;
+  }
+
+  .login-highlight-card {
+    padding: 0.75rem !important;
+    border-radius: 0.95rem !important;
+  }
+
+  .login-highlight-card div {
+    font-size: 1.15rem !important;
+  }
+
+  .login-highlight-card span {
+    font-size: 0.66rem !important;
+  }
+
+  .auth-3d-scene {
+    height: clamp(190px, 25vh, 240px) !important;
+    margin-top: 1rem !important;
+    border-radius: 1.5rem !important;
+  }
+
+  .floating-chip {
+    padding: 0.45rem 0.8rem !important;
+    font-size: 0.64rem !important;
+  }
+
+  .login-form-side {
+    padding: 1.25rem !important;
+  }
+
+  .login-card {
+    max-width: 23.5rem !important;
+    border-radius: 1.55rem !important;
+    padding: 1.35rem !important;
+  }
+
+  .login-card-logo {
+    width: 3.4rem !important;
+    height: 3.4rem !important;
+  }
+
+  .login-card-logo img {
+    width: 2.45rem !important;
+    height: 2.45rem !important;
+  }
+
+  .login-card h2 {
+    font-size: 1.55rem !important;
+  }
+
+  .login-card p {
+    font-size: 0.78rem !important;
+  }
+}
+
+/* Tablet / small laptop: use focused login layout instead of broken two-column */
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+  .login-shell {
+    min-height: 100dvh !important;
+    height: auto !important;
+    overflow-y: auto !important;
+  }
+
+  .login-page {
+    display: flex !important;
+    min-height: 100dvh !important;
+    height: auto !important;
+    max-width: 100% !important;
+    flex-direction: column !important;
+    grid-template-columns: unset !important;
+  }
+
+  .login-hero {
+    display: block !important;
+    height: auto !important;
+    min-height: auto !important;
+    padding: 1.25rem 1.5rem 0 !important;
+  }
+
+  .login-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  .login-hero-main,
+  .login-copy,
+  .login-eyebrow,
+  .login-highlight-grid,
+  .auth-3d-scene,
+  .login-footer {
+    display: none !important;
+  }
+
+  .login-form-side {
+    display: flex !important;
+    min-height: calc(100dvh - 5rem) !important;
+    height: auto !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 1.5rem 1rem 4rem !important;
+  }
+
+  .login-card {
+    width: 100% !important;
+    max-width: 25rem !important;
+    margin: auto !important;
+  }
+
+  .login-mobile-footer {
+    display: block !important;
+    margin-top: 1.25rem !important;
+    color: #64748b !important;
+    font-size: 0.72rem !important;
+    text-align: center !important;
+  }
+}
+
+/* Prevent dashboard/cards/tables/charts from overflowing on different screens */
+.card,
+.glass-panel,
+.page-shell,
+main {
+  min-width: 0;
+}
+
+.grid,
+.flex {
+  min-width: 0;
+}
+
+table {
+  max-width: 100%;
+}
+
+.recharts-wrapper,
+.recharts-responsive-container {
+  max-width: 100% !important;
+}
