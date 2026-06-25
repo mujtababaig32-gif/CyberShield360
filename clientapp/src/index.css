@@ -1238,3 +1238,268 @@ select option {
     display: none !important;
   }
 }
+
+/* =========================================================
+   CyberShield360 Responsive Login Final Fix
+   Fixes minimized desktop/tablet overlap while keeping
+   maximized desktop premium and mobile app-style layout.
+========================================================= */
+
+/* Compact desktop / short-height laptops */
+@media screen and (min-width: 1051px) and (max-width: 1320px),
+       screen and (min-width: 1051px) and (max-height: 760px) {
+  .login-shell {
+    min-height: 100dvh !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .login-page {
+    width: 100% !important;
+    max-width: 1360px !important;
+    min-height: 100dvh !important;
+    height: auto !important;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 0.82fr) !important;
+    gap: 1.5rem !important;
+    align-items: center !important;
+    overflow: visible !important;
+  }
+
+  .login-hero {
+    height: auto !important;
+    min-height: 100dvh !important;
+    padding: 1.25rem 2rem !important;
+  }
+
+  .login-header {
+    position: relative !important;
+    z-index: 20 !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .login-logo-box {
+    width: 2.55rem !important;
+    height: 2.55rem !important;
+    border-radius: 0.95rem !important;
+  }
+
+  .login-logo {
+    width: 1.85rem !important;
+    height: 1.85rem !important;
+  }
+
+  .login-brand-name {
+    font-size: 1.25rem !important;
+    white-space: nowrap !important;
+  }
+
+  .login-status-pill {
+    padding: 0.55rem 0.85rem !important;
+    font-size: 0.66rem !important;
+    white-space: nowrap !important;
+  }
+
+  .login-hero-main {
+    align-items: flex-start !important;
+    padding: 0.25rem 0 0 !important;
+  }
+
+  .login-copy {
+    max-width: 42rem !important;
+  }
+
+  .login-eyebrow {
+    padding: 0.5rem 0.85rem !important;
+    font-size: 0.62rem !important;
+    letter-spacing: 0.14em !important;
+    max-width: 100% !important;
+  }
+
+  .login-copy h1 {
+    max-width: 42rem !important;
+    margin-top: 0.85rem !important;
+    font-size: clamp(2.25rem, 4.05vw, 3.35rem) !important;
+    line-height: 1.05 !important;
+    letter-spacing: -0.052em !important;
+  }
+
+  .login-copy p {
+    max-width: 38rem !important;
+    margin-top: 0.85rem !important;
+    font-size: 0.92rem !important;
+    line-height: 1.62 !important;
+  }
+
+  .login-highlight-grid {
+    max-width: 38rem !important;
+    margin-top: 1rem !important;
+    gap: 0.65rem !important;
+  }
+
+  .login-highlight-card {
+    border-radius: 0.95rem !important;
+    padding: 0.78rem !important;
+  }
+
+  .login-highlight-card div {
+    font-size: 1.22rem !important;
+  }
+
+  .login-highlight-card span {
+    font-size: 0.66rem !important;
+  }
+
+  .auth-3d-scene {
+    height: clamp(190px, 24vh, 235px) !important;
+    margin-top: 1rem !important;
+    border-radius: 1.7rem !important;
+  }
+
+  .floating-chip {
+    padding: 0.5rem 0.9rem !important;
+    font-size: 0.64rem !important;
+  }
+
+  .shield-diamond {
+    width: 142px !important;
+    height: 96px !important;
+  }
+
+  .shield-diamond-inner {
+    width: 46px !important;
+    height: 46px !important;
+    font-size: 1.45rem !important;
+  }
+
+  .login-footer {
+    margin-top: 0.75rem !important;
+    padding-top: 0.75rem !important;
+    font-size: 0.66rem !important;
+  }
+
+  .login-form-side {
+    height: auto !important;
+    min-height: 100dvh !important;
+    padding: 1.5rem 2rem 1.5rem 0 !important;
+  }
+
+  .login-card {
+    max-width: 24rem !important;
+    border-radius: 1.75rem !important;
+    padding: 1.5rem !important;
+  }
+
+  .login-card-logo {
+    width: 3.65rem !important;
+    height: 3.65rem !important;
+    border-radius: 1.15rem !important;
+  }
+
+  .login-card-logo img {
+    width: 2.65rem !important;
+    height: 2.65rem !important;
+  }
+
+  .login-card h2 {
+    font-size: 1.72rem !important;
+  }
+}
+
+/* Tablet and narrow desktop: use a clean login-focused layout */
+@media screen and (min-width: 768px) and (max-width: 1050px) {
+  .login-shell {
+    min-height: 100dvh !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .login-page {
+    display: flex !important;
+    min-height: 100dvh !important;
+    height: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    flex-direction: column !important;
+    grid-template-columns: unset !important;
+    overflow: visible !important;
+  }
+
+  .login-hero {
+    display: block !important;
+    height: auto !important;
+    min-height: auto !important;
+    flex: 0 0 auto !important;
+    padding: 1.1rem 1.5rem 0 !important;
+  }
+
+  .login-header {
+    width: 100% !important;
+    max-width: 46rem !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 1rem !important;
+  }
+
+  .login-brand-name {
+    font-size: 1.18rem !important;
+    white-space: nowrap !important;
+  }
+
+  .login-status-pill {
+    max-width: 8rem !important;
+    padding: 0.5rem 0.8rem !important;
+    font-size: 0.6rem !important;
+    line-height: 1.15 !important;
+    text-align: center !important;
+    white-space: normal !important;
+  }
+
+  .login-hero-main,
+  .login-copy,
+  .login-eyebrow,
+  .login-highlight-grid,
+  .auth-3d-scene,
+  .login-footer {
+    display: none !important;
+  }
+
+  .login-form-side {
+    position: relative !important;
+    display: flex !important;
+    width: 100% !important;
+    min-height: calc(100dvh - 5rem) !important;
+    height: auto !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 1.25rem 1.5rem 4.5rem !important;
+    box-sizing: border-box !important;
+  }
+
+  .login-card {
+    width: 100% !important;
+    max-width: 25rem !important;
+    margin: auto !important;
+    border-radius: 1.65rem !important;
+    padding: 1.55rem !important;
+    background: rgba(15, 23, 42, 0.82) !important;
+  }
+
+  .login-mobile-footer {
+    position: absolute !important;
+    left: 1rem !important;
+    right: 1rem !important;
+    bottom: 1rem !important;
+    display: block !important;
+    padding: 0 !important;
+    color: #64748b !important;
+    font-size: 0.72rem !important;
+    line-height: 1.45 !important;
+    text-align: center !important;
+  }
+}
