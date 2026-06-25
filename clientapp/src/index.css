@@ -216,7 +216,9 @@ select option {
   color: white;
 }
 
-/* Login page */
+/* =====================================================
+   LOGIN PAGE — DESKTOP
+   ===================================================== */
 
 .login-shell {
   position: relative;
@@ -571,7 +573,9 @@ select option {
   display: none;
 }
 
-/* Moving 3D hero visual - wide style like reference image 2 */
+/* =====================================================
+   3D HERO SCENE (desktop)
+   ===================================================== */
 
 .auth-3d-scene {
   position: relative;
@@ -613,8 +617,7 @@ select option {
   height: 220px;
   transform: translate(-50%, -50%);
   border-radius: 999px;
-  background:
-    radial-gradient(circle, rgba(16, 181, 166, 0.26), transparent 64%);
+  background: radial-gradient(circle, rgba(16, 181, 166, 0.26), transparent 64%);
   filter: blur(10px);
   animation: glowPulse 4.5s ease-in-out infinite;
 }
@@ -629,24 +632,9 @@ select option {
   animation: ringPulse 4s ease-in-out infinite;
 }
 
-.ring-3d-one {
-  width: 330px;
-  height: 116px;
-}
-
-.ring-3d-two {
-  width: 440px;
-  height: 155px;
-  border-color: rgba(16, 181, 166, 0.19);
-  animation-delay: 0.8s;
-}
-
-.ring-3d-three {
-  width: 560px;
-  height: 195px;
-  border-color: rgba(129, 140, 248, 0.16);
-  animation-delay: 1.4s;
-}
+.ring-3d-one  { width: 330px; height: 116px; }
+.ring-3d-two  { width: 440px; height: 155px; border-color: rgba(16, 181, 166, 0.19); animation-delay: 0.8s; }
+.ring-3d-three{ width: 560px; height: 195px; border-color: rgba(129, 140, 248, 0.16); animation-delay: 1.4s; }
 
 .shield-diamond {
   position: absolute;
@@ -694,157 +682,313 @@ select option {
   animation: chipFloat 4s ease-in-out infinite;
 }
 
-.chip-top-left {
-  left: 2.4rem;
-  top: 2rem;
-}
-
-.chip-top-right {
-  right: 2.4rem;
-  top: 2rem;
-}
-
-.chip-bottom-left {
-  left: 2.4rem;
-  bottom: 2rem;
-}
-
-.chip-bottom-right {
-  right: 2.4rem;
-  bottom: 2rem;
-}
+.chip-top-left    { left: 2.4rem; top: 2rem; }
+.chip-top-right   { right: 2.4rem; top: 2rem; }
+.chip-bottom-left { left: 2.4rem; bottom: 2rem; }
+.chip-bottom-right{ right: 2.4rem; bottom: 2rem; }
 
 @keyframes shieldDiamondFloat {
-  0%,
-  100% {
-    transform: translate(-50%, -50%) rotateX(62deg) rotateZ(-12deg) translateY(0);
-  }
-
-  50% {
-    transform: translate(-50%, -50%) rotateX(62deg) rotateZ(-12deg) translateY(-14px);
-  }
+  0%, 100% { transform: translate(-50%, -50%) rotateX(62deg) rotateZ(-12deg) translateY(0); }
+  50%       { transform: translate(-50%, -50%) rotateX(62deg) rotateZ(-12deg) translateY(-14px); }
 }
 
 @keyframes ringPulse {
-  0%,
-  100% {
-    opacity: 0.34;
-    transform: translate(-50%, -50%) rotateX(68deg) scale(0.96);
-  }
-
-  50% {
-    opacity: 0.82;
-    transform: translate(-50%, -50%) rotateX(68deg) scale(1.05);
-  }
+  0%, 100% { opacity: 0.34; transform: translate(-50%, -50%) rotateX(68deg) scale(0.96); }
+  50%       { opacity: 0.82; transform: translate(-50%, -50%) rotateX(68deg) scale(1.05); }
 }
 
 @keyframes chipFloat {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-8px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-8px); }
 }
 
 @keyframes glowPulse {
-  0%,
-  100% {
-    opacity: 0.55;
-    transform: translate(-50%, -50%) scale(0.96);
-  }
-
-  50% {
-    opacity: 0.9;
-    transform: translate(-50%, -50%) scale(1.06);
-  }
+  0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.96); }
+  50%       { opacity: 0.9;  transform: translate(-50%, -50%) scale(1.06); }
 }
 
 @keyframes gridDrift {
-  from {
-    background-position: 0 0;
-  }
-
-  to {
-    background-position: 48px 48px;
-  }
+  from { background-position: 0 0; }
+  to   { background-position: 48px 48px; }
 }
 
-/* Mobile login polish */
+/* =====================================================
+   MOBILE  ≤ 767px
+   Full rewrite — no patches, no !important hacks.
+   The desktop grid simply doesn't exist here.
+   ===================================================== */
 
 @media (max-width: 767px) {
+
+  /* ── global ── */
+  html, body, #root {
+    width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    min-width: 320px;
+    background:
+      radial-gradient(circle at 18% 8%,  rgba(16, 181, 166, 0.22), transparent 22rem),
+      radial-gradient(circle at 88% 14%, rgba(99, 102, 241, 0.20), transparent 22rem),
+      #050816;
+  }
+
+  /* ── shell ── */
   .login-shell {
-    min-height: 100vh;
+    position: relative;
     height: auto;
+    min-height: 100dvh;
+    overflow-x: hidden;
     overflow-y: auto;
   }
 
+  /* ── THE FIX: replace grid with a single flex column ── */
   .login-page {
-    display: block;
-    min-height: 100vh;
-    height: auto;
-  }
-
-  .login-form-side {
-    min-height: 100vh;
-    height: auto;
-    padding: 1rem;
-    align-items: center;
-  }
-
-  .login-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    /* kill the desktop grid entirely */
+    grid-template-columns: unset;
+    width: 100%;
     max-width: 100%;
-    border-radius: 1.5rem;
-    padding: 1.35rem;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  /* ── slim top bar ── */
+  .login-hero {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: auto;
+    padding: 1rem 1.25rem 0;
+    flex-shrink: 0;
+  }
+
+  .login-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .login-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+  }
+
+  .login-logo-box {
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 0.8rem;
+    flex-shrink: 0;
+  }
+
+  .login-logo {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .login-brand-name {
+    font-size: 1.1rem;
+    font-weight: 950;
+    letter-spacing: -0.04em;
+    white-space: nowrap;
+    color: white;
+  }
+
+  .login-brand-sub {
+    font-size: 0.48rem;
+    letter-spacing: 0.28em;
+    margin-top: 0.15rem;
+  }
+
+  .login-status-pill {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.6rem;
+    line-height: 1.3;
+    text-align: center;
+    white-space: normal;
+    max-width: 7rem;
+  }
+
+  /* hide all desktop hero content below the header bar */
+  .login-hero-main,
+  .login-copy,
+  .login-footer,
+  .auth-3d-scene {
+    display: none;
+  }
+
+  /* ── form side: takes all remaining height, centres card ── */
+  .login-form-side {
+    display: flex;
+    flex: 1;
+    width: 100%;
+    /* use min-height so short content still centres */
+    min-height: calc(100dvh - 5rem);
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 1.25rem 2.5rem;
+    overflow: visible;
+  }
+
+  /* ── card: full width inside padding, centred ── */
+  .login-card {
+    width: 100%;
+    /* no max-width cap so it fills the viewport edge-to-edge minus padding */
+    max-width: 100%;
+    margin: 0;
+    border-radius: 1.75rem;
+    padding: 2rem 1.5rem 1.75rem;
+    background: rgba(15, 23, 42, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+      0 32px 80px rgba(0, 0, 0, 0.45),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(24px);
+  }
+
+  .login-card-head {
+    text-align: center;
   }
 
   .login-card-logo {
-    width: 3.5rem;
-    height: 3.5rem;
-    border-radius: 1.1rem;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 1.2rem;
+    margin: 0 auto;
   }
 
   .login-card-logo img {
-    width: 2.55rem;
-    height: 2.55rem;
+    width: 2.9rem;
+    height: 2.9rem;
   }
 
   .login-card h2 {
-    font-size: 1.65rem;
+    margin: 1rem 0 0;
+    font-size: 1.85rem;
+    font-weight: 950;
+    letter-spacing: -0.045em;
+    color: white;
+    text-align: center;
+    line-height: 1.05;
+  }
+
+  .login-card-sub {
+    font-size: 0.54rem;
+    letter-spacing: 0.28em;
+    margin-top: 0.3rem;
+    text-align: center;
   }
 
   .login-card p {
-    font-size: 0.8rem;
+    margin: 0.7rem 0 0;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: #94a3b8;
+    text-align: center;
   }
 
+  /* ── actions ── */
   .login-actions {
-    gap: 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1.35rem;
+  }
+
+  .btn-primary,
+  .btn-ghost {
+    width: 100%;
+    min-height: 3rem;
+    border-radius: 0.95rem;
+    font-size: 0.95rem;
+    font-weight: 800;
   }
 
   .google-button-wrap {
+    width: 100%;
     height: 3rem;
+    border-radius: 0.95rem;
   }
 
   .google-button {
-    font-size: 0.9rem;
+    border-radius: 0.95rem;
+    font-size: 0.92rem;
+    font-weight: 800;
   }
 
+  .google-icon {
+    width: 1.6rem;
+    height: 1.6rem;
+  }
+
+  .google-icon svg {
+    width: 1.4rem;
+    height: 1.4rem;
+  }
+
+  /* ── inputs ── */
+  .input {
+    min-height: 3rem;
+    border-radius: 0.95rem;
+    font-size: 0.95rem;
+    width: 100%;
+  }
+
+  .login-divider {
+    gap: 0.6rem;
+    font-size: 0.72rem;
+  }
+
+  .login-error {
+    padding: 0.75rem;
+    font-size: 0.82rem;
+    border-radius: 0.95rem;
+  }
+
+  /* ── mobile-only footer ── */
   .login-mobile-footer {
     display: block;
-    padding: 0 1rem 1rem;
-    color: #64748b;
-    font-size: 0.72rem;
+    padding: 0.5rem 1.25rem 1.25rem;
+    color: #475569;
+    font-size: 0.7rem;
     text-align: center;
+    flex-shrink: 0;
+  }
+
+  /* ── dashboard / app pages ── */
+  .page-shell {
+    padding: 1rem;
+  }
+
+  .card,
+  .glass-panel {
+    border-radius: 1.1rem;
+    padding: 1rem;
+  }
+
+  .overflow-x-auto,
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  button {
+    touch-action: manipulation;
   }
 }
 
-/* =========================================================
-   CyberShield360 Light Mode Fix
-   Fixes custom dark cards staying dark after theme toggle.
-   Keep this section at the very bottom of index.css.
-========================================================= */
+/* =====================================================
+   LIGHT MODE OVERRIDES
+   ===================================================== */
 
 html:not(.dark) {
   color-scheme: light;
@@ -864,23 +1008,11 @@ html:not(.dark) ::selection {
   color: #0f172a;
 }
 
-html:not(.dark) ::-webkit-scrollbar-track {
-  background: #f8fafc;
-}
+html:not(.dark) ::-webkit-scrollbar-track  { background: #f8fafc; }
+html:not(.dark) ::-webkit-scrollbar-thumb  { background: rgba(100, 116, 139, 0.28); }
+html:not(.dark) select option { background: #ffffff; color: #0f172a; }
 
-html:not(.dark) ::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.28);
-}
-
-html:not(.dark) select option {
-  background: #ffffff;
-  color: #0f172a;
-}
-
-html:not(.dark) .page-shell {
-  background: transparent;
-  color: #0f172a;
-}
+html:not(.dark) .page-shell { background: transparent; color: #0f172a; }
 
 html:not(.dark) .card,
 html:not(.dark) .glass-card,
@@ -895,8 +1027,7 @@ html:not(.dark) .score-card,
 html:not(.dark) .posture-card,
 html:not(.dark) .risk-card {
   border: 1px solid rgba(203, 213, 225, 0.95) !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96)) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96)) !important;
   color: #0f172a !important;
   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08) !important;
 }
@@ -905,12 +1036,6 @@ html:not(.dark) .section-title,
 html:not(.dark) h1,
 html:not(.dark) h2,
 html:not(.dark) h3,
-html:not(.dark) .card h1,
-html:not(.dark) .card h2,
-html:not(.dark) .card h3,
-html:not(.dark) .glass-panel h1,
-html:not(.dark) .glass-panel h2,
-html:not(.dark) .glass-panel h3,
 html:not(.dark) .font-black,
 html:not(.dark) .font-bold,
 html:not(.dark) .font-semibold {
@@ -932,24 +1057,11 @@ html:not(.dark) .text-brand-600 {
   color: #0d9488 !important;
 }
 
-html:not(.dark) .text-red-400,
-html:not(.dark) .text-red-500,
-html:not(.dark) .text-rose-400,
-html:not(.dark) .text-rose-500 {
-  color: #ef4444 !important;
-}
-
-html:not(.dark) .text-orange-400,
-html:not(.dark) .text-orange-500 {
-  color: #f97316 !important;
-}
-
-html:not(.dark) .text-emerald-400,
-html:not(.dark) .text-emerald-500,
-html:not(.dark) .text-green-400,
-html:not(.dark) .text-green-500 {
-  color: #10b981 !important;
-}
+html:not(.dark) .text-red-400,   html:not(.dark) .text-red-500,
+html:not(.dark) .text-rose-400,  html:not(.dark) .text-rose-500  { color: #ef4444 !important; }
+html:not(.dark) .text-orange-400,html:not(.dark) .text-orange-500 { color: #f97316 !important; }
+html:not(.dark) .text-emerald-400,html:not(.dark) .text-emerald-500,
+html:not(.dark) .text-green-400, html:not(.dark) .text-green-500  { color: #10b981 !important; }
 
 html:not(.dark) input,
 html:not(.dark) select,
@@ -966,50 +1078,28 @@ html:not(.dark) .input::placeholder {
   color: #94a3b8 !important;
 }
 
-html:not(.dark) table,
-html:not(.dark) thead,
-html:not(.dark) tbody,
-html:not(.dark) tr,
-html:not(.dark) td,
-html:not(.dark) th {
-  color: #0f172a !important;
-}
+html:not(.dark) table, html:not(.dark) thead,
+html:not(.dark) tbody,html:not(.dark) tr,
+html:not(.dark) td,  html:not(.dark) th    { color: #0f172a !important; }
+html:not(.dark) thead                       { background: #f1f5f9 !important; }
+html:not(.dark) tbody tr                    { border-color: rgba(203, 213, 225, 0.9) !important; }
 
-html:not(.dark) thead {
-  background: #f1f5f9 !important;
-}
-
-html:not(.dark) tbody tr {
-  border-color: rgba(203, 213, 225, 0.9) !important;
-}
-
-html:not(.dark) .bg-slate-950,
-html:not(.dark) .bg-slate-900,
-html:not(.dark) .bg-slate-900\/80,
-html:not(.dark) .bg-slate-800,
-html:not(.dark) .bg-slate-800\/70,
-html:not(.dark) .bg-black,
+html:not(.dark) .bg-slate-950, html:not(.dark) .bg-slate-900,
+html:not(.dark) .bg-slate-900\/80, html:not(.dark) .bg-slate-800,
+html:not(.dark) .bg-slate-800\/70, html:not(.dark) .bg-black,
 html:not(.dark) .bg-black\/20 {
   background-color: #ffffff !important;
   color: #0f172a !important;
 }
 
 html:not(.dark) .border-slate-800,
-html:not(.dark) .border-slate-700 {
-  border-color: rgba(203, 213, 225, 0.95) !important;
-}
+html:not(.dark) .border-slate-700 { border-color: rgba(203, 213, 225, 0.95) !important; }
 
-html:not(.dark) button {
-  color: #0f172a;
-}
+html:not(.dark) button { color: #0f172a; }
 
 html:not(.dark) .btn-primary,
 html:not(.dark) .bg-brand-500,
-html:not(.dark) .bg-brand-600,
-html:not(.dark) .from-brand-600,
-html:not(.dark) .to-brand-500 {
-  color: #ffffff !important;
-}
+html:not(.dark) .bg-brand-600 { color: #ffffff !important; }
 
 html:not(.dark) .btn-ghost {
   border-color: rgba(203, 213, 225, 0.95) !important;
@@ -1017,44 +1107,25 @@ html:not(.dark) .btn-ghost {
   color: #0f172a !important;
 }
 
-html:not(.dark) .shadow-brand-600\/20,
-html:not(.dark) .shadow-brand-500\/20 {
-  box-shadow: 0 18px 40px rgba(13, 148, 136, 0.16) !important;
-}
-
-/* Login must remain dark/premium in both themes */
+/* login always stays dark in both themes */
 html:not(.dark) .login-shell,
-html:not(.dark) .login-shell * {
-  color-scheme: dark;
-}
+html:not(.dark) .login-shell * { color-scheme: dark; }
 
-html:not(.dark) .login-shell {
-  background: #050816;
-  color: white;
-}
-
+html:not(.dark) .login-shell           { background: #050816; color: white; }
 html:not(.dark) .login-card,
 html:not(.dark) .login-highlight-card,
-html:not(.dark) .auth-3d-scene {
-  color: white !important;
-}
+html:not(.dark) .auth-3d-scene         { color: white !important; }
 
 html:not(.dark) .login-card h2,
 html:not(.dark) .login-brand-name,
 html:not(.dark) .login-copy h1,
-html:not(.dark) .floating-chip {
-  color: white !important;
-}
+html:not(.dark) .floating-chip         { color: white !important; }
 
 html:not(.dark) .login-card p,
 html:not(.dark) .login-card-sub,
 html:not(.dark) .login-brand-sub,
 html:not(.dark) .login-copy p,
-html:not(.dark) .login-highlight-card span {
-  color: #94a3b8 !important;
-}
+html:not(.dark) .login-highlight-card span { color: #94a3b8 !important; }
 
 html:not(.dark) .google-button,
-html:not(.dark) .google-button * {
-  color: #334155 !important;
-}
+html:not(.dark) .google-button *       { color: #334155 !important; }
