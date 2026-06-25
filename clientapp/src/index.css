@@ -772,53 +772,70 @@ select option {
   }
 }
 
-@media (max-height: 850px) {
-  .login-hero {
-    padding-top: 1.5rem;
-    padding-bottom: 1.5rem;
+/* Mobile login polish */
+
+@media (max-width: 767px) {
+  .login-shell {
+    min-height: 100vh;
+    height: auto;
+    overflow-y: auto;
   }
 
-  .login-copy h1 {
-    font-size: clamp(2.35rem, 4vw, 3.55rem);
-  }
-
-  .login-copy p {
-    font-size: 0.95rem;
-    line-height: 1.55;
-  }
-
-  .login-highlight-grid {
-    margin-top: 1rem;
-  }
-
-  .auth-3d-scene {
-    height: 220px;
-    margin-top: 1rem;
-  }
-
-  .login-footer {
-    padding-top: 0.7rem;
-  }
-}
-
-@media (max-width: 1023px) {
   .login-page {
     display: block;
-  }
-
-  .login-hero {
-    display: none;
+    min-height: 100vh;
+    height: auto;
   }
 
   .login-form-side {
-    height: 100vh;
+    min-height: 100vh;
+    height: auto;
+    padding: 1rem;
+    align-items: center;
+  }
+
+  .login-card {
+    max-width: 100%;
+    border-radius: 1.5rem;
+    padding: 1.35rem;
+  }
+
+  .login-card-logo {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 1.1rem;
+  }
+
+  .login-card-logo img {
+    width: 2.55rem;
+    height: 2.55rem;
+  }
+
+  .login-card h2 {
+    font-size: 1.65rem;
+  }
+
+  .login-card p {
+    font-size: 0.8rem;
+  }
+
+  .login-actions {
+    gap: 0.65rem;
+  }
+
+  .google-button-wrap {
+    height: 3rem;
+  }
+
+  .google-button {
+    font-size: 0.9rem;
   }
 
   .login-mobile-footer {
     display: block;
-    margin-top: 1rem;
-    color: #475569;
-    font-size: 0.75rem;
+    padding: 0 1rem 1rem;
+    color: #64748b;
+    font-size: 0.72rem;
     text-align: center;
   }
 }

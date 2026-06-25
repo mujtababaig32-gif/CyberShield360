@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
+type ThemeMode = "dark" | "light";
+
+const THEME_KEY = "cs360-theme";
+const LEGACY_THEME_KEY = "cs360_theme";
+
 const NAV_GROUPS = [
   {
     title: "Executive",
@@ -87,9 +92,25 @@ function getPageHint(pathname: string) {
   return "Unified visibility across risk, exposure, compliance, and operations";
 }
 
-function getInitialTheme() {
+function getInitialTheme(): ThemeMode {
   if (typeof window === "undefined") return "dark";
-  return localStorage.getItem("cs360_theme") || "dark";
+
+  const savedTheme =
+    localStorage.getItem(THEME_KEY) ||
+    localStorage.getItem(LEGACY_THEME_KEY) ||
+    "dark";
+
+  return savedTheme === "light" ? "light" : "dark";
+}
+
+function applyTheme(theme: ThemeMode) {
+  const isDark = theme === "dark";
+
+  document.documentElement.classList.toggle("dark", isDark);
+  document.body.classList.toggle("dark", isDark);
+
+  localStorage.setItem(THEME_KEY, theme);
+  localStorage.removeItem(LEGACY_THEME_KEY);
 }
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
@@ -98,41 +119,48 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <>
-      <div className="relative overflow-hidden border-b border-white/10 p-4">
+      <div className="relative overflow-hidden border-b border-slate-200/80 p-4 dark:border-white/10">
         <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-transparent to-accent-500/10" />
+
         <div className="relative flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-lg shadow-brand-500/20 dark:bg-slate-950">
             <img src="/logo.svg" alt="CyberShield360 logo" className="h-8 w-8" />
           </div>
 
           <div className="min-w-0">
-            <div className="text-base font-black leading-tight tracking-tight">
+            <div className="text-base font-black leading-tight tracking-tight text-slate-950 dark:text-white">
               CyberShield<span className="text-brand-500">360</span>
             </div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
+            <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
               By Mujtaba
             </div>
           </div>
         </div>
 
-        <div className="relative mt-5 rounded-2xl border border-white/10 bg-slate-950/70 p-3 text-white shadow-inner dark:bg-black/20">
+        <div className="relative mt-5 rounded-2xl border border-slate-200 bg-slate-100/90 p-3 text-slate-950 shadow-inner dark:border-white/10 dark:bg-black/20 dark:text-white">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <div className="text-[10px] uppercase tracking-wide text-slate-400">Workspace</div>
+              <div className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Workspace
+              </div>
               <div className="text-sm font-bold">CyberShield360 Tenant</div>
             </div>
-            <span className="rounded-full bg-brand-500/15 px-2 py-1 text-[10px] font-bold text-brand-300 ring-1 ring-brand-500/30">
+
+            <span className="rounded-full bg-brand-500/15 px-2 py-1 text-[10px] font-bold text-brand-600 ring-1 ring-brand-500/30 dark:text-brand-300">
               ACTIVE
             </span>
           </div>
-          <div className="mt-2 truncate text-xs text-slate-400">{user?.email}</div>
+
+          <div className="mt-2 truncate text-xs text-slate-500 dark:text-slate-400">
+            {user?.email}
+          </div>
         </div>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 text-sm">
         {NAV_GROUPS.map((group) => (
           <div key={group.title} className="mb-5">
-            <div className="mb-2 px-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+            <div className="mb-2 px-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
               {group.title}
             </div>
 
@@ -162,9 +190,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                       >
                         {n.icon}
                       </span>
+
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-semibold">{n.label}</span>
-                        <span className={`block truncate text-[10px] ${isActive ? "text-white/75" : "text-slate-400"}`}>
+                        <span
+                          className={`block truncate text-[10px] ${
+                            isActive ? "text-white/75" : "text-slate-400"
+                          }`}
+                        >
                           {n.hint}
                         </span>
                       </span>
@@ -179,10 +212,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
       <div className="border-t border-slate-200/80 p-4 dark:border-slate-800">
         <div className="rounded-2xl bg-slate-100 p-3 dark:bg-slate-800/70">
-          <div className="text-[10px] uppercase tracking-wide text-slate-400">Signed in</div>
+          <div className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Signed in
+          </div>
+
           <div className="truncate text-xs font-semibold text-slate-700 dark:text-slate-200">
             {user?.email}
           </div>
+
           <button
             onClick={() => {
               logout();
@@ -200,7 +237,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [theme, setTheme] = useState(getInitialTheme);
+  const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -208,18 +245,21 @@ export default function Layout() {
   const hint = useMemo(() => getPageHint(location.pathname), [location.pathname]);
 
   useEffect(() => {
-    const isDark = theme === "dark";
-    document.documentElement.classList.toggle("dark", isDark);
-    localStorage.setItem("cs360_theme", theme);
+    applyTheme(theme);
   }, [theme]);
 
+  const toggleTheme = () => {
+    setTheme((current) => (current === "dark" ? "light" : "dark"));
+  };
+
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-transparent text-slate-950 dark:text-slate-100">
+    <div className="relative min-h-screen overflow-x-hidden bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-100">
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 opacity-80">
         <div className="absolute left-[18rem] top-20 h-72 w-72 rounded-full bg-brand-500/10 blur-3xl" />
         <div className="absolute right-0 top-1/3 h-80 w-80 rounded-full bg-accent-500/10 blur-3xl" />
       </div>
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-80 flex-col border-r border-slate-200/80 bg-white/80 shadow-2xl shadow-slate-300/30 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80 dark:shadow-black/20 lg:flex">
+
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-80 flex-col border-r border-slate-200/80 bg-white/90 shadow-2xl shadow-slate-300/30 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/90 dark:shadow-black/20 lg:flex">
         <SidebarContent />
       </aside>
 
@@ -230,6 +270,7 @@ export default function Layout() {
             className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
           />
+
           <aside className="relative z-10 flex h-full w-80 max-w-[88vw] flex-col border-r border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950">
             <div className="flex justify-end px-4 pt-4">
               <button
@@ -239,13 +280,14 @@ export default function Layout() {
                 Close
               </button>
             </div>
+
             <SidebarContent onNavigate={() => setMobileOpen(false)} />
           </aside>
         </div>
       )}
 
       <main className="min-h-screen lg:pl-80">
-        <header className="sticky top-0 z-30 border-b border-white/70 bg-white/75 px-4 py-3 shadow-sm shadow-slate-200/50 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-950/75 dark:shadow-black/10 sm:px-6">
+        <header className="sticky top-0 z-30 border-b border-white/70 bg-white/85 px-4 py-3 shadow-sm shadow-slate-200/50 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-950/85 dark:shadow-black/10 sm:px-6">
           <div className="flex items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
               <button
@@ -260,38 +302,46 @@ export default function Layout() {
                   <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
                   CyberShield360
                 </div>
-                <div className="truncate text-lg font-black tracking-tight sm:text-xl">{title}</div>
-                <div className="hidden truncate text-xs text-slate-500 dark:text-slate-400 sm:block">{hint}</div>
+
+                <div className="truncate text-lg font-black tracking-tight sm:text-xl">
+                  {title}
+                </div>
+
+                <div className="hidden truncate text-xs text-slate-500 dark:text-slate-400 sm:block">
+                  {hint}
+                </div>
               </div>
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
               <button
                 onClick={() => navigate("/search")}
-                className="hidden items-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:bg-slate-800 sm:flex"
+                className="hidden items-center gap-2 rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:bg-slate-800 sm:flex"
               >
                 <span>🔍</span>
                 <span>Search</span>
               </button>
 
               <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:bg-slate-800"
-                title="Toggle theme"
+                type="button"
+                onClick={toggleTheme}
+                className="rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:bg-slate-800"
+                title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
               >
                 {theme === "dark" ? "☀️" : "🌙"}
               </button>
 
               <button
                 onClick={() => navigate("/notifications")}
-                className="rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:bg-slate-800"
+                className="rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:bg-slate-800"
               >
                 🔔
               </button>
 
               <button
                 onClick={() => navigate("/profile")}
-                className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:bg-slate-800"
+                className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:bg-slate-800"
               >
                 <span>👤</span>
                 <span className="hidden sm:inline">Profile</span>

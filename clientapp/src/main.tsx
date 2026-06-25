@@ -6,8 +6,13 @@ import App from "./App";
 import { AuthProvider } from "./auth/AuthContext";
 import "./index.css";
 
-document.documentElement.classList.add("dark");
-document.body.classList.add("dark");
+const savedTheme = localStorage.getItem("cs360-theme") ?? "dark";
+
+if (savedTheme === "dark") {
+  document.documentElement.classList.add("dark");
+} else {
+  document.documentElement.classList.remove("dark");
+}
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "";
 
