@@ -839,3 +839,222 @@ select option {
     text-align: center;
   }
 }
+
+/* =========================================================
+   CyberShield360 Light Mode Fix
+   Fixes custom dark cards staying dark after theme toggle.
+   Keep this section at the very bottom of index.css.
+========================================================= */
+
+html:not(.dark) {
+  color-scheme: light;
+}
+
+html:not(.dark),
+html:not(.dark) body {
+  background:
+    radial-gradient(circle at 15% 10%, rgba(16, 181, 166, 0.08), transparent 28rem),
+    radial-gradient(circle at 85% 20%, rgba(99, 102, 241, 0.08), transparent 28rem),
+    #f8fafc;
+  color: #0f172a;
+}
+
+html:not(.dark) ::selection {
+  background: rgba(16, 181, 166, 0.22);
+  color: #0f172a;
+}
+
+html:not(.dark) ::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+html:not(.dark) ::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.28);
+}
+
+html:not(.dark) select option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+html:not(.dark) .page-shell {
+  background: transparent;
+  color: #0f172a;
+}
+
+html:not(.dark) .card,
+html:not(.dark) .glass-card,
+html:not(.dark) .glass-panel,
+html:not(.dark) .panel,
+html:not(.dark) .dashboard-card,
+html:not(.dark) .metric-card,
+html:not(.dark) .summary-card,
+html:not(.dark) .stat-card,
+html:not(.dark) .hero-card,
+html:not(.dark) .score-card,
+html:not(.dark) .posture-card,
+html:not(.dark) .risk-card {
+  border: 1px solid rgba(203, 213, 225, 0.95) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96)) !important;
+  color: #0f172a !important;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08) !important;
+}
+
+html:not(.dark) .section-title,
+html:not(.dark) h1,
+html:not(.dark) h2,
+html:not(.dark) h3,
+html:not(.dark) .card h1,
+html:not(.dark) .card h2,
+html:not(.dark) .card h3,
+html:not(.dark) .glass-panel h1,
+html:not(.dark) .glass-panel h2,
+html:not(.dark) .glass-panel h3,
+html:not(.dark) .font-black,
+html:not(.dark) .font-bold,
+html:not(.dark) .font-semibold {
+  color: #0f172a !important;
+}
+
+html:not(.dark) .section-subtitle,
+html:not(.dark) .text-slate-400,
+html:not(.dark) .text-slate-500,
+html:not(.dark) .text-gray-400,
+html:not(.dark) .text-gray-500 {
+  color: #64748b !important;
+}
+
+html:not(.dark) .text-brand-300,
+html:not(.dark) .text-brand-400,
+html:not(.dark) .text-brand-500,
+html:not(.dark) .text-brand-600 {
+  color: #0d9488 !important;
+}
+
+html:not(.dark) .text-red-400,
+html:not(.dark) .text-red-500,
+html:not(.dark) .text-rose-400,
+html:not(.dark) .text-rose-500 {
+  color: #ef4444 !important;
+}
+
+html:not(.dark) .text-orange-400,
+html:not(.dark) .text-orange-500 {
+  color: #f97316 !important;
+}
+
+html:not(.dark) .text-emerald-400,
+html:not(.dark) .text-emerald-500,
+html:not(.dark) .text-green-400,
+html:not(.dark) .text-green-500 {
+  color: #10b981 !important;
+}
+
+html:not(.dark) input,
+html:not(.dark) select,
+html:not(.dark) textarea,
+html:not(.dark) .input {
+  border-color: rgba(203, 213, 225, 0.95) !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  color: #0f172a !important;
+}
+
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder,
+html:not(.dark) .input::placeholder {
+  color: #94a3b8 !important;
+}
+
+html:not(.dark) table,
+html:not(.dark) thead,
+html:not(.dark) tbody,
+html:not(.dark) tr,
+html:not(.dark) td,
+html:not(.dark) th {
+  color: #0f172a !important;
+}
+
+html:not(.dark) thead {
+  background: #f1f5f9 !important;
+}
+
+html:not(.dark) tbody tr {
+  border-color: rgba(203, 213, 225, 0.9) !important;
+}
+
+html:not(.dark) .bg-slate-950,
+html:not(.dark) .bg-slate-900,
+html:not(.dark) .bg-slate-900\/80,
+html:not(.dark) .bg-slate-800,
+html:not(.dark) .bg-slate-800\/70,
+html:not(.dark) .bg-black,
+html:not(.dark) .bg-black\/20 {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html:not(.dark) .border-slate-800,
+html:not(.dark) .border-slate-700 {
+  border-color: rgba(203, 213, 225, 0.95) !important;
+}
+
+html:not(.dark) button {
+  color: #0f172a;
+}
+
+html:not(.dark) .btn-primary,
+html:not(.dark) .bg-brand-500,
+html:not(.dark) .bg-brand-600,
+html:not(.dark) .from-brand-600,
+html:not(.dark) .to-brand-500 {
+  color: #ffffff !important;
+}
+
+html:not(.dark) .btn-ghost {
+  border-color: rgba(203, 213, 225, 0.95) !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  color: #0f172a !important;
+}
+
+html:not(.dark) .shadow-brand-600\/20,
+html:not(.dark) .shadow-brand-500\/20 {
+  box-shadow: 0 18px 40px rgba(13, 148, 136, 0.16) !important;
+}
+
+/* Login must remain dark/premium in both themes */
+html:not(.dark) .login-shell,
+html:not(.dark) .login-shell * {
+  color-scheme: dark;
+}
+
+html:not(.dark) .login-shell {
+  background: #050816;
+  color: white;
+}
+
+html:not(.dark) .login-card,
+html:not(.dark) .login-highlight-card,
+html:not(.dark) .auth-3d-scene {
+  color: white !important;
+}
+
+html:not(.dark) .login-card h2,
+html:not(.dark) .login-brand-name,
+html:not(.dark) .login-copy h1,
+html:not(.dark) .floating-chip {
+  color: white !important;
+}
+
+html:not(.dark) .login-card p,
+html:not(.dark) .login-card-sub,
+html:not(.dark) .login-brand-sub,
+html:not(.dark) .login-copy p,
+html:not(.dark) .login-highlight-card span {
+  color: #94a3b8 !important;
+}
+
+html:not(.dark) .google-button,
+html:not(.dark) .google-button * {
+  color: #334155 !important;
+}
