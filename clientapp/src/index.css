@@ -772,289 +772,330 @@ select option {
   }
 }
 
-/* Mobile login polish */
+/* ── MOBILE LOGIN + MOBILE UI POLISH ───────────────────────── */
+@media screen and (max-width: 767px) {
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+  }
 
-@media (max-width: 767px) {
+  body {
+    min-width: 320px;
+    background:
+      radial-gradient(circle at 18% 8%, rgba(16, 181, 166, 0.2), transparent 18rem),
+      radial-gradient(circle at 92% 12%, rgba(99, 102, 241, 0.2), transparent 20rem),
+      #050816;
+  }
+
   .login-shell {
-    min-height: 100vh;
-    height: auto;
-    overflow-y: auto;
+    min-height: 100dvh !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
   }
 
   .login-page {
-    display: block;
-    min-height: 100vh;
-    height: auto;
+    display: flex !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 100dvh !important;
+    height: auto !important;
+    flex-direction: column !important;
+    grid-template-columns: unset !important;
+    overflow: visible !important;
+  }
+
+  .login-hero {
+    display: block !important;
+    height: auto !important;
+    min-height: auto !important;
+    padding: 1rem 1rem 0 !important;
+  }
+
+  .login-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.75rem !important;
+  }
+
+  .login-brand {
+    min-width: 0 !important;
+    gap: 0.65rem !important;
+  }
+
+  .login-logo-box {
+    width: 2.45rem !important;
+    height: 2.45rem !important;
+    border-radius: 0.9rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .login-logo {
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+  }
+
+  .login-brand-name {
+    font-size: 1.08rem !important;
+    white-space: nowrap !important;
+    letter-spacing: -0.035em !important;
+  }
+
+  .login-brand-sub {
+    margin-top: 0.18rem !important;
+    font-size: 0.5rem !important;
+    letter-spacing: 0.22em !important;
+  }
+
+  .login-status-pill {
+    max-width: 7.4rem !important;
+    padding: 0.46rem 0.65rem !important;
+    font-size: 0.56rem !important;
+    line-height: 1.15 !important;
+    text-align: center !important;
+  }
+
+  .login-hero-main,
+  .login-copy,
+  .login-eyebrow,
+  .login-highlight-grid,
+  .auth-3d-scene,
+  .login-footer {
+    display: none !important;
   }
 
   .login-form-side {
-    min-height: 100vh;
-    height: auto;
-    padding: 1rem;
-    align-items: center;
+    display: flex !important;
+    width: 100% !important;
+    min-height: calc(100dvh - 4.9rem) !important;
+    height: auto !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: visible !important;
+    padding: 0.9rem 1rem 1.25rem !important;
+    box-sizing: border-box !important;
   }
 
   .login-card {
-    max-width: 100%;
-    border-radius: 1.5rem;
-    padding: 1.35rem;
+    width: 100% !important;
+    max-width: 23rem !important;
+    margin: 0 auto !important;
+    border-radius: 1.55rem !important;
+    padding: 1.35rem 1.25rem !important;
+    background: rgba(15, 23, 42, 0.78) !important;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.38) !important;
+    box-sizing: border-box !important;
   }
 
   .login-card-logo {
-    width: 3.5rem;
-    height: 3.5rem;
-    border-radius: 1.1rem;
+    width: 3.35rem !important;
+    height: 3.35rem !important;
+    border-radius: 1.05rem !important;
   }
 
   .login-card-logo img {
-    width: 2.55rem;
-    height: 2.55rem;
+    width: 2.45rem !important;
+    height: 2.45rem !important;
   }
 
   .login-card h2 {
-    font-size: 1.65rem;
+    margin-top: 0.85rem !important;
+    font-size: 1.58rem !important;
+    line-height: 1.05 !important;
+  }
+
+  .login-card-sub {
+    font-size: 0.52rem !important;
+    letter-spacing: 0.24em !important;
   }
 
   .login-card p {
-    font-size: 0.8rem;
+    margin-top: 0.6rem !important;
+    font-size: 0.8rem !important;
+    line-height: 1.45 !important;
   }
 
   .login-actions {
-    gap: 0.65rem;
+    gap: 0.65rem !important;
+    margin-top: 1rem !important;
+  }
+
+  .btn-primary,
+  .btn-ghost,
+  .input {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .btn-primary,
+  .btn-ghost {
+    min-height: 2.8rem !important;
+    border-radius: 0.92rem !important;
+    font-size: 0.9rem !important;
+  }
+
+  .input {
+    min-height: 2.75rem !important;
+    border-radius: 0.9rem !important;
+    font-size: 0.9rem !important;
   }
 
   .google-button-wrap {
-    height: 3rem;
+    height: 2.95rem !important;
+    border-radius: 0.92rem !important;
   }
 
   .google-button {
-    font-size: 0.9rem;
+    border-radius: 0.92rem !important;
+    font-size: 0.88rem !important;
+  }
+
+  .google-icon {
+    width: 1.55rem !important;
+    height: 1.55rem !important;
+  }
+
+  .google-icon svg {
+    width: 1.35rem !important;
+    height: 1.35rem !important;
+  }
+
+  .login-divider {
+    gap: 0.55rem !important;
+    font-size: 0.68rem !important;
+  }
+
+  .login-error {
+    padding: 0.65rem !important;
+    font-size: 0.78rem !important;
   }
 
   .login-mobile-footer {
-    display: block;
-    padding: 0 1rem 1rem;
-    color: #64748b;
-    font-size: 0.72rem;
-    text-align: center;
+    display: block !important;
+    padding: 0.25rem 1rem 1rem !important;
+    color: #64748b !important;
+    font-size: 0.68rem !important;
+    line-height: 1.35 !important;
+    text-align: center !important;
+  }
+
+  .page-shell {
+    padding: 1rem !important;
+  }
+
+  .card,
+  .glass-panel {
+    border-radius: 1.1rem !important;
+    padding: 1rem !important;
+  }
+
+  .dashboard-grade-badge {
+    width: 4.4rem !important;
+    height: 4.4rem !important;
+    min-width: 4.4rem !important;
+    min-height: 4.4rem !important;
+    border-radius: 1.2rem !important;
+    font-size: 2.25rem !important;
+    transform: perspective(700px) rotateX(7deg) rotateY(-7deg);
+  }
+
+  h1,
+  .section-title {
+    font-size: 1.35rem !important;
+    line-height: 1.2 !important;
+  }
+
+  p,
+  .section-subtitle {
+    font-size: 0.88rem !important;
+  }
+
+  .overflow-x-auto,
+  .table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  button {
+    touch-action: manipulation;
   }
 }
 
-/* =========================================================
-   CyberShield360 Light Mode Fix
-   Fixes custom dark cards staying dark after theme toggle.
-   Keep this section at the very bottom of index.css.
-========================================================= */
-
-html:not(.dark) {
-  color-scheme: light;
-}
-
-html:not(.dark),
-html:not(.dark) body {
-  background:
-    radial-gradient(circle at 15% 10%, rgba(16, 181, 166, 0.08), transparent 28rem),
-    radial-gradient(circle at 85% 20%, rgba(99, 102, 241, 0.08), transparent 28rem),
-    #f8fafc;
-  color: #0f172a;
-}
-
-html:not(.dark) ::selection {
-  background: rgba(16, 181, 166, 0.22);
-  color: #0f172a;
-}
-
-html:not(.dark) ::-webkit-scrollbar-track {
-  background: #f8fafc;
-}
-
-html:not(.dark) ::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.28);
-}
-
-html:not(.dark) select option {
-  background: #ffffff;
-  color: #0f172a;
-}
-
-html:not(.dark) .page-shell {
-  background: transparent;
-  color: #0f172a;
-}
-
-html:not(.dark) .card,
-html:not(.dark) .glass-card,
-html:not(.dark) .glass-panel,
-html:not(.dark) .panel,
-html:not(.dark) .dashboard-card,
-html:not(.dark) .metric-card,
-html:not(.dark) .summary-card,
-html:not(.dark) .stat-card,
-html:not(.dark) .hero-card,
-html:not(.dark) .score-card,
-html:not(.dark) .posture-card,
-html:not(.dark) .risk-card {
-  border: 1px solid rgba(203, 213, 225, 0.95) !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96)) !important;
-  color: #0f172a !important;
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08) !important;
-}
-
-html:not(.dark) .section-title,
-html:not(.dark) h1,
-html:not(.dark) h2,
-html:not(.dark) h3,
-html:not(.dark) .card h1,
-html:not(.dark) .card h2,
-html:not(.dark) .card h3,
-html:not(.dark) .glass-panel h1,
-html:not(.dark) .glass-panel h2,
-html:not(.dark) .glass-panel h3,
-html:not(.dark) .font-black,
-html:not(.dark) .font-bold,
-html:not(.dark) .font-semibold {
-  color: #0f172a !important;
-}
-
-html:not(.dark) .section-subtitle,
-html:not(.dark) .text-slate-400,
-html:not(.dark) .text-slate-500,
-html:not(.dark) .text-gray-400,
-html:not(.dark) .text-gray-500 {
-  color: #64748b !important;
-}
-
-html:not(.dark) .text-brand-300,
-html:not(.dark) .text-brand-400,
-html:not(.dark) .text-brand-500,
-html:not(.dark) .text-brand-600 {
-  color: #0d9488 !important;
-}
-
-html:not(.dark) .text-red-400,
-html:not(.dark) .text-red-500,
-html:not(.dark) .text-rose-400,
-html:not(.dark) .text-rose-500 {
-  color: #ef4444 !important;
-}
-
-html:not(.dark) .text-orange-400,
-html:not(.dark) .text-orange-500 {
-  color: #f97316 !important;
-}
-
-html:not(.dark) .text-emerald-400,
-html:not(.dark) .text-emerald-500,
-html:not(.dark) .text-green-400,
-html:not(.dark) .text-green-500 {
-  color: #10b981 !important;
-}
-
-html:not(.dark) input,
-html:not(.dark) select,
-html:not(.dark) textarea,
-html:not(.dark) .input {
-  border-color: rgba(203, 213, 225, 0.95) !important;
-  background: rgba(255, 255, 255, 0.96) !important;
-  color: #0f172a !important;
-}
-
-html:not(.dark) input::placeholder,
-html:not(.dark) textarea::placeholder,
-html:not(.dark) .input::placeholder {
-  color: #94a3b8 !important;
-}
-
-html:not(.dark) table,
-html:not(.dark) thead,
-html:not(.dark) tbody,
-html:not(.dark) tr,
-html:not(.dark) td,
-html:not(.dark) th {
-  color: #0f172a !important;
-}
-
-html:not(.dark) thead {
-  background: #f1f5f9 !important;
-}
-
-html:not(.dark) tbody tr {
-  border-color: rgba(203, 213, 225, 0.9) !important;
-}
-
-html:not(.dark) .bg-slate-950,
-html:not(.dark) .bg-slate-900,
-html:not(.dark) .bg-slate-900\/80,
-html:not(.dark) .bg-slate-800,
-html:not(.dark) .bg-slate-800\/70,
-html:not(.dark) .bg-black,
-html:not(.dark) .bg-black\/20 {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-}
-
-html:not(.dark) .border-slate-800,
-html:not(.dark) .border-slate-700 {
-  border-color: rgba(203, 213, 225, 0.95) !important;
-}
-
-html:not(.dark) button {
-  color: #0f172a;
-}
-
-html:not(.dark) .btn-primary,
-html:not(.dark) .bg-brand-500,
-html:not(.dark) .bg-brand-600,
-html:not(.dark) .from-brand-600,
-html:not(.dark) .to-brand-500 {
+/* Dashboard premium 3D grade badge */
+.dashboard-grade-badge {
+  position: relative !important;
+  display: inline-flex !important;
+  width: 5.15rem !important;
+  height: 5.15rem !important;
+  min-width: 5.15rem !important;
+  min-height: 5.15rem !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  overflow: hidden !important;
+  border-radius: 1.45rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  padding: 0 !important;
   color: #ffffff !important;
+  font-size: 2.65rem !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.04em !important;
+  text-align: center !important;
+  transform: perspective(700px) rotateX(8deg) rotateY(-9deg);
+  box-shadow:
+    0 20px 45px rgba(0, 0, 0, 0.35),
+    0 0 34px rgba(245, 158, 11, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -18px 28px rgba(0, 0, 0, 0.22) !important;
 }
 
-html:not(.dark) .btn-ghost {
-  border-color: rgba(203, 213, 225, 0.95) !important;
-  background: rgba(255, 255, 255, 0.88) !important;
-  color: #0f172a !important;
+.dashboard-grade-badge::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.42), transparent 34%),
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.42), transparent 28%),
+    linear-gradient(315deg, rgba(0, 0, 0, 0.22), transparent 42%);
+  pointer-events: none;
 }
 
-html:not(.dark) .shadow-brand-600\/20,
-html:not(.dark) .shadow-brand-500\/20 {
-  box-shadow: 0 18px 40px rgba(13, 148, 136, 0.16) !important;
+.dashboard-grade-badge::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 8%;
+  height: 0.32rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.34);
+  filter: blur(0.2px);
+  pointer-events: none;
 }
 
-/* Login must remain dark/premium in both themes */
-html:not(.dark) .login-shell,
-html:not(.dark) .login-shell * {
-  color-scheme: dark;
+.dashboard-grade-badge span {
+  position: relative;
+  z-index: 2;
+  display: block;
+  transform: translateY(-1px);
+  text-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.18),
+    0 10px 20px rgba(0, 0, 0, 0.28);
 }
 
-html:not(.dark) .login-shell {
-  background: #050816;
-  color: white;
-}
-
-html:not(.dark) .login-card,
-html:not(.dark) .login-highlight-card,
-html:not(.dark) .auth-3d-scene {
-  color: white !important;
-}
-
-html:not(.dark) .login-card h2,
-html:not(.dark) .login-brand-name,
-html:not(.dark) .login-copy h1,
-html:not(.dark) .floating-chip {
-  color: white !important;
-}
-
-html:not(.dark) .login-card p,
-html:not(.dark) .login-card-sub,
-html:not(.dark) .login-brand-sub,
-html:not(.dark) .login-copy p,
-html:not(.dark) .login-highlight-card span {
-  color: #94a3b8 !important;
-}
-
-html:not(.dark) .google-button,
-html:not(.dark) .google-button * {
-  color: #334155 !important;
+@media screen and (max-width: 767px) {
+  .dashboard-grade-badge {
+    width: 4.4rem !important;
+    height: 4.4rem !important;
+    min-width: 4.4rem !important;
+    min-height: 4.4rem !important;
+    border-radius: 1.2rem !important;
+    font-size: 2.25rem !important;
+    transform: perspective(700px) rotateX(7deg) rotateY(-7deg);
+  }
 }

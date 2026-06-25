@@ -90,22 +90,22 @@ export default function Dashboard() {
     if (!data) return;
 
     const rows = [
-      ["Metric", "Value"],
-      ["Generated UTC", data.generatedUtc || ""],
-      ["Overall Score", data.overallScore],
-      ["Overall Grade", data.overallGrade],
-      ["Posture Status", data.postureStatus || riskLabel(data.overallScore)],
-      ["Assets", data.assetCount],
-      ["Full Posture Assets", data.fullPostureAssets ?? 0],
-      ["Open Vulnerabilities", data.openVulnerabilities],
-      ["Critical Vulnerabilities", data.criticalVulnerabilities],
-      ["Open Risks", data.openRisks],
-      ["Active Brand Alerts", data.activeBrandAlerts],
-      ["Total Evaluated Checks", data.totalChecks ?? 0],
-      ["Passed Findings", data.passedFindings ?? 0],
-      ["Failed Findings", data.failedFindings ?? 0],
-      ["High/Critical Findings", data.highCriticalFindings ?? 0],
-    ];
+	  ["Metric", "Value"],
+  	["Generated UTC", data.generatedUtc || ""],
+  	["Overall Score", data.overallScore],
+  	["Overall Grade", data.overallGrade],
+  	["Posture Status", data.postureStatus || riskLabel(data.overallScore)],
+  	["Assets", data.assetCount],
+  	["Full Posture Assets", data.fullPostureAssets ?? 0],
+  	["Open Vulnerabilities", data.openVulnerabilities],
+  	["Critical Vulnerabilities", data.criticalVulnerabilities],
+  	["Open Risks", data.openRisks],
+  	["Active Brand Alerts", data.activeBrandAlerts],
+  	["Total Evaluated Checks", data.totalChecks ?? 0],
+  	["Passed Findings", data.passedFindings ?? 0],
+  	["Failed Findings", data.failedFindings ?? 0],
+  	["High/Critical Findings", data.highCriticalFindings ?? 0],
+];
 
     const csv = rows.map((r) => r.map(csvSafe).join(",")).join("\n");
     downloadTextFile("cybershield360-dashboard-summary.csv", csv);
@@ -113,7 +113,7 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 text-red-600 p-4 text-sm dark:bg-red-950 dark:border-red-900">
+      <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600 dark:border-red-900 dark:bg-red-950">
         {error}
       </div>
     );
@@ -123,9 +123,10 @@ export default function Dashboard() {
     return <div className="card text-sm text-gray-500">Loading dashboard...</div>;
   }
 
-  const scanCoverage = data.assetCount > 0
-    ? Math.round(((data.fullPostureAssets ?? 0) / data.assetCount) * 100)
-    : 0;
+  const scanCoverage =
+    data.assetCount > 0
+      ? Math.round(((data.fullPostureAssets ?? 0) / data.assetCount) * 100)
+      : 0;
 
   const severityData = data.findingBySeverity?.length
     ? data.findingBySeverity
@@ -135,7 +136,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Security Posture Dashboard</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Security Posture Dashboard</h1>
           <p className="text-sm text-gray-500">
             Real-time tenant overview across assets, scans, vulnerabilities, risks, and security posture.
           </p>
@@ -145,7 +146,7 @@ export default function Dashboard() {
           <button
             onClick={load}
             disabled={loading}
-            className="border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
+            className="rounded-lg border border-gray-200 px-4 py-2 text-sm hover:bg-gray-100 disabled:opacity-50 dark:border-gray-700 dark:hover:bg-gray-800"
           >
             {loading ? "Refreshing..." : "Refresh"}
           </button>
@@ -159,40 +160,47 @@ export default function Dashboard() {
       <section className="card card-3d relative mb-6 overflow-hidden border-brand-500/20">
         <div className="absolute -right-16 -top-16 h-52 w-52 rounded-full bg-brand-500/15 blur-3xl" />
         <div className="absolute -bottom-20 left-1/3 h-44 w-44 rounded-full bg-accent-500/10 blur-3xl" />
+
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex min-w-0 items-center gap-4">
             <div
-              className="dashboard-orb flex items-center justify-center text-4xl font-extrabold text-white"
+              className="dashboard-grade-badge"
               style={{ background: GRADE_COLOR[data.overallGrade] ?? "#6b7280" }}
+              aria-label={`Overall grade ${data.overallGrade}`}
             >
-              {data.overallGrade}
+              <span>{data.overallGrade}</span>
             </div>
 
-            <div>
+            <div className="min-w-0">
               <div className="text-xs text-gray-500">Overall Security Score</div>
+
               <div className={`text-4xl font-bold ${riskClass(data.overallScore)}`}>
                 {data.overallScore}/100
               </div>
+
               <div className="text-sm text-gray-500">
                 {data.postureStatus || riskLabel(data.overallScore)} posture
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 lg:w-[560px]">
-            <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:w-[560px]">
+            <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
               <div className="text-xs text-gray-500">Scan Coverage</div>
               <div className="text-2xl font-bold">{scanCoverage}%</div>
             </div>
-            <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
+
+            <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
               <div className="text-xs text-gray-500">Checks</div>
               <div className="text-2xl font-bold">{data.totalChecks ?? 0}</div>
             </div>
-            <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
+
+            <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
               <div className="text-xs text-gray-500">Failed</div>
               <div className="text-2xl font-bold text-red-600">{data.failedFindings ?? 0}</div>
             </div>
-            <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
+
+            <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
               <div className="text-xs text-gray-500">High/Critical</div>
               <div className="text-2xl font-bold text-orange-600">{data.highCriticalFindings ?? 0}</div>
             </div>
@@ -200,38 +208,40 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Monitored Assets" value={data.monitoredAssetCount ?? data.assetCount} icon="🌐" />
         <StatCard label="Open Vulnerabilities" value={data.openVulnerabilities} accent="#ea580c" icon="🛡️" />
         <StatCard label="Critical Vulnerabilities" value={data.criticalVulnerabilities} accent="#dc2626" icon="🔥" />
         <StatCard label="Open Risks" value={data.openRisks} icon="⚠️" />
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      <section className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="card lg:col-span-2">
-          <h2 className="font-semibold mb-2">Security Advisor</h2>
-          <p className="text-sm text-gray-500 mb-4">
+          <h2 className="mb-2 font-semibold">Security Advisor</h2>
+          <p className="mb-4 text-sm text-gray-500">
             Practical next-step guidance based on real Full Posture scans and tenant data.
           </p>
 
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 text-sm font-medium">
+          <div className="rounded-xl border border-gray-200 p-4 text-sm font-medium dark:border-gray-700">
             {advisorText}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
-            <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
               <div className="text-xs text-gray-500">Priority</div>
               <div className="font-semibold">
                 {data.overallScore >= 85 ? "Maintain" : data.overallScore >= 70 ? "Improve" : "Urgent"}
               </div>
             </div>
-            <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
+
+            <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
               <div className="text-xs text-gray-500">Latest Scan</div>
               <div className="font-semibold">
                 {data.latestScanUtc ? new Date(data.latestScanUtc).toLocaleDateString() : "No scan"}
               </div>
             </div>
-            <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
+
+            <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
               <div className="text-xs text-gray-500">Training</div>
               <div className="font-semibold">{data.trainingCompletionPercent}% complete</div>
             </div>
@@ -239,11 +249,15 @@ export default function Dashboard() {
         </div>
 
         <div className="card">
-          <h2 className="font-semibold mb-4">Executive Actions</h2>
+          <h2 className="mb-4 font-semibold">Executive Actions</h2>
+
           <div className="space-y-3">
-            {(data.executiveActions?.length ? data.executiveActions : ["Run Full Posture scans and review failed findings."]).map((action, index) => (
-              <div key={`${action}-${index}`} className="rounded-xl border border-gray-200 dark:border-gray-700 p-3">
-                <div className="text-xs text-gray-500 mb-1">Action #{index + 1}</div>
+            {(data.executiveActions?.length
+              ? data.executiveActions
+              : ["Run Full Posture scans and review failed findings."]
+            ).map((action, index) => (
+              <div key={`${action}-${index}`} className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
+                <div className="mb-1 text-xs text-gray-500">Action #{index + 1}</div>
                 <div className="text-sm font-medium">{action}</div>
               </div>
             ))}
@@ -251,9 +265,10 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      <section className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="card lg:col-span-2">
-          <h2 className="font-semibold mb-3">Full Posture Score Trend</h2>
+          <h2 className="mb-3 font-semibold">Full Posture Score Trend</h2>
+
           {data.scoreTrend.length === 0 ? (
             <div className="text-sm text-gray-500">No Full Posture scan trend available yet.</div>
           ) : (
@@ -265,6 +280,7 @@ export default function Dashboard() {
                     <stop offset="100%" stopColor="#10B5A6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
+
                 <CartesianGrid strokeDasharray="3 3" stroke="#33415555" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
@@ -276,7 +292,8 @@ export default function Dashboard() {
         </div>
 
         <div className="card">
-          <h2 className="font-semibold mb-3">Failures by Severity</h2>
+          <h2 className="mb-3 font-semibold">Failures by Severity</h2>
+
           {severityData.length === 0 ? (
             <div className="text-sm text-gray-500">No failed findings found.</div>
           ) : (
@@ -296,20 +313,22 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      <section className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="card">
-          <h2 className="font-semibold mb-4">Weakest Assets</h2>
+          <h2 className="mb-4 font-semibold">Weakest Assets</h2>
+
           {data.weakestAssets?.length ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-gray-500 border-b border-gray-200 dark:border-gray-800">
+                  <tr className="border-b border-gray-200 text-left text-gray-500 dark:border-gray-800">
                     <th className="py-2">Domain</th>
                     <th>Score</th>
                     <th>Failed</th>
                     <th>Last Scan</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {data.weakestAssets.map((asset) => (
                     <tr key={asset.domain} className="border-b border-gray-100 dark:border-gray-800">
@@ -330,19 +349,21 @@ export default function Dashboard() {
         </div>
 
         <div className="card">
-          <h2 className="font-semibold mb-4">Latest Full Posture Scans</h2>
+          <h2 className="mb-4 font-semibold">Latest Full Posture Scans</h2>
+
           {data.latestScans?.length ? (
             <div className="space-y-3">
               {data.latestScans.map((scan) => (
-                <div key={scan.scanId} className="rounded-xl border border-gray-200 dark:border-gray-700 p-3">
+                <div key={scan.scanId} className="rounded-xl border border-gray-200 p-3 dark:border-gray-700">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="font-semibold break-all">{scan.domain}</div>
+                      <div className="break-all font-semibold">{scan.domain}</div>
                       <div className="text-xs text-gray-500">
                         {scan.completedUtc ? new Date(scan.completedUtc).toLocaleString() : "No completion time"}
                       </div>
                     </div>
-                    <div className="text-right shrink-0">
+
+                    <div className="shrink-0 text-right">
                       <div className={`font-bold ${riskClass(scan.score)}`}>{scan.score}/100</div>
                       <div className="text-xs text-gray-500">{scan.failedFindings} failed</div>
                     </div>
