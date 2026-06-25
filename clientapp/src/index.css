@@ -1099,3 +1099,26 @@ select option {
     transform: perspective(700px) rotateX(7deg) rotateY(-7deg);
   }
 }
+
+
+/* Sticky module header inside every page */
+.page-shell > div > header:first-child {
+  position: sticky;
+  top: 4.25rem;
+  z-index: 25;
+  margin: -0.35rem -0.25rem 1.25rem;
+  padding: 0.85rem 0.25rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  background:
+    linear-gradient(180deg, rgba(5, 8, 22, 0.96), rgba(5, 8, 22, 0.82));
+  backdrop-filter: blur(18px);
+}
+
+@media screen and (max-width: 767px) {
+  .page-shell > div > header:first-child {
+    top: 3.95rem;
+    margin: -0.25rem -0.15rem 1rem;
+    padding: 0.75rem 0.15rem;
+  }
+}
+

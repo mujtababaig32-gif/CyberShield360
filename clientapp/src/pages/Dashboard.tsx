@@ -46,6 +46,72 @@ function downloadTextFile(filename: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
+const GRADE_CRITERIA = [
+  {
+    grade: "A",
+    range: "90–100",
+    meaning: "Excellent posture",
+    description: "Strong security controls, low exposure, strong scan coverage, and minimal critical findings.",
+  },
+  {
+    grade: "B",
+    range: "80–89",
+    meaning: "Good posture",
+    description: "Mostly healthy posture with a few important improvement areas.",
+  },
+  {
+    grade: "C",
+    range: "70–79",
+    meaning: "Moderate posture",
+    description: "Acceptable baseline, but multiple controls need remediation and follow-up.",
+  },
+  {
+    grade: "D",
+    range: "60–69",
+    meaning: "Weak posture",
+    description: "High exposure, poor coverage, or repeated failures across important checks.",
+  },
+  {
+    grade: "F",
+    range: "0–59",
+    meaning: "Critical posture",
+    description: "Immediate attention required because serious security gaps are present.",
+  },
+];
+
+function slugifyFilePart(value: unknown) {
+  const text = String(value ?? "client")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return text || "client";
+}
+
+function getClientName(data: PostureDashboard) {
+  const dynamicData = data as any;
+
+  return (
+    dynamicData.clientName ||
+    dynamicData.companyName ||
+    dynamicData.organizationName ||
+    dynamicData.tenantName ||
+    dynamicData.workspaceName ||
+    "client"
+  );
+}
+
+function getLatestScore(data: PostureDashboard) {
+  const latestScan = data.latestScans?.[0];
+
+  return {
+    score: latestScan?.score ?? data.overallScore,
+    checkName: "Full Posture",
+  };
+}
+
 export default function Dashboard() {
   const [data, setData] = useState<PostureDashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -105,10 +171,11 @@ export default function Dashboard() {
   	["Passed Findings", data.passedFindings ?? 0],
   	["Failed Findings", data.failedFindings ?? 0],
   	["High/Critical Findings", data.highCriticalFindings ?? 0],
-];
+    ];
 
     const csv = rows.map((r) => r.map(csvSafe).join(",")).join("\n");
-    downloadTextFile("cybershield360-dashboard-summary.csv", csv);
+    const clientSlug = slugifyFilePart(getClientName(data));
+    downloadTextFile(`cybershield360-dashboard-summary-${clientSlug}.csv`, csv);
   };
 
   if (error) {
@@ -131,6 +198,8 @@ export default function Dashboard() {
   const severityData = data.findingBySeverity?.length
     ? data.findingBySeverity
     : data.vulnerabilityBySeverity;
+
+  const latestScore = getLatestScore(data);
 
   return (
     <div className="space-y-6">
@@ -180,6 +249,10 @@ export default function Dashboard() {
 
               <div className="text-sm text-gray-500">
                 {data.postureStatus || riskLabel(data.overallScore)} posture
+              </div>
+
+              <div className="mt-2 inline-flex rounded-full border border-brand-500/25 bg-brand-500/10 px-3 py-1 text-xs font-bold text-brand-300">
+                Latest Score: {latestScore.score}/100 {latestScore.checkName}
               </div>
             </div>
           </div>
@@ -262,6 +335,40 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+
+      <section className="card mb-6">
+        <div className="mb-4 flex flex-col gap-1">
+          <h2 className="font-semibold">CyberShield360 Grading Criteria</h2>
+          <p className="text-sm text-gray-500">
+            The overall grade is calculated from the security posture score, scan coverage,
+            failed checks, high/critical findings, vulnerabilities, and unresolved risks.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {GRADE_CRITERIA.map((item) => (
+            <div
+              key={item.grade}
+              className="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800"
+            >
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <span
+                  className="flex h-9 w-9 items-center justify-center rounded-xl text-lg font-black text-white"
+                  style={{ background: GRADE_COLOR[item.grade] ?? "#6b7280" }}
+                >
+                  {item.grade}
+                </span>
+
+                <span className="text-xs font-bold text-gray-500">{item.range}</span>
+              </div>
+
+              <div className="text-sm font-semibold">{item.meaning}</div>
+              <div className="mt-1 text-xs leading-5 text-gray-500">{item.description}</div>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -364,8 +471,12 @@ export default function Dashboard() {
                     </div>
 
                     <div className="shrink-0 text-right">
-                      <div className={`font-bold ${riskClass(scan.score)}`}>{scan.score}/100</div>
-                      <div className="text-xs text-gray-500">{scan.failedFindings} failed</div>
+                      <div className={`font-bold ${riskClass(scan.score)}`}>
+                        Latest Score: {scan.score}/100
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Full Posture • {scan.failedFindings} failed
+                      </div>
                     </div>
                   </div>
                 </div>
