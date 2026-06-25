@@ -774,77 +774,250 @@ select option {
 
 /* Mobile login polish */
 
+/* =========================================================
+   CyberShield360 Mobile Polish
+   Fixes login preview + dashboard/mobile pages
+========================================================= */
+
 @media (max-width: 767px) {
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    min-width: 320px;
+    background:
+      radial-gradient(circle at 18% 8%, rgba(16, 181, 166, 0.18), transparent 18rem),
+      radial-gradient(circle at 92% 12%, rgba(99, 102, 241, 0.18), transparent 20rem),
+      #050816;
+  }
+
+  /* Login mobile layout */
   .login-shell {
-    min-height: 100vh;
+    min-height: 100dvh;
     height: auto;
+    overflow-x: hidden;
     overflow-y: auto;
   }
 
   .login-page {
-    display: block;
-    min-height: 100vh;
+    display: flex;
+    min-height: 100dvh;
     height: auto;
-  }
-
-  .login-form-side {
-    min-height: 100vh;
-    height: auto;
-    padding: 1rem;
-    align-items: center;
-  }
-
-  .login-card {
+    width: 100%;
     max-width: 100%;
-    border-radius: 1.5rem;
-    padding: 1.35rem;
+    flex-direction: column;
+    overflow: visible;
   }
 
-  .login-card-logo {
-    width: 3.5rem;
-    height: 3.5rem;
-    border-radius: 1.1rem;
+  .login-hero {
+    height: auto;
+    min-height: auto;
+    padding: 1rem 1rem 0;
   }
 
-  .login-card-logo img {
-    width: 2.55rem;
-    height: 2.55rem;
+  .login-header {
+    align-items: center;
+    gap: 0.75rem;
   }
 
-  .login-card h2 {
-    font-size: 1.65rem;
-  }
-
-  .login-card p {
-    font-size: 0.8rem;
-  }
-
-  .login-actions {
+  .login-brand {
+    min-width: 0;
     gap: 0.65rem;
   }
 
+  .login-logo-box {
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  .login-logo {
+    width: 1.7rem;
+    height: 1.7rem;
+  }
+
+  .login-brand-name {
+    font-size: 1.05rem;
+    letter-spacing: -0.035em;
+    white-space: nowrap;
+  }
+
+  .login-brand-sub {
+    margin-top: 0.2rem;
+    font-size: 0.5rem;
+    letter-spacing: 0.22em;
+  }
+
+  .login-status-pill {
+    max-width: 6.8rem;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.55rem;
+    line-height: 1.15;
+    text-align: center;
+  }
+
+  /* Hide big desktop marketing content on mobile */
+  .login-hero-main,
+  .login-copy,
+  .login-eyebrow,
+  .login-copy h1,
+  .login-copy p,
+  .login-highlight-grid,
+  .auth-3d-scene,
+  .login-footer {
+    display: none !important;
+  }
+
+  .login-form-side {
+    display: flex;
+    min-height: calc(100dvh - 4.8rem);
+    height: auto;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+    padding: 0.9rem 1rem 1.2rem;
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 24rem;
+    border-radius: 1.55rem;
+    padding: 1.25rem;
+    background: rgba(15, 23, 42, 0.76);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+  }
+
+  .login-card-logo {
+    width: 3.35rem;
+    height: 3.35rem;
+    border-radius: 1.05rem;
+  }
+
+  .login-card-logo img {
+    width: 2.45rem;
+    height: 2.45rem;
+  }
+
+  .login-card h2 {
+    margin-top: 0.85rem;
+    font-size: 1.55rem;
+    line-height: 1.05;
+  }
+
+  .login-card-sub {
+    font-size: 0.52rem;
+    letter-spacing: 0.24em;
+  }
+
+  .login-card p {
+    margin-top: 0.6rem;
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+
+  .login-actions {
+    gap: 0.62rem;
+    margin-top: 1rem;
+  }
+
   .google-button-wrap {
-    height: 3rem;
+    height: 2.95rem;
+    border-radius: 0.9rem;
   }
 
   .google-button {
+    border-radius: 0.9rem;
+    font-size: 0.88rem;
+  }
+
+  .google-icon {
+    width: 1.55rem;
+    height: 1.55rem;
+  }
+
+  .google-icon svg {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+
+  .btn-primary,
+  .btn-ghost {
+    min-height: 2.75rem;
+    width: 100%;
+    border-radius: 0.9rem;
+    font-size: 0.86rem;
+  }
+
+  .input {
+    min-height: 2.75rem;
+    border-radius: 0.9rem;
     font-size: 0.9rem;
+  }
+
+  .login-divider {
+    gap: 0.55rem;
+    font-size: 0.68rem;
+  }
+
+  .login-error {
+    padding: 0.65rem;
+    font-size: 0.78rem;
   }
 
   .login-mobile-footer {
     display: block;
-    padding: 0 1rem 1rem;
+    padding: 0.3rem 1rem 1rem;
     color: #64748b;
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     text-align: center;
   }
-}
 
-/* =========================================================
-   CyberShield360 Light Mode Fix
-   Fixes custom dark cards staying dark after theme toggle.
-   Keep this section at the very bottom of index.css.
-========================================================= */
+  /* App/mobile dashboard polish */
+  .page-shell {
+    padding: 1rem !important;
+  }
+
+  .card,
+  .glass-panel {
+    border-radius: 1.1rem;
+    padding: 1rem;
+  }
+
+  .section-title,
+  h1 {
+    font-size: 1.35rem;
+    line-height: 1.2;
+  }
+
+  .section-subtitle,
+  p {
+    font-size: 0.88rem;
+  }
+
+  .grid {
+    min-width: 0;
+  }
+
+  table {
+    width: 100%;
+  }
+
+  .overflow-x-auto,
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  button {
+    touch-action: manipulation;
+  }
+}
 
 html:not(.dark) {
   color-scheme: light;
