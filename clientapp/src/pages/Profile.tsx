@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { ProfileApi } from "../api/endpoints";
+import CyberStatCard from "../components/CyberStatCard";
+import CyberStatusBadge from "../components/CyberStatusBadge";
 
 type ProfileSummary = {
   generatedUtc: string;
@@ -25,179 +27,170 @@ type ProfileSummary = {
   recommendations: string[];
 };
 
-function badgeColor(value: string) {
-  if (value === "Active" || value === "Enabled") return "bg-green-600";
-  if (value === "Not Enabled") return "bg-orange-500";
-  return "bg-gray-600";
-}
-
 export default function Profile() {
   const [data, setData] = useState<ProfileSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const result = await ProfileApi.summary();
+      setData(result);
+    } catch {
+      setError("Failed to load profile.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    ProfileApi.summary()
-      .then(setData)
-      .catch(() => setError("Failed to load profile."));
+    void load();
   }, []);
 
-  if (error) return <div className="text-red-500">{error}</div>;
-  if (!data) return <div className="text-gray-500">Loading profile...</div>;
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-semibold text-red-300">
+        {error}
+      </div>
+    );
+  }
+
+  if (!data) {
+    return <div className="text-gray-500">Loading profile...</div>;
+  }
+
+  const initials = data.user.name
+    ?.split(" ")
+    .map((item) => item[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "U";
 
   return (
-    <div>
-      <header className="mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold">My Profile</h1>
-        <p className="text-sm text-gray-500">
-          Manage account details, tenant information, login method, MFA status, and security recommendations.
-        </p>
+    <div className="space-y-6">
+      <header className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h1 className="text-xl font-bold sm:text-2xl">My Profile</h1>
+          <p className="text-sm text-gray-500">
+            Manage account details, tenant information, login method, MFA status, and security recommendations.
+          </p>
+        </div>
+
+        <button type="button" onClick={load} disabled={loading} className="btn-ghost">
+          {loading ? "Refreshing..." : "Refresh"}
+        </button>
       </header>
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <div className="card lg:col-span-2">
+      <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/10">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-brand-600 text-white flex items-center justify-center text-2xl font-bold">
-              {data.user.name?.charAt(0) || "U"}
+            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-brand-600 text-2xl font-black text-white">
+              {initials}
             </div>
 
             <div>
-              <div className="text-2xl font-bold">{data.user.name}</div>
-              <div className="text-sm text-gray-500">{data.user.email}</div>
-              <div className="mt-2">
-                <span className="badge bg-brand-600">{data.user.role}</span>
+              <div className="text-2xl font-black text-white">{data.user.name}</div>
+              <div className="mt-1 break-all text-sm text-slate-400">{data.user.email}</div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <CyberStatusBadge value={data.user.role} />
+                <CyberStatusBadge value={data.user.loginMethod} />
+                <CyberStatusBadge value={data.user.mfaStatus} />
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="card">
-          <div className="text-xs text-gray-500">Tenant Plan</div>
-          <div className="text-3xl font-bold">{data.tenant.plan}</div>
-          <div className="mt-2">
-            <span className={`badge ${badgeColor(data.tenant.status)}`}>
-              {data.tenant.status}
-            </span>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <div className="card">
-          <h2 className="font-semibold mb-4">Account Information</h2>
-
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between border-b border-gray-100 dark:border-gray-800 pb-2">
-              <span className="text-gray-500">Name</span>
-              <span className="font-medium">{data.user.name}</span>
-            </div>
-
-            <div className="flex justify-between border-b border-gray-100 dark:border-gray-800 pb-2">
-              <span className="text-gray-500">Email</span>
-              <span className="font-medium">{data.user.email}</span>
-            </div>
-
-            <div className="flex justify-between border-b border-gray-100 dark:border-gray-800 pb-2">
-              <span className="text-gray-500">Role</span>
-              <span className="font-medium">{data.user.role}</span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-500">Login Method</span>
-              <span className="font-medium">{data.user.loginMethod}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <h2 className="font-semibold mb-4">Tenant Information</h2>
-
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between border-b border-gray-100 dark:border-gray-800 pb-2">
-              <span className="text-gray-500">Tenant</span>
-              <span className="font-medium">{data.tenant.name}</span>
-            </div>
-
-            <div className="flex justify-between border-b border-gray-100 dark:border-gray-800 pb-2">
-              <span className="text-gray-500">Status</span>
-              <span className={`badge ${badgeColor(data.tenant.status)}`}>
-                {data.tenant.status}
-              </span>
-            </div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-500">Plan</span>
-              <span className="font-medium">{data.tenant.plan}</span>
+          <div className="rounded-2xl border border-brand-500/20 bg-brand-500/10 px-5 py-4 text-center">
+            <div className="text-xs font-black uppercase tracking-wide text-brand-300">Tenant</div>
+            <div className="mt-1 font-black text-white">{data.tenant.name}</div>
+            <div className="mt-2 flex justify-center gap-2">
+              <CyberStatusBadge value={data.tenant.status} />
+              <CyberStatusBadge value={data.tenant.plan} />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <div className="card">
-          <h2 className="font-semibold mb-4">Security Overview</h2>
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <CyberStatCard label="Role" value={data.user.role} hint="Access level" tone="brand" />
+        <CyberStatCard label="MFA" value={data.user.mfaStatus} hint="Account protection" tone={data.user.mfaStatus === "Enabled" ? "green" : "orange"} />
+        <CyberStatCard label="Sessions" value={data.security.activeSessions} hint="Active sessions" tone="brand" />
+        <CyberStatCard label="Plan" value={data.tenant.plan} hint={data.tenant.status} tone="green" />
+      </section>
 
-          <div className="space-y-3">
-            <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-              <div className="flex justify-between gap-3">
-                <div>
-                  <div className="font-semibold">MFA Status</div>
-                  <div className="text-sm text-gray-500">Multi-factor authentication</div>
-                </div>
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+          <h2 className="text-lg font-black tracking-tight text-white">Account Information</h2>
 
-                <span className={`badge ${badgeColor(data.user.mfaStatus)}`}>
-                  {data.user.mfaStatus}
-                </span>
-              </div>
-            </div>
-
-            <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-              <div className="font-semibold">Active Sessions</div>
-              <div className="text-sm text-gray-500">{data.security.activeSessions} active session(s)</div>
-            </div>
-
-            <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-              <div className="font-semibold">Password Last Changed</div>
-              <div className="text-sm text-gray-500">{data.security.passwordLastChanged}</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <h2 className="font-semibold mb-4">Recommendations</h2>
-
-          <div className="space-y-3">
-            {data.recommendations.map((r, i) => (
-              <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-                <div className="text-xs text-gray-500 mb-1">Recommendation #{i + 1}</div>
-                <div className="font-medium">{r}</div>
+          <div className="mt-5 space-y-3 text-sm">
+            {[
+              ["Name", data.user.name],
+              ["Email", data.user.email ?? "-"],
+              ["Role", data.user.role],
+              ["Login Method", data.user.loginMethod],
+              ["Last Login", data.security.lastLogin],
+              ["Password Last Changed", data.security.passwordLastChanged],
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+              >
+                <span className="text-slate-500">{label}</span>
+                <span className="break-all text-right font-semibold text-slate-200">{value}</span>
               </div>
             ))}
           </div>
+        </section>
 
-          <div className="pt-4 text-xs text-gray-500">
+        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+          <h2 className="text-lg font-black tracking-tight text-white">Security Recommendations</h2>
+
+          <div className="mt-5 space-y-3">
+            {data.recommendations.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm text-slate-500">
+                No account recommendations available.
+              </div>
+            ) : (
+              data.recommendations.map((item, index) => (
+                <div
+                  key={`${item}-${index}`}
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center"
+                >
+                  <div className="text-xs font-black uppercase tracking-widest text-brand-300">
+                    Recommendation #{index + 1}
+                  </div>
+                  <div className="mt-2 text-sm font-medium leading-6 text-slate-300">{item}</div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="pt-4 text-xs text-slate-500">
             Generated: {new Date(data.generatedUtc).toLocaleString()}
           </div>
-        </div>
+        </section>
       </section>
 
-      <section className="card">
-        <h2 className="font-semibold mb-4">Account Actions</h2>
+      <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+        <h2 className="text-lg font-black tracking-tight text-white">Account Actions</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-left hover:bg-gray-100 dark:hover:bg-gray-800">
-            <div className="font-semibold">Change Password</div>
-            <div className="text-sm text-gray-500 mt-1">Update your account password.</div>
-          </button>
-
-          <button className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-left hover:bg-gray-100 dark:hover:bg-gray-800">
-            <div className="font-semibold">Enable MFA</div>
-            <div className="text-sm text-gray-500 mt-1">Add an extra login protection layer.</div>
-          </button>
-
-          <button className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-left hover:bg-gray-100 dark:hover:bg-gray-800">
-            <div className="font-semibold">View Audit Activity</div>
-            <div className="text-sm text-gray-500 mt-1">Review your recent account activity.</div>
-          </button>
+        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
+          {[
+            ["Change Password", "Update your account password."],
+            ["Enable MFA", "Add an extra login protection layer."],
+            ["View Audit Activity", "Review your recent account activity."],
+          ].map(([title, text]) => (
+            <button
+              key={title}
+              type="button"
+              className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center transition hover:border-brand-500/40 hover:bg-brand-500/10"
+            >
+              <div className="font-semibold text-white">{title}</div>
+              <div className="mt-1 text-sm text-slate-500">{text}</div>
+            </button>
+          ))}
         </div>
       </section>
     </div>

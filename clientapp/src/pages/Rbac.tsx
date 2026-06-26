@@ -1,22 +1,69 @@
 import { useEffect, useMemo, useState } from "react";
 import { RbacApi } from "../api/endpoints";
-
+import CyberStatCard from "../components/CyberStatCard";
+import CyberStatusBadge from "../components/CyberStatusBadge";
+import CyberTable from "../components/CyberTable";
 import ModuleTabs from "../components/ModuleTabs";
-type RoleCard = { role: string; description: string; users: number; privilege: string; mfaRecommended: boolean };
-type UserAccess = { id: string; email?: string; fullName?: string; isActive: boolean; emailConfirmed: boolean; lastLoginUtc?: string | null; roles: string[]; accessLevel: string };
-type PermissionRow = { module: string; tenantAdmin: boolean; securityAnalyst: boolean; auditor: boolean; member: boolean };
-type RbacSummary = { generatedUtc: string; totalUsers: number; activeUsers: number; privilegedUsers: number; unassignedUsers: number; totalRoles: number; roles: RoleCard[]; users: UserAccess[]; permissions: PermissionRow[]; recommendations: string[] };
+
+type RoleCard = {
+  role: string;
+  description: string;
+  users: number;
+  privilege: string;
+  mfaRecommended: boolean;
+};
+
+type UserAccess = {
+  id: string;
+  email?: string;
+  fullName?: string;
+  isActive: boolean;
+  emailConfirmed: boolean;
+  lastLoginUtc?: string | null;
+  roles: string[];
+  accessLevel: string;
+};
+
+type PermissionRow = {
+  module: string;
+  tenantAdmin: boolean;
+  securityAnalyst: boolean;
+  auditor: boolean;
+  member: boolean;
+};
+
+type RbacSummary = {
+  generatedUtc: string;
+  totalUsers: number;
+  activeUsers: number;
+  privilegedUsers: number;
+  unassignedUsers: number;
+  totalRoles: number;
+  roles: RoleCard[];
+  users: UserAccess[];
+  permissions: PermissionRow[];
+  recommendations: string[];
+};
 
 const TABS = ["Overview", "Roles", "Users", "Permission Matrix", "Reports"];
 
-function badgeColor(value: string) {
+function dateText(value?: string | null) {
+  return value ? new Date(value).toLocaleString() : "No login recorded";
+}
+
+function accessPriority(value: string) {
   const v = value.toLowerCase();
-  if (v.includes("critical") || v.includes("privileged")) return "bg-red-600";
-  if (v.includes("high")) return "bg-orange-500";
-  if (v.includes("medium") || v.includes("standard")) return "bg-brand-600";
-  if (v.includes("active") || v.includes("yes")) return "bg-green-600";
-  if (v.includes("unassigned") || v.includes("inactive") || v.includes("no")) return "bg-gray-600";
-  return "bg-slate-600";
+
+  if (v.includes("privileged") || v.includes("critical")) return "Privileged";
+  if (v.includes("high")) return "High Access";
+  if (v.includes("standard") || v.includes("medium")) return "Standard";
+  if (v.includes("unassigned")) return "Unassigned";
+
+  return value;
+}
+
+function yesNo(value: boolean) {
+  return value ? "Yes" : "No";
 }
 
 function csvSafe(value: unknown) {
@@ -29,6 +76,7 @@ function downloadCsv(filename: string, rows: unknown[][]) {
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
+
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
@@ -45,57 +93,330 @@ export default function Rbac() {
   const [query, setQuery] = useState("");
 
   const load = async () => {
-    try { setLoading(true); setError(null); setData(await RbacApi.summary()); }
-    catch { setError("Failed to load RBAC summary."); }
-    finally { setLoading(false); }
+    try {
+      setLoading(true);
+      setError(null);
+
+      const result = await RbacApi.summary();
+      setData(result);
+    } catch {
+      setError("Failed to load RBAC summary.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    void load();
+  }, []);
 
   const filteredUsers = useMemo(() => {
     if (!data) return [];
+
     const q = query.trim().toLowerCase();
-    return data.users.filter((u) => !q || [u.email, u.fullName, u.accessLevel, u.roles.join(" ")].some((x) => String(x ?? "").toLowerCase().includes(q)));
+
+    return data.users.filter(
+      (user) =>
+        !q ||
+        [user.email, user.fullName, user.accessLevel, user.roles.join(" ")]
+          .some((value) => String(value ?? "").toLowerCase().includes(q))
+    );
   }, [data, query]);
 
   const exportUsers = () => {
     if (!data) return;
+
     downloadCsv("cybershield360-rbac-users.csv", [
       ["Name", "Email", "Active", "Email Confirmed", "Roles", "Access Level", "Last Login"],
-      ...filteredUsers.map((u) => [u.fullName ?? "", u.email ?? "", u.isActive ? "Yes" : "No", u.emailConfirmed ? "Yes" : "No", u.roles.join("; "), u.accessLevel, u.lastLoginUtc ?? ""]),
+      ...filteredUsers.map((user) => [
+        user.fullName ?? "",
+        user.email ?? "",
+        user.isActive ? "Yes" : "No",
+        user.emailConfirmed ? "Yes" : "No",
+        user.roles.join("; "),
+        user.accessLevel,
+        user.lastLoginUtc ?? "",
+      ]),
     ]);
   };
 
-  if (error) return <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-600 dark:border-red-900 dark:bg-red-950">{error}</div>;
-  if (loading || !data) return <div className="card text-sm text-slate-500">Loading RBAC engine...</div>;
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-semibold text-red-300">
+        {error}
+      </div>
+    );
+  }
+
+  if (loading || !data) {
+    return <div className="card text-sm text-slate-500">Loading RBAC engine...</div>;
+  }
+
+  const privilegedRoles = data.roles.filter((role) =>
+    ["Critical", "High"].includes(role.privilege)
+  );
 
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div><h1 className="text-2xl font-black tracking-tight">RBAC Engine</h1><p className="section-subtitle">Review roles, access levels, permission mapping, and privileged access exposure.</p></div>
-        <div className="flex gap-2"><button onClick={load} className="btn-ghost">Refresh</button><button onClick={exportUsers} className="btn-primary">Export Users</button></div>
+        <div>
+          <h1 className="text-2xl font-black tracking-tight">RBAC Engine</h1>
+          <p className="section-subtitle">
+            Review roles, access levels, permission mapping, and privileged access exposure.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={load} disabled={loading} className="btn-ghost">
+            {loading ? "Refreshing..." : "Refresh"}
+          </button>
+          <button type="button" onClick={exportUsers} className="btn-primary">
+            Export Users
+          </button>
+        </div>
       </header>
 
-      <ModuleTabs tabs={TABS.map((t) => ({ key: t, label: t }))} activeKey={tab} onChange={setTab} />
+      <ModuleTabs
+        tabs={TABS.map((item) => ({ key: item, label: item }))}
+        activeKey={tab}
+        onChange={setTab}
+      />
 
-      {tab === "Overview" && <>
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <div className="metric-card"><div className="section-subtitle">Total Users</div><div className="text-3xl font-black">{data.totalUsers}</div></div>
-          <div className="metric-card"><div className="section-subtitle">Active Users</div><div className="text-3xl font-black text-green-600">{data.activeUsers}</div></div>
-          <div className="metric-card"><div className="section-subtitle">Privileged Users</div><div className="text-3xl font-black text-red-600">{data.privilegedUsers}</div></div>
-          <div className="metric-card"><div className="section-subtitle">Unassigned Users</div><div className="text-3xl font-black text-orange-500">{data.unassignedUsers}</div></div>
-          <div className="metric-card"><div className="section-subtitle">Roles</div><div className="text-3xl font-black text-brand-500">{data.totalRoles}</div></div>
+      {tab === "Overview" && (
+        <div className="space-y-6">
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <CyberStatCard label="Total Users" value={data.totalUsers} hint="All accounts" tone="brand" />
+            <CyberStatCard label="Active Users" value={data.activeUsers} hint="Enabled users" tone="green" />
+            <CyberStatCard label="Privileged Users" value={data.privilegedUsers} hint="Admin-sensitive" tone={data.privilegedUsers > 0 ? "red" : "green"} />
+            <CyberStatCard label="Unassigned Users" value={data.unassignedUsers} hint="Need role review" tone={data.unassignedUsers > 0 ? "orange" : "green"} />
+            <CyberStatCard label="Roles" value={data.totalRoles} hint="Configured roles" tone="brand" />
+          </section>
+
+          <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+            <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+              <div className="mb-5 text-center">
+                <h2 className="text-lg font-black tracking-tight text-white">
+                  Access Recommendations
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-400">
+                  Priority actions for stronger access governance.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {data.recommendations.length === 0 ? (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm text-slate-500">
+                    No access recommendations available.
+                  </div>
+                ) : (
+                  data.recommendations.map((item, index) => (
+                    <div
+                      key={`${item}-${index}`}
+                      className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center"
+                    >
+                      <div className="text-xs font-black uppercase tracking-widest text-brand-300">
+                        Action #{index + 1}
+                      </div>
+                      <div className="mt-2 text-sm font-medium leading-6 text-slate-300">
+                        {item}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+              <div className="mb-5 text-center">
+                <h2 className="text-lg font-black tracking-tight text-white">
+                  Privileged Role Summary
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-400">
+                  Roles with elevated access should be reviewed regularly.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {privilegedRoles.length === 0 ? (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm text-slate-500">
+                    No privileged role exposure found.
+                  </div>
+                ) : (
+                  privilegedRoles.map((role) => (
+                    <div
+                      key={role.role}
+                      className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center"
+                    >
+                      <div className="font-black text-white">{role.role}</div>
+                      <div className="mt-1 text-sm text-slate-500">{role.description}</div>
+                      <div className="mt-3 flex justify-center gap-2">
+                        <CyberStatusBadge value={role.privilege} />
+                        <CyberStatusBadge value={`${role.users} users`} />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
+          </section>
+        </div>
+      )}
+
+      {tab === "Roles" && (
+        <CyberTable
+          title="Role Register"
+          description="Role descriptions, privilege level, assigned users, and MFA recommendation."
+          data={data.roles}
+          emptyText="No roles available."
+          columns={[
+            {
+              key: "role",
+              label: "Role",
+              render: (role) => (
+                <div className="mx-auto min-w-72 text-center">
+                  <div className="font-semibold text-white">{role.role}</div>
+                  <div className="mt-1 text-xs leading-5 text-slate-500">{role.description}</div>
+                </div>
+              ),
+            },
+            {
+              key: "privilege",
+              label: "Privilege",
+              render: (role) => <CyberStatusBadge value={role.privilege} />,
+            },
+            {
+              key: "users",
+              label: "Assigned Users",
+              render: (role) => <div className="font-black text-white">{role.users}</div>,
+            },
+            {
+              key: "mfa",
+              label: "MFA",
+              render: (role) => (
+                <CyberStatusBadge value={role.mfaRecommended ? "Required" : "Recommended"} />
+              ),
+            },
+          ]}
+        />
+      )}
+
+      {tab === "Users" && (
+        <div className="space-y-6">
+          <section className="card grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
+            <input
+              className="input"
+              placeholder="Search users, roles, access level..."
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            <button type="button" onClick={exportUsers} className="btn-primary">
+              Export Users
+            </button>
+          </section>
+
+          <CyberTable
+            title="User Access Review"
+            description="User status, role assignment, email confirmation, access level, and last login."
+            data={filteredUsers}
+            emptyText="No users match this view."
+            columns={[
+              {
+                key: "user",
+                label: "User",
+                render: (user) => (
+                  <div className="mx-auto min-w-72 text-center">
+                    <div className="font-semibold text-white">{user.fullName || "Unnamed User"}</div>
+                    <div className="mt-1 break-all text-xs text-slate-500">{user.email || user.id}</div>
+                  </div>
+                ),
+              },
+              {
+                key: "active",
+                label: "Active",
+                render: (user) => <CyberStatusBadge value={user.isActive ? "Active" : "Inactive"} />,
+              },
+              {
+                key: "email",
+                label: "Email",
+                render: (user) => <CyberStatusBadge value={user.emailConfirmed ? "Confirmed" : "Unconfirmed"} />,
+              },
+              {
+                key: "roles",
+                label: "Roles",
+                render: (user) => (
+                  <div className="mx-auto min-w-64 text-center text-sm leading-6 text-slate-300">
+                    {user.roles.length ? user.roles.join(", ") : "No role assigned"}
+                  </div>
+                ),
+              },
+              {
+                key: "access",
+                label: "Access Level",
+                render: (user) => <CyberStatusBadge value={accessPriority(user.accessLevel)} />,
+              },
+              {
+                key: "last",
+                label: "Last Login",
+                render: (user) => (
+                  <div className="whitespace-nowrap text-slate-400">{dateText(user.lastLoginUtc)}</div>
+                ),
+              },
+            ]}
+          />
+        </div>
+      )}
+
+      {tab === "Permission Matrix" && (
+        <CyberTable
+          title="Permission Matrix"
+          description="Role-level access by CyberShield360 module."
+          data={data.permissions}
+          emptyText="No permission matrix available."
+          columns={[
+            {
+              key: "module",
+              label: "Module",
+              render: (row) => <div className="font-semibold text-white">{row.module}</div>,
+            },
+            {
+              key: "tenantAdmin",
+              label: "Tenant Admin",
+              render: (row) => <CyberStatusBadge value={yesNo(row.tenantAdmin)} />,
+            },
+            {
+              key: "securityAnalyst",
+              label: "Security Analyst",
+              render: (row) => <CyberStatusBadge value={yesNo(row.securityAnalyst)} />,
+            },
+            {
+              key: "auditor",
+              label: "Auditor",
+              render: (row) => <CyberStatusBadge value={yesNo(row.auditor)} />,
+            },
+            {
+              key: "member",
+              label: "Member",
+              render: (row) => <CyberStatusBadge value={yesNo(row.member)} />,
+            },
+          ]}
+        />
+      )}
+
+      {tab === "Reports" && (
+        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 text-center shadow-2xl shadow-black/10">
+          <h2 className="font-black text-white">User Access Report</h2>
+          <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+            Export user access, assigned roles, confirmation status, and last-login evidence.
+          </p>
+          <button type="button" onClick={exportUsers} className="btn-primary mt-4">
+            Download CSV
+          </button>
         </section>
-        <section className="grid grid-cols-1 gap-4 xl:grid-cols-2"><div className="card"><h2 className="section-title mb-4">Access Recommendations</h2><div className="space-y-3">{data.recommendations.map((r) => <div key={r} className="rounded-2xl border border-slate-200 p-4 font-medium dark:border-slate-800">{r}</div>)}</div></div><div className="card"><h2 className="section-title mb-4">Privileged Role Summary</h2><div className="space-y-3">{data.roles.filter((r) => ["Critical", "High"].includes(r.privilege)).map((r) => <div key={r.role} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800"><div className="flex items-center justify-between"><div><div className="font-bold">{r.role}</div><div className="text-sm text-slate-500">{r.description}</div></div><span className={`badge ${badgeColor(r.privilege)}`}>{r.users}</span></div></div>)}</div></div></section>
-      </>}
+      )}
 
-      {tab === "Roles" && <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">{data.roles.map((r) => <div key={r.role} className="card card-hover"><div className="flex items-start justify-between gap-3"><div><div className="text-lg font-black">{r.role}</div><div className="mt-1 text-sm text-slate-500">{r.description}</div></div><span className={`badge ${badgeColor(r.privilege)}`}>{r.privilege}</span></div><div className="mt-4 grid grid-cols-2 gap-3 text-sm"><div className="rounded-2xl bg-slate-100 p-3 dark:bg-slate-950/60"><div className="text-slate-500">Assigned Users</div><div className="text-2xl font-black">{r.users}</div></div><div className="rounded-2xl bg-slate-100 p-3 dark:bg-slate-950/60"><div className="text-slate-500">MFA</div><div className="font-bold">{r.mfaRecommended ? "Required" : "Recommended"}</div></div></div></div>)}</div>}
-
-      {tab === "Users" && <div className="card"><div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between"><div><h2 className="section-title">User Access Review</h2><p className="section-subtitle">Search users and verify role assignments before audit.</p></div><input className="input max-w-md" placeholder="Search user, role, access level..." value={query} onChange={(e) => setQuery(e.target.value)} /></div><div className="table-wrap"><table className="w-full text-sm"><thead className="table-head"><tr><th className="p-3">User</th><th>Status</th><th>Roles</th><th>Access</th><th>Last Login</th></tr></thead><tbody>{filteredUsers.map((u) => <tr key={u.id} className="border-t border-slate-200 dark:border-slate-800"><td className="p-3"><div className="font-bold">{u.fullName || u.email}</div><div className="text-xs text-slate-500">{u.email}</div></td><td><span className={`badge ${badgeColor(u.isActive ? "Active" : "Inactive")}`}>{u.isActive ? "Active" : "Inactive"}</span></td><td>{u.roles.length ? u.roles.join(", ") : "No role"}</td><td><span className={`badge ${badgeColor(u.accessLevel)}`}>{u.accessLevel}</span></td><td className="text-xs text-slate-500">{u.lastLoginUtc ? new Date(u.lastLoginUtc).toLocaleString() : "No login"}</td></tr>)}</tbody></table></div></div>}
-
-      {tab === "Permission Matrix" && <div className="card"><h2 className="section-title mb-4">Permission Matrix</h2><div className="table-wrap"><table className="w-full text-sm"><thead className="table-head"><tr><th className="p-3">Module</th><th>Tenant Admin</th><th>Security Analyst</th><th>Auditor</th><th>Member</th></tr></thead><tbody>{data.permissions.map((p) => <tr key={p.module} className="border-t border-slate-200 dark:border-slate-800"><td className="p-3 font-bold">{p.module}</td>{[p.tenantAdmin, p.securityAnalyst, p.auditor, p.member].map((v, i) => <td key={i}><span className={`badge ${badgeColor(v ? "Yes" : "No")}`}>{v ? "Allowed" : "Blocked"}</span></td>)}</tr>)}</tbody></table></div></div>}
-
-      {tab === "Reports" && <div className="card"><h2 className="section-title mb-2">RBAC Reports</h2><p className="section-subtitle mb-4">Download current user access and role assignments for review.</p><button onClick={exportUsers} className="btn-primary">Download User Access Review</button></div>}
+      <div className="text-xs text-slate-400">
+        Generated: {new Date(data.generatedUtc).toLocaleString()}
+      </div>
     </div>
   );
 }

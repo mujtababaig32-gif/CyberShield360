@@ -1,5 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { SettingsApi } from "../api/endpoints";
+import CyberStatCard from "../components/CyberStatCard";
+import CyberStatusBadge from "../components/CyberStatusBadge";
+import CyberTable from "../components/CyberTable";
 import ModuleTabs from "../components/ModuleTabs";
 
 type Branding = {
@@ -20,23 +23,25 @@ type SettingsSummary = {
 
 const TABS = ["Branding", "Readiness", "Deployment", "Security"];
 
-function badgeColor(value: string) {
-  const v = value.toLowerCase();
+const DEPLOYMENT_ITEMS = [
+  "Move OpenAI, SMTP, JWT, database, Lemon Squeezy secrets to environment variables",
+  "Restrict CORS to production frontend domain",
+  "Disable demo seed credentials",
+  "Use production SQL backups",
+  "Verify SMTP sender domain",
+  "Configure HTTPS / reverse proxy",
+  "Set production logging retention",
+  "Test report generation after deployment",
+];
 
-  if (
-    v.includes("ready") ||
-    v.includes("active") ||
-    v.includes("enabled") ||
-    v.includes("validated")
-  ) {
-    return "bg-green-600";
-  }
+function priorityLabel(priority: string) {
+  const value = priority.toLowerCase();
 
-  if (v.includes("high") || v.includes("needs") || v.includes("not")) {
-    return "bg-orange-500";
-  }
+  if (value.includes("high") || value.includes("critical")) return "High Priority";
+  if (value.includes("medium")) return "Medium Priority";
+  if (value.includes("low")) return "Low Priority";
 
-  return "bg-brand-600";
+  return priority || "Review";
 }
 
 export default function Settings() {
@@ -52,12 +57,12 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const applyBranding = (s: Branding) => {
-    setBrandName(s.brandName ?? "");
-    setLogoUrl(s.logoUrl ?? "");
-    setPrimaryColorHex(s.primaryColorHex ?? "#10B5A6");
-    setCustomReportFooter(s.customReportFooter ?? "");
-    setWhiteLabelEnabled(s.whiteLabelEnabled ?? true);
+  const applyBranding = (settings: Branding) => {
+    setBrandName(settings.brandName ?? "");
+    setLogoUrl(settings.logoUrl ?? "");
+    setPrimaryColorHex(settings.primaryColorHex ?? "#10B5A6");
+    setCustomReportFooter(settings.customReportFooter ?? "");
+    setWhiteLabelEnabled(settings.whiteLabelEnabled ?? true);
   };
 
   const load = async (showMessage = false) => {
@@ -65,25 +70,19 @@ export default function Settings() {
       setLoading(true);
       setError(null);
 
-      if (showMessage) {
-        setMsg("Refreshing settings...");
-      }
+      if (showMessage) setMsg("Refreshing settings...");
 
       const result = await SettingsApi.summary();
       setSummary(result);
       applyBranding(result.branding ?? {});
 
-      if (showMessage) {
-        setMsg("Settings refreshed successfully.");
-      }
+      if (showMessage) setMsg("Settings refreshed successfully.");
     } catch {
       try {
         const branding = await SettingsApi.getBranding();
         applyBranding(branding);
 
-        if (showMessage) {
-          setMsg("Branding settings refreshed successfully.");
-        }
+        if (showMessage) setMsg("Branding settings refreshed successfully.");
       } catch {
         setError("Failed to load settings.");
         setMsg(null);
@@ -97,8 +96,8 @@ export default function Settings() {
     void load();
   }, []);
 
-  const save = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const save = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
     try {
       setSaving(true);
@@ -122,6 +121,12 @@ export default function Settings() {
     }
   };
 
+  const readyCount = summary?.readiness.filter((item) =>
+    item.status.toLowerCase().includes("ready") ||
+    item.status.toLowerCase().includes("enabled") ||
+    item.status.toLowerCase().includes("active")
+  ).length ?? 0;
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -142,101 +147,107 @@ export default function Settings() {
         </button>
       </header>
 
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <CyberStatCard label="Branding" value={whiteLabelEnabled ? "Enabled" : "Disabled"} hint="White-label reports" tone={whiteLabelEnabled ? "green" : "orange"} />
+        <CyberStatCard label="Readiness" value={`${readyCount}/${summary?.readiness.length ?? 0}`} hint="Ready items" tone="brand" />
+        <CyberStatCard label="Primary Color" value={primaryColorHex} hint="Report theme" tone="brand" />
+        <CyberStatCard label="Recommendations" value={summary?.recommendations.length ?? 0} hint="Security safeguards" tone="orange" />
+      </section>
+
       <ModuleTabs
-        tabs={TABS.map((t) => ({ key: t, label: t }))}
+        tabs={TABS.map((item) => ({ key: item, label: item }))}
         activeKey={tab}
         onChange={setTab}
       />
 
       {msg && (
-        <div className="rounded-2xl border border-brand-500/30 bg-brand-500/10 p-4 text-sm font-medium text-brand-600 dark:text-brand-300">
+        <div className="rounded-2xl border border-brand-500/30 bg-brand-500/10 p-4 text-sm font-medium text-brand-300">
           {msg}
         </div>
       )}
 
       {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-600 dark:border-red-900 dark:bg-red-950">
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-medium text-red-300">
           {error}
         </div>
       )}
 
       {tab === "Branding" && (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-          <form onSubmit={save} className="card space-y-4">
-            <h2 className="section-title">White-Label Branding</h2>
-            <p className="section-subtitle">
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+          <form onSubmit={save} className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+            <h2 className="text-lg font-black tracking-tight text-white">White-Label Branding</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-400">
               These values affect customer-facing reports and workspace branding.
             </p>
 
-            <div>
-              <label className="text-sm font-bold">Brand Name</label>
-              <input
-                className="input mt-1"
-                value={brandName}
-                onChange={(e) => setBrandName(e.target.value)}
-                placeholder="CyberShield360 By Mujtaba"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-bold">Logo URL</label>
-              <input
-                className="input mt-1"
-                value={logoUrl}
-                onChange={(e) => setLogoUrl(e.target.value)}
-                placeholder="https://example.com/logo.png"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="mt-5 space-y-4">
               <div>
-                <label className="text-sm font-bold">Primary Color</label>
+                <label className="text-sm font-bold text-slate-200">Brand Name</label>
                 <input
                   className="input mt-1"
-                  value={primaryColorHex}
-                  onChange={(e) => setPrimaryColorHex(e.target.value)}
-                  placeholder="#10B5A6"
+                  value={brandName}
+                  onChange={(event) => setBrandName(event.target.value)}
+                  placeholder="CyberShield360 By Mujtaba"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-bold">Report Footer</label>
+                <label className="text-sm font-bold text-slate-200">Logo URL</label>
                 <input
                   className="input mt-1"
-                  value={customReportFooter}
-                  onChange={(e) => setCustomReportFooter(e.target.value)}
-                  placeholder="Confidential Security Report"
+                  value={logoUrl}
+                  onChange={(event) => setLogoUrl(event.target.value)}
+                  placeholder="https://example.com/logo.png"
                 />
               </div>
-            </div>
 
-            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
-              <input
-                type="checkbox"
-                checked={whiteLabelEnabled}
-                onChange={(e) => setWhiteLabelEnabled(e.target.checked)}
-              />
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className="text-sm font-bold text-slate-200">Primary Color</label>
+                  <input
+                    className="input mt-1"
+                    value={primaryColorHex}
+                    onChange={(event) => setPrimaryColorHex(event.target.value)}
+                    placeholder="#10B5A6"
+                  />
+                </div>
 
-              <span>
-                <span className="block font-bold">Enable white-label branding</span>
-                <span className="text-sm text-slate-500">
-                  Use custom name, color, and footer in reports.
+                <div>
+                  <label className="text-sm font-bold text-slate-200">Report Footer</label>
+                  <input
+                    className="input mt-1"
+                    value={customReportFooter}
+                    onChange={(event) => setCustomReportFooter(event.target.value)}
+                    placeholder="Confidential Security Report"
+                  />
+                </div>
+              </div>
+
+              <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <input
+                  type="checkbox"
+                  checked={whiteLabelEnabled}
+                  onChange={(event) => setWhiteLabelEnabled(event.target.checked)}
+                />
+
+                <span>
+                  <span className="block font-bold text-white">Enable white-label branding</span>
+                  <span className="text-sm text-slate-500">
+                    Use custom name, color, and footer in reports.
+                  </span>
                 </span>
-              </span>
-            </label>
+              </label>
 
-            <button disabled={saving} className="btn-primary">
-              {saving ? "Saving..." : "Save Settings"}
-            </button>
+              <button disabled={saving} className="btn-primary">
+                {saving ? "Saving..." : "Save Settings"}
+              </button>
+            </div>
           </form>
 
-          <div className="card">
-            <h2 className="section-title mb-4">Live Preview</h2>
+          <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+            <h2 className="text-lg font-black tracking-tight text-white">Live Preview</h2>
 
-            <div
-              className="rounded-3xl border border-slate-200 p-5 dark:border-slate-800"
-              style={{ borderColor: primaryColorHex }}
-            >
+            <div className="mt-5 rounded-3xl border p-5" style={{ borderColor: primaryColorHex }}>
               <div className="flex items-center gap-3">
                 <div
                   className="flex h-12 w-12 items-center justify-center rounded-2xl text-white"
@@ -246,7 +257,7 @@ export default function Settings() {
                 </div>
 
                 <div>
-                  <div className="text-xl font-black">
+                  <div className="text-xl font-black text-white">
                     {brandName || "CyberShield360 By Mujtaba"}
                   </div>
                   <div className="text-sm text-slate-500">
@@ -255,86 +266,94 @@ export default function Settings() {
                 </div>
               </div>
 
-              <div className="mt-6 rounded-2xl bg-slate-100 p-4 dark:bg-slate-950/60">
+              <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                 <div className="text-sm text-slate-500">Footer</div>
-                <div className="font-medium">
+                <div className="font-medium text-slate-300">
                   {customReportFooter || "Confidential Security Report - CyberShield360"}
                 </div>
               </div>
             </div>
-          </div>
+          </section>
         </div>
       )}
 
       {tab === "Readiness" && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {(summary?.readiness ?? []).map((r) => (
-            <div key={r.item} className="card card-hover">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="font-black">{r.item}</div>
-                  <div className="mt-1 text-sm text-slate-500">
-                    Priority: {r.priority}
-                  </div>
-                </div>
-
-                <span className={`badge ${badgeColor(r.status + r.priority)}`}>
-                  {r.status}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+        <CyberTable
+          title="Readiness Register"
+          description="Settings and workspace readiness items before production launch."
+          data={summary?.readiness ?? []}
+          emptyText="No readiness data available."
+          columns={[
+            {
+              key: "item",
+              label: "Item",
+              render: (item) => (
+                <div className="mx-auto min-w-80 text-center font-semibold text-white">{item.item}</div>
+              ),
+            },
+            {
+              key: "status",
+              label: "Status",
+              render: (item) => <CyberStatusBadge value={item.status} />,
+            },
+            {
+              key: "priority",
+              label: "Priority",
+              render: (item) => <CyberStatusBadge value={priorityLabel(item.priority)} />,
+            },
+          ]}
+        />
       )}
 
       {tab === "Deployment" && (
-        <div className="card">
-          <h2 className="section-title mb-4">Deployment Checklist</h2>
-
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {[
-              "Move OpenAI, SMTP, JWT, database, Lemon Squeezy secrets to environment variables",
-              "Restrict CORS to production frontend domain",
-              "Disable demo seed credentials",
-              "Use production SQL backups",
-              "Verify SMTP sender domain",
-              "Configure HTTPS / reverse proxy",
-              "Set production logging retention",
-              "Test report generation after deployment",
-            ].map((x) => (
-              <label
-                key={x}
-                className="flex items-start gap-3 rounded-2xl border border-slate-200 p-4 dark:border-slate-800"
-              >
-                <input type="checkbox" className="mt-1" />
-                <span className="font-medium">{x}</span>
-              </label>
-            ))}
-          </div>
-        </div>
+        <CyberTable
+          title="Deployment Checklist"
+          description="Production safeguards to complete before buying a domain or onboarding clients."
+          data={DEPLOYMENT_ITEMS.map((item) => ({ item, status: "Required" }))}
+          emptyText="No deployment items available."
+          columns={[
+            {
+              key: "item",
+              label: "Checklist Item",
+              render: (item) => (
+                <div className="mx-auto min-w-96 text-center text-sm font-semibold leading-6 text-white">
+                  {item.item}
+                </div>
+              ),
+            },
+            {
+              key: "status",
+              label: "Status",
+              render: (item) => <CyberStatusBadge value={item.status} />,
+            },
+          ]}
+        />
       )}
 
       {tab === "Security" && (
-        <div className="card">
-          <h2 className="section-title mb-4">Security Safeguards</h2>
+        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+          <h2 className="text-lg font-black tracking-tight text-white">Security Safeguards</h2>
 
-          <div className="space-y-3">
+          <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-2">
             {(
               summary?.recommendations ?? [
                 "Move secrets to environment variables before deployment.",
                 "Enable MFA for administrators.",
                 "Keep audit logging enabled.",
               ]
-            ).map((r) => (
+            ).map((item, index) => (
               <div
-                key={r}
-                className="rounded-2xl border border-slate-200 p-4 font-medium dark:border-slate-800"
+                key={`${item}-${index}`}
+                className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center"
               >
-                {r}
+                <div className="text-xs font-black uppercase tracking-widest text-brand-300">
+                  Safeguard #{index + 1}
+                </div>
+                <div className="mt-2 text-sm font-medium leading-6 text-slate-300">{item}</div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
     </div>
   );

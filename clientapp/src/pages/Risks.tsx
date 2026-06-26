@@ -1,5 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { RiskApi } from "../api/endpoints";
+import CyberStatCard from "../components/CyberStatCard";
+import CyberStatusBadge from "../components/CyberStatusBadge";
+import CyberTable from "../components/CyberTable";
 import type { Risk } from "../types";
 
 const LIKELIHOOD_LABELS = ["", "Rare", "Unlikely", "Possible", "Likely", "Almost Certain"];
@@ -14,20 +17,27 @@ const STATUS_OPTIONS = [
   { label: "Closed", value: 3 },
 ];
 
-function riskColor(score: number) {
-  if (score >= 20) return "#991b1b";
-  if (score >= 15) return "#dc2626";
-  if (score >= 9) return "#ea580c";
-  if (score >= 4) return "#ca8a04";
-  return "#16a34a";
-}
-
 function riskLabel(score: number) {
   if (score >= 20) return "Critical";
   if (score >= 15) return "High";
   if (score >= 9) return "Medium";
   if (score >= 4) return "Low";
   return "Minimal";
+}
+
+function riskTone(score: number): "green" | "orange" | "red" | "slate" {
+  if (!score) return "slate";
+  if (score >= 15) return "red";
+  if (score >= 9) return "orange";
+  return "green";
+}
+
+function riskCellClass(score: number) {
+  if (score >= 20) return "bg-red-700/80 border-red-400/30";
+  if (score >= 15) return "bg-red-600/75 border-red-400/30";
+  if (score >= 9) return "bg-orange-500/75 border-orange-300/30";
+  if (score >= 4) return "bg-amber-500/70 border-amber-300/30";
+  return "bg-emerald-600/70 border-emerald-300/30";
 }
 
 function statusLabel(status: string | number | undefined) {
@@ -47,7 +57,7 @@ function enumNumber(value: string | number | undefined, labels: string[]) {
   const parsed = Number(value);
   if (!Number.isNaN(parsed)) return parsed;
 
-  return labels.findIndex((x) => x.toLowerCase() === value.toLowerCase());
+  return labels.findIndex((label) => label.toLowerCase() === value.toLowerCase());
 }
 
 function csvSafe(value: unknown) {
@@ -110,15 +120,15 @@ export default function Risks() {
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, [status]);
 
   const filteredRisks = useMemo(() => {
     const text = query.trim().toLowerCase();
     if (!text) return risks;
 
-    return risks.filter((risk) => {
-      return [
+    return risks.filter((risk) =>
+      [
         risk.title,
         risk.category,
         risk.owner,
@@ -126,16 +136,20 @@ export default function Risks() {
         risk.mitigationPlan,
       ]
         .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(text));
-    });
+        .some((value) => String(value).toLowerCase().includes(text))
+    );
   }, [risks, query]);
 
   const summary = useMemo(() => {
-    const openRisks = risks.filter((r) => statusLabel(r.status) !== "Closed");
-    const critical = openRisks.filter((r) => r.inherentScore >= 20).length;
-    const high = openRisks.filter((r) => r.inherentScore >= 15 && r.inherentScore < 20).length;
+    const openRisks = risks.filter((risk) => statusLabel(risk.status) !== "Closed");
+    const critical = openRisks.filter((risk) => risk.inherentScore >= 20).length;
+    const high = openRisks.filter(
+      (risk) => risk.inherentScore >= 15 && risk.inherentScore < 20
+    ).length;
     const avgScore = openRisks.length
-      ? Math.round(openRisks.reduce((sum, r) => sum + r.inherentScore, 0) / openRisks.length)
+      ? Math.round(
+          openRisks.reduce((sum, risk) => sum + risk.inherentScore, 0) / openRisks.length
+        )
       : 0;
 
     return {
@@ -148,10 +162,12 @@ export default function Risks() {
   }, [risks]);
 
   const countAt = (likelihood: number, impact: number) => {
-    return heatmap.find((cell) => cell.likelihood === likelihood && cell.impact === impact)?.count ?? 0;
+    return (
+      heatmap.find((cell) => cell.likelihood === likelihood && cell.impact === impact)?.count ?? 0
+    );
   };
 
-  const createRisk = async (event: React.FormEvent) => {
+  const createRisk = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!form.title.trim()) {
@@ -213,7 +229,18 @@ export default function Risks() {
 
   const exportRisks = () => {
     downloadCsv("cybershield360-risk-register.csv", [
-      ["Title", "Category", "Likelihood", "Impact", "Inherent Score", "Risk Level", "Status", "Owner", "Residual Score", "Mitigation Plan"],
+      [
+        "Title",
+        "Category",
+        "Likelihood",
+        "Impact",
+        "Inherent Score",
+        "Risk Level",
+        "Status",
+        "Owner",
+        "Residual Score",
+        "Mitigation Plan",
+      ],
       ...filteredRisks.map((risk) => {
         const likelihood = enumNumber(risk.likelihood, LIKELIHOOD_LABELS);
         const impact = enumNumber(risk.impact, IMPACT_LABELS);
@@ -244,71 +271,66 @@ export default function Risks() {
           <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">
             Risk Register
           </h1>
-          <p className="mt-2 max-w-3xl text-sm text-slate-500 dark:text-slate-400">
-            Track risk ownership, likelihood, impact, mitigation activity, and residual exposure across your tenant.
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+            Track ownership, likelihood, impact, mitigation activity, and residual exposure across client risk records.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <button onClick={load} disabled={loading} className="btn-ghost">
+          <button type="button" onClick={load} disabled={loading} className="btn-ghost">
             {loading ? "Refreshing..." : "Refresh"}
           </button>
-          <button onClick={exportRisks} disabled={filteredRisks.length === 0} className="btn-primary">
+          <button
+            type="button"
+            onClick={exportRisks}
+            disabled={filteredRisks.length === 0}
+            className="btn-primary disabled:opacity-50"
+          >
             Export CSV
           </button>
         </div>
       </header>
 
       {message && (
-        <div className="rounded-2xl border border-brand-500/30 bg-brand-500/10 p-4 text-sm font-medium text-brand-600 dark:text-brand-300">
+        <div className="rounded-2xl border border-brand-500/30 bg-brand-500/10 p-4 text-sm font-medium text-brand-300">
           {message}
         </div>
       )}
 
       {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-medium text-red-300">
           {error}
         </div>
       )}
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <div className="metric-card">
-          <div className="section-subtitle">Total Risks</div>
-          <div className="mt-2 text-3xl font-black">{summary.total}</div>
-        </div>
-        <div className="metric-card">
-          <div className="section-subtitle">Open Risks</div>
-          <div className="mt-2 text-3xl font-black text-orange-500">{summary.open}</div>
-        </div>
-        <div className="metric-card">
-          <div className="section-subtitle">Critical</div>
-          <div className="mt-2 text-3xl font-black text-red-600">{summary.critical}</div>
-        </div>
-        <div className="metric-card">
-          <div className="section-subtitle">High</div>
-          <div className="mt-2 text-3xl font-black text-orange-500">{summary.high}</div>
-        </div>
-        <div className="metric-card">
-          <div className="section-subtitle">Average Score</div>
-          <div className="mt-2 text-3xl font-black" style={{ color: riskColor(summary.avgScore) }}>
-            {summary.avgScore || "-"}
-          </div>
-        </div>
+        <CyberStatCard label="Total Risks" value={summary.total} hint="All loaded records" tone="brand" />
+        <CyberStatCard label="Open Risks" value={summary.open} hint="Not closed" tone="orange" />
+        <CyberStatCard label="Critical" value={summary.critical} hint="Score 20+" tone="red" />
+        <CyberStatCard label="High" value={summary.high} hint="Score 15-19" tone="orange" />
+        <CyberStatCard
+          label="Average Score"
+          value={summary.avgScore || "-"}
+          hint={summary.avgScore ? riskLabel(summary.avgScore) : "No open risks"}
+          tone={riskTone(summary.avgScore)}
+        />
       </section>
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="card">
-          <div className="flex flex-col gap-1">
-            <h2 className="section-title">Risk Heatmap</h2>
-            <p className="section-subtitle">Likelihood × impact. Failed controls and business exposure should be reviewed from the red/orange zones first.</p>
+        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+          <div className="text-center">
+            <h2 className="text-lg font-black tracking-tight text-white">Risk Heatmap</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-400">
+              Likelihood × impact. Review red and orange zones first.
+            </p>
           </div>
 
           <div className="mt-5 overflow-x-auto">
-            <table className="border-separate border-spacing-2">
+            <table className="mx-auto border-separate border-spacing-2">
               <tbody>
                 {[5, 4, 3, 2, 1].map((likelihood) => (
                   <tr key={likelihood}>
-                    <td className="w-28 pr-2 text-right text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    <td className="w-32 pr-2 text-right text-xs font-semibold text-slate-500">
                       {LIKELIHOOD_LABELS[likelihood]}
                     </td>
                     {[1, 2, 3, 4, 5].map((impact) => {
@@ -318,15 +340,13 @@ export default function Risks() {
                       return (
                         <td
                           key={impact}
-                          className="h-16 w-20 rounded-2xl text-center align-middle text-sm font-black text-white shadow-sm"
-                          style={{
-                            background: riskColor(score),
-                            opacity: count ? 1 : 0.28,
-                          }}
+                          className={`h-16 w-20 rounded-2xl border text-center align-middle text-sm font-black text-white shadow-sm ${riskCellClass(score)}`}
                           title={`${LIKELIHOOD_LABELS[likelihood]} × ${IMPACT_LABELS[impact]} = ${score}`}
                         >
                           <div>{count || ""}</div>
-                          <div className="text-[10px] font-semibold opacity-80">{count ? riskLabel(score) : ""}</div>
+                          <div className="text-[10px] font-semibold opacity-80">
+                            {count ? riskLabel(score) : ""}
+                          </div>
                         </td>
                       );
                     })}
@@ -335,7 +355,10 @@ export default function Risks() {
                 <tr>
                   <td />
                   {[1, 2, 3, 4, 5].map((impact) => (
-                    <td key={impact} className="w-20 text-center text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                    <td
+                      key={impact}
+                      className="w-20 text-center text-[11px] font-semibold text-slate-500"
+                    >
                       {IMPACT_LABELS[impact]}
                     </td>
                   ))}
@@ -343,207 +366,247 @@ export default function Risks() {
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
 
-        <form onSubmit={createRisk} className="card space-y-4">
-          <div>
-            <h2 className="section-title">Create Risk</h2>
-            <p className="section-subtitle">Add a real risk with likelihood, impact, owner, and mitigation plan.</p>
+        <form
+          onSubmit={createRisk}
+          className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10"
+        >
+          <div className="mb-5 text-center">
+            <h2 className="text-lg font-black tracking-tight text-white">Create Risk</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-400">
+              Add likelihood, impact, owner, and mitigation plan.
+            </p>
           </div>
 
-          <input
-            className="input"
-            placeholder="Risk title"
-            value={form.title}
-            onChange={(event) => setForm({ ...form, title: event.target.value })}
-          />
-
-          <textarea
-            className="input min-h-24"
-            placeholder="Description"
-            value={form.description}
-            onChange={(event) => setForm({ ...form, description: event.target.value })}
-          />
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="space-y-4">
             <input
               className="input"
-              placeholder="Category"
-              value={form.category}
-              onChange={(event) => setForm({ ...form, category: event.target.value })}
+              placeholder="Risk title"
+              value={form.title}
+              onChange={(event) => setForm({ ...form, title: event.target.value })}
             />
-            <input
-              className="input"
-              placeholder="Owner"
-              value={form.owner}
-              onChange={(event) => setForm({ ...form, owner: event.target.value })}
+
+            <textarea
+              className="input min-h-24"
+              placeholder="Description"
+              value={form.description}
+              onChange={(event) => setForm({ ...form, description: event.target.value })}
             />
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <input
+                className="input"
+                placeholder="Category"
+                value={form.category}
+                onChange={(event) => setForm({ ...form, category: event.target.value })}
+              />
+              <input
+                className="input"
+                placeholder="Owner"
+                value={form.owner}
+                onChange={(event) => setForm({ ...form, owner: event.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <select
+                className="input"
+                value={form.likelihood}
+                onChange={(event) =>
+                  setForm({ ...form, likelihood: Number(event.target.value) })
+                }
+              >
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <option key={value} value={value}>
+                    {LIKELIHOOD_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                className="input"
+                value={form.impact}
+                onChange={(event) => setForm({ ...form, impact: Number(event.target.value) })}
+              >
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <option key={value} value={value}>
+                    {IMPACT_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <textarea
+              className="input min-h-24"
+              placeholder="Mitigation plan"
+              value={form.mitigationPlan}
+              onChange={(event) => setForm({ ...form, mitigationPlan: event.target.value })}
+            />
+
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm">
+              <span className="text-slate-500">Calculated inherent score: </span>
+              <span className="font-black text-white">
+                {form.likelihood * form.impact} / {riskLabel(form.likelihood * form.impact)}
+              </span>
+            </div>
+
+            <button disabled={saving} className="btn-primary w-full justify-center">
+              {saving ? "Saving..." : "Create Risk"}
+            </button>
           </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <select
-              className="input"
-              value={form.likelihood}
-              onChange={(event) => setForm({ ...form, likelihood: Number(event.target.value) })}
-            >
-              {[1, 2, 3, 4, 5].map((value) => (
-                <option key={value} value={value}>{LIKELIHOOD_LABELS[value]}</option>
-              ))}
-            </select>
-
-            <select
-              className="input"
-              value={form.impact}
-              onChange={(event) => setForm({ ...form, impact: Number(event.target.value) })}
-            >
-              {[1, 2, 3, 4, 5].map((value) => (
-                <option key={value} value={value}>{IMPACT_LABELS[value]}</option>
-              ))}
-            </select>
-          </div>
-
-          <textarea
-            className="input min-h-24"
-            placeholder="Mitigation plan"
-            value={form.mitigationPlan}
-            onChange={(event) => setForm({ ...form, mitigationPlan: event.target.value })}
-          />
-
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm dark:border-slate-800 dark:bg-slate-950/60">
-            <span className="text-slate-500 dark:text-slate-400">Calculated inherent score:</span>{" "}
-            <span className="font-black" style={{ color: riskColor(form.likelihood * form.impact) }}>
-              {form.likelihood * form.impact} / {riskLabel(form.likelihood * form.impact)}
-            </span>
-          </div>
-
-          <button disabled={saving} className="btn-primary w-full">
-            {saving ? "Saving..." : "Create Risk"}
-          </button>
         </form>
       </section>
 
-      <section className="card">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="section-title">Risk Register</h2>
-            <p className="section-subtitle">{filteredRisks.length} visible risks from {risks.length} loaded records.</p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:min-w-[520px]">
-            <input
-              className="input"
-              placeholder="Search risks, owners, category..."
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-            <select className="input" value={status} onChange={(event) => setStatus(event.target.value)}>
-              {STATUS_OPTIONS.map((option) => (
-                <option key={String(option.value)} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="mt-6 text-sm text-slate-500 dark:text-slate-400">Loading risk register...</div>
-        ) : filteredRisks.length === 0 ? (
-          <div className="empty-state mt-6">
-            <div className="text-lg font-bold">No risks found</div>
-            <p className="mt-2 max-w-md text-sm text-slate-500 dark:text-slate-400">
-              Create a risk or adjust filters to view existing risk records.
-            </p>
-          </div>
-        ) : (
-          <div className="table-wrap mt-6">
-            <table className="w-full text-sm">
-              <thead className="table-head">
-                <tr>
-                  <th className="px-4 py-3">Risk</th>
-                  <th className="px-4 py-3">Category</th>
-                  <th className="px-4 py-3">Score</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Owner</th>
-                  <th className="px-4 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRisks.map((risk) => (
-                  <tr key={risk.id} className="border-t border-slate-200 dark:border-slate-800">
-                    <td className="px-4 py-3">
-                      <div className="font-bold text-slate-950 dark:text-white">{risk.title}</div>
-                      {risk.mitigationPlan && (
-                        <div className="mt-1 line-clamp-1 text-xs text-slate-500 dark:text-slate-400">
-                          {risk.mitigationPlan}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{risk.category ?? "-"}</td>
-                    <td className="px-4 py-3">
-                      <span className="badge" style={{ background: riskColor(risk.inherentScore) }}>
-                        {risk.inherentScore} {riskLabel(risk.inherentScore)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">{statusLabel(risk.status)}</td>
-                    <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{risk.owner ?? "Unassigned"}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-2">
-                        <button onClick={() => setSelectedRisk(risk)} className="btn-ghost px-3 py-1.5 text-xs" type="button">
-                          View
-                        </button>
-                        {statusLabel(risk.status) !== "Closed" && (
-                          <button onClick={() => updateRisk(risk, 3)} className="btn-ghost px-3 py-1.5 text-xs" type="button">
-                            Close
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      <section className="card grid grid-cols-1 gap-3 lg:grid-cols-[1fr_220px]">
+        <input
+          className="input"
+          placeholder="Search risks, owners, category..."
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        <select
+          className="input"
+          value={status}
+          onChange={(event) => setStatus(event.target.value)}
+        >
+          {STATUS_OPTIONS.map((option) => (
+            <option key={String(option.value)} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       </section>
 
+      <CyberTable
+        title="Risk Register"
+        description={`${filteredRisks.length} visible risks from ${risks.length} loaded records.`}
+        data={filteredRisks}
+        emptyText={loading ? "Loading risk register..." : "No risks found."}
+        columns={[
+          {
+            key: "risk",
+            label: "Risk",
+            render: (risk) => (
+              <div className="mx-auto min-w-72 text-center">
+                <div className="font-semibold leading-6 text-white">{risk.title}</div>
+                <div className="mt-1 text-xs text-slate-500">
+                  {risk.category ?? "Uncategorized"} · Owner: {risk.owner ?? "Unassigned"}
+                </div>
+              </div>
+            ),
+          },
+          {
+            key: "likelihood",
+            label: "Likelihood",
+            render: (risk) => {
+              const likelihood = enumNumber(risk.likelihood, LIKELIHOOD_LABELS);
+              return <div className="text-slate-300">{LIKELIHOOD_LABELS[likelihood] ?? "-"}</div>;
+            },
+          },
+          {
+            key: "impact",
+            label: "Impact",
+            render: (risk) => {
+              const impact = enumNumber(risk.impact, IMPACT_LABELS);
+              return <div className="text-slate-300">{IMPACT_LABELS[impact] ?? "-"}</div>;
+            },
+          },
+          {
+            key: "score",
+            label: "Score",
+            render: (risk) => (
+              <div>
+                <div className="font-black text-white">{risk.inherentScore}</div>
+                <div className="mt-2">
+                  <CyberStatusBadge value={riskLabel(risk.inherentScore)} />
+                </div>
+              </div>
+            ),
+          },
+          {
+            key: "status",
+            label: "Status",
+            render: (risk) => <CyberStatusBadge value={statusLabel(risk.status)} />,
+          },
+          {
+            key: "plan",
+            label: "Mitigation Plan",
+            render: (risk) => (
+              <div className="mx-auto min-w-80 text-center text-sm leading-6 text-slate-400">
+                {risk.mitigationPlan || "No mitigation plan provided."}
+              </div>
+            ),
+          },
+          {
+            key: "action",
+            label: "Action",
+            render: (risk) => (
+              <div className="flex min-w-56 flex-wrap justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedRisk(risk)}
+                  className="rounded-xl border border-brand-500/30 bg-brand-500/10 px-3 py-2 text-xs font-black text-brand-300 transition hover:bg-brand-500/20"
+                >
+                  View
+                </button>
+                <select
+                  className="input min-w-36 py-1"
+                  value={String(enumNumber(risk.status, STATUS_LABELS))}
+                  onChange={(event) => updateRisk(risk, Number(event.target.value))}
+                >
+                  {STATUS_LABELS.map((label, index) => (
+                    <option key={label} value={index}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ),
+          },
+        ]}
+      />
+
       {selectedRisk && (
-        <section className="card border-brand-500/30">
+        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h2 className="section-title">Risk Detail</h2>
-              <p className="section-subtitle">{selectedRisk.title}</p>
+              <h2 className="text-lg font-black tracking-tight text-white">
+                Selected Risk Detail
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-slate-400">
+                {selectedRisk.title}
+              </p>
             </div>
-            <button onClick={() => setSelectedRisk(null)} className="btn-ghost">Close</button>
+            <button type="button" onClick={() => setSelectedRisk(null)} className="btn-ghost">
+              Close
+            </button>
           </div>
 
-          <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
-              <div className="section-subtitle">Score</div>
-              <div className="mt-2 text-2xl font-black" style={{ color: riskColor(selectedRisk.inherentScore) }}>
-                {selectedRisk.inherentScore} / {riskLabel(selectedRisk.inherentScore)}
+          <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+              <div className="text-xs font-black uppercase tracking-wide text-slate-500">
+                Level
+              </div>
+              <div className="mt-2 flex justify-center">
+                <CyberStatusBadge value={riskLabel(selectedRisk.inherentScore)} />
               </div>
             </div>
-            <div className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
-              <div className="section-subtitle">Likelihood</div>
-              <div className="mt-2 font-bold">{LIKELIHOOD_LABELS[enumNumber(selectedRisk.likelihood, LIKELIHOOD_LABELS)] ?? "-"}</div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+              <div className="text-xs font-black uppercase tracking-wide text-slate-500">
+                Residual Score
+              </div>
+              <div className="mt-2 text-2xl font-black text-white">
+                {selectedRisk.residualScore ?? "-"}
+              </div>
             </div>
-            <div className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
-              <div className="section-subtitle">Impact</div>
-              <div className="mt-2 font-bold">{IMPACT_LABELS[enumNumber(selectedRisk.impact, IMPACT_LABELS)] ?? "-"}</div>
-            </div>
-            <div className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
-              <div className="section-subtitle">Status</div>
-              <div className="mt-2 font-bold">{statusLabel(selectedRisk.status)}</div>
-            </div>
-          </div>
-
-          <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div>
-              <div className="text-sm font-bold">Description</div>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{selectedRisk.description || "No description provided."}</p>
-            </div>
-            <div>
-              <div className="text-sm font-bold">Mitigation Plan</div>
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{selectedRisk.mitigationPlan || "No mitigation plan provided."}</p>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+              <div className="text-xs font-black uppercase tracking-wide text-slate-500">
+                Status
+              </div>
+              <div className="mt-2 flex justify-center">
+                <CyberStatusBadge value={statusLabel(selectedRisk.status)} />
+              </div>
             </div>
           </div>
         </section>

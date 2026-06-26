@@ -1,5 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BillingApi } from "../api/endpoints";
+import CyberStatCard from "../components/CyberStatCard";
+import CyberStatusBadge from "../components/CyberStatusBadge";
+import CyberTable from "../components/CyberTable";
 
 type BillingSummary = {
   generatedUtc: string;
@@ -67,14 +70,31 @@ export default function Billing() {
     }
   };
 
+  const statusMessage = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("success") === "true") {
+      return {
+        type: "success",
+        text: "Payment completed successfully. Subscription status will update after webhook processing.",
+      };
+    }
+    if (params.get("cancelled") === "true") {
+      return {
+        type: "warning",
+        text: "Checkout was cancelled. You can restart checkout anytime.",
+      };
+    }
+    return null;
+  }, []);
+
   if (loading) {
     return <div className="card">Loading billing...</div>;
   }
 
   if (!data) {
     return (
-      <div className="card">
-        <div className="text-red-500">{error ?? "Billing data unavailable."}</div>
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-semibold text-red-300">
+        {error ?? "Billing data unavailable."}
       </div>
     );
   }
@@ -83,130 +103,110 @@ export default function Billing() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Billing</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Billing</h1>
           <p className="text-sm text-gray-500">
             Manage CyberShield360 subscription, checkout, and billing readiness.
           </p>
         </div>
 
-        <button
-          onClick={load}
-          className="border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
+        <button type="button" onClick={load} className="btn-ghost">
           Refresh
         </button>
-      </div>
+      </header>
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 text-red-600 p-4 text-sm dark:bg-red-950 dark:border-red-900">
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-semibold text-red-300">
           {error}
         </div>
       )}
 
-      {new URLSearchParams(window.location.search).get("success") === "true" && (
-        <div className="rounded-xl border border-green-200 bg-green-50 text-green-700 p-4 text-sm dark:bg-green-950 dark:border-green-900">
-          Payment completed successfully. Subscription status will update after webhook processing.
-        </div>
-      )}
-
-      {new URLSearchParams(window.location.search).get("cancelled") === "true" && (
-        <div className="rounded-xl border border-yellow-200 bg-yellow-50 text-yellow-700 p-4 text-sm dark:bg-yellow-950 dark:border-yellow-900">
-          Checkout was cancelled. You can restart checkout anytime.
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card">
-          <div className="text-sm text-gray-500">Current Plan</div>
-          <div className="text-2xl font-bold mt-1">{data.currentPlan.name}</div>
-          <div className="text-sm mt-2">
-            Status:{" "}
-            <span className="font-semibold text-brand-500">
-              {data.currentPlan.status}
-            </span>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="text-sm text-gray-500">Billing Provider</div>
-          <div className="text-2xl font-bold mt-1">{data.provider}</div>
-          <div className="text-sm text-gray-500 mt-2">
-            Checkout powered by Lemon Squeezy.
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="text-sm text-gray-500">Configuration</div>
-          <div
-            className={`text-2xl font-bold mt-1 ${
-              isReady ? "text-green-600" : "text-yellow-600"
-            }`}
-          >
-            {data.configuration.status}
-          </div>
-          <div className="text-sm text-gray-500 mt-2">
-            {isReady ? "Ready for checkout." : "Add Lemon Squeezy keys to enable checkout."}
-          </div>
-        </div>
-      </div>
-
-      <div className="card">
-        <h2 className="font-semibold mb-4">Lemon Squeezy Checkout</h2>
-
-        <p className="text-sm text-gray-500 mb-4">
-          Start a hosted subscription checkout session for the current tenant.
-        </p>
-
-        <button
-          onClick={startCheckout}
-          disabled={!isReady || checkoutLoading}
-          className="btn-primary justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+      {statusMessage && (
+        <div
+          className={`rounded-2xl border p-4 text-sm font-semibold ${
+            statusMessage.type === "success"
+              ? "border-green-500/30 bg-green-500/10 text-green-300"
+              : "border-yellow-500/30 bg-yellow-500/10 text-yellow-300"
+          }`}
         >
-          {checkoutLoading ? "Starting checkout..." : "Upgrade Plan"}
-        </button>
+          {statusMessage.text}
+        </div>
+      )}
 
-        {!isReady && (
-          <div className="text-xs text-gray-400 mt-3">
-            Checkout is disabled until API Key, Store ID, and Variant ID are configured.
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <CyberStatCard label="Current Plan" value={data.currentPlan.name} hint={data.currentPlan.status} tone="brand" />
+        <CyberStatCard label="Provider" value={data.provider} hint={data.currentPlan.billingProvider} tone="green" />
+        <CyberStatCard label="Configuration" value={data.configuration.status} hint={isReady ? "Ready for checkout" : "Add billing keys"} tone={isReady ? "green" : "orange"} />
+      </section>
+
+      <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div>
+            <h2 className="text-lg font-black tracking-tight text-white">Lemon Squeezy Checkout</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-400">
+              Start a hosted subscription checkout session for the current tenant.
+            </p>
+            {!isReady && (
+              <div className="mt-3 text-xs text-slate-500">
+                Checkout is disabled until API Key, Store ID, and Variant ID are configured.
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="card">
-        <h2 className="font-semibold mb-4">Billing Readiness</h2>
+          <button
+            type="button"
+            onClick={startCheckout}
+            disabled={!isReady || checkoutLoading}
+            className="btn-primary justify-center disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {checkoutLoading ? "Starting checkout..." : "Upgrade Plan"}
+          </button>
+        </div>
+      </section>
 
-        <div className="space-y-3">
-          {data.readiness.map((item) => (
+      <CyberTable
+        title="Billing Readiness"
+        description="Billing configuration items required before accepting live payments."
+        data={data.readiness}
+        emptyText="No billing readiness items available."
+        columns={[
+          {
+            key: "item",
+            label: "Item",
+            render: (item) => (
+              <div className="mx-auto min-w-80 text-center font-semibold text-white">{item.item}</div>
+            ),
+          },
+          {
+            key: "status",
+            label: "Status",
+            render: (item) => <CyberStatusBadge value={item.status} />,
+          },
+        ]}
+      />
+
+      <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+        <h2 className="text-lg font-black tracking-tight text-white">Recommendations</h2>
+
+        <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {data.recommendations.map((item, index) => (
             <div
-              key={item.item}
-              className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-2"
+              key={`${item}-${index}`}
+              className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center"
             >
-              <span className="text-sm">{item.item}</span>
-              <span
-                className={`text-xs px-2 py-1 rounded-full ${
-                  item.status === "Configured"
-                    ? "bg-green-100 text-green-700 dark:bg-green-950"
-                    : "bg-yellow-100 text-yellow-700 dark:bg-yellow-950"
-                }`}
-              >
-                {item.status}
-              </span>
+              <div className="text-xs font-black uppercase tracking-widest text-brand-300">
+                Recommendation #{index + 1}
+              </div>
+              <div className="mt-2 text-sm font-medium leading-6 text-slate-300">{item}</div>
             </div>
           ))}
         </div>
-      </div>
 
-      <div className="card">
-        <h2 className="font-semibold mb-4">Recommendations</h2>
-
-        <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-          {data.recommendations.map((r) => (
-            <li key={r}>• {r}</li>
-          ))}
-        </ul>
-      </div>
+        <div className="mt-5 text-xs text-slate-500">
+          Generated: {new Date(data.generatedUtc).toLocaleString()}
+        </div>
+      </section>
     </div>
   );
 }

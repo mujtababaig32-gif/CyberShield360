@@ -1,7 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { NotificationsApi } from "../api/endpoints";
-
+import CyberChartCard from "../components/CyberChartCard";
+import CyberStatCard from "../components/CyberStatCard";
+import CyberStatusBadge from "../components/CyberStatusBadge";
+import CyberTable from "../components/CyberTable";
 import ModuleTabs from "../components/ModuleTabs";
+
 type NotificationItem = {
   id: string;
   title: string;
@@ -31,15 +44,6 @@ type Summary = {
 
 const TABS = ["Overview", "Inbox", "Critical", "Delivery", "Settings"];
 
-function badgeColor(value: string) {
-  const v = value.toLowerCase();
-  if (v.includes("critical") || v.includes("failed")) return "bg-red-600";
-  if (v.includes("warning") || v.includes("pending")) return "bg-orange-500";
-  if (v.includes("delivered") || v.includes("read")) return "bg-green-600";
-  if (v.includes("info")) return "bg-brand-600";
-  return "bg-gray-600";
-}
-
 function csvSafe(value: unknown) {
   const text = String(value ?? "");
   return `"${text.replace(/"/g, '""')}"`;
@@ -50,12 +54,17 @@ function downloadCsv(filename: string, rows: unknown[][]) {
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
+
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+function dateText(value?: string | null) {
+  return value ? new Date(value).toLocaleString() : "-";
 }
 
 export default function NotificationsCenter() {
@@ -71,7 +80,9 @@ export default function NotificationsCenter() {
     try {
       setLoading(true);
       setError(null);
-      setData(await NotificationsApi.summary());
+
+      const result = await NotificationsApi.summary();
+      setData(result);
     } catch {
       setError("Failed to load notifications.");
     } finally {
@@ -79,73 +90,290 @@ export default function NotificationsCenter() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    void load();
+  }, []);
 
   const filtered = useMemo(() => {
     if (!data) return [];
+
     const q = query.trim().toLowerCase();
-    return data.notifications.filter((n) => {
-      const matchesQuery = !q || [n.title, n.message, n.category, n.recipient, n.status].some((x) => String(x ?? "").toLowerCase().includes(q));
-      const matchesCategory = category === "All" || n.category === category;
-      const matchesSeverity = severity === "All" || n.severity === severity;
+
+    return data.notifications.filter((notification) => {
+      const matchesQuery =
+        !q ||
+        [notification.title, notification.message, notification.category, notification.recipient, notification.status].some((value) =>
+          String(value ?? "").toLowerCase().includes(q)
+        );
+      const matchesCategory = category === "All" || notification.category === category;
+      const matchesSeverity = severity === "All" || notification.severity === severity;
+
       return matchesQuery && matchesCategory && matchesSeverity;
     });
   }, [data, query, category, severity]);
 
-  const exportNotifications = () => downloadCsv("cybershield360-notifications.csv", [
-    ["Title", "Category", "Severity", "Status", "Channel", "Recipient", "Message", "Error", "Created UTC"],
-    ...filtered.map((n) => [n.title, n.category, n.severity, n.status, n.channel ?? "", n.recipient ?? "", n.message, n.error ?? "", n.createdUtc]),
-  ]);
+  const visibleNotifications = useMemo(() => {
+    if (tab === "Critical") {
+      return filtered.filter((item) => item.severity === "Critical");
+    }
 
-  if (error) return <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-600 dark:border-red-900 dark:bg-red-950">{error}</div>;
-  if (loading || !data) return <div className="card text-sm text-slate-500">Loading notifications...</div>;
+    if (tab === "Delivery") {
+      return filtered.filter(
+        (item) => item.channel || item.recipient || item.sentAtUtc || item.error
+      );
+    }
 
+    return filtered;
+  }, [filtered, tab]);
+
+  const exportNotifications = () =>
+    downloadCsv("cybershield360-notifications.csv", [
+      ["Title", "Category", "Severity", "Status", "Channel", "Recipient", "Message", "Error", "Created UTC"],
+      ...visibleNotifications.map((notification) => [
+        notification.title,
+        notification.category,
+        notification.severity,
+        notification.status,
+        notification.channel ?? "",
+        notification.recipient ?? "",
+        notification.message,
+        notification.error ?? "",
+        notification.createdUtc,
+      ]),
+    ]);
+
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-semibold text-red-300">
+        {error}
+      </div>
+    );
+  }
+
+  if (loading || !data) {
+    return <div className="card text-sm text-slate-500">Loading notifications...</div>;
+  }
 
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div><h1 className="text-2xl font-black tracking-tight">Notifications</h1><p className="section-subtitle">Email delivery, system alerts, security reminders, and owner notifications.</p></div>
-        <div className="flex gap-2"><button onClick={load} className="btn-ghost">Refresh</button><button onClick={exportNotifications} className="btn-primary">Export CSV</button></div>
+        <div>
+          <h1 className="text-2xl font-black tracking-tight">Notifications</h1>
+          <p className="section-subtitle">
+            Email delivery, system alerts, security reminders, and owner notifications.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={load} disabled={loading} className="btn-ghost">
+            {loading ? "Refreshing..." : "Refresh"}
+          </button>
+          <button type="button" onClick={exportNotifications} className="btn-primary">
+            Export CSV
+          </button>
+        </div>
       </header>
 
-      <ModuleTabs tabs={TABS.map((t) => ({ key: t, label: t }))} activeKey={tab} onChange={setTab} />
+      <ModuleTabs
+        tabs={TABS.map((item) => ({ key: item, label: item }))}
+        activeKey={tab}
+        onChange={setTab}
+      />
 
       {tab === "Overview" && (
-        <>
+        <div className="space-y-6">
           <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <div className="metric-card"><div className="section-subtitle">Total</div><div className="text-3xl font-black">{data.totalNotifications}</div></div>
-            <div className="metric-card"><div className="section-subtitle">Pending / Unread</div><div className="text-3xl font-black text-orange-500">{data.unreadNotifications}</div></div>
-            <div className="metric-card"><div className="section-subtitle">Critical</div><div className="text-3xl font-black text-red-600">{data.criticalNotifications}</div></div>
-            <div className="metric-card"><div className="section-subtitle">Open Risks</div><div className="text-3xl font-black text-brand-500">{data.openRisks ?? 0}</div></div>
-            <div className="metric-card"><div className="section-subtitle">Open Vulns</div><div className="text-3xl font-black text-purple-500">{data.openVulnerabilities ?? 0}</div></div>
+            <CyberStatCard label="Total" value={data.totalNotifications} hint="All notifications" tone="brand" />
+            <CyberStatCard label="Pending / Unread" value={data.unreadNotifications} hint="Needs attention" tone="orange" />
+            <CyberStatCard label="Critical" value={data.criticalNotifications} hint="Critical alerts" tone="red" />
+            <CyberStatCard label="Open Risks" value={data.openRisks ?? 0} hint="Risk notifications" tone="brand" />
+            <CyberStatCard label="Open Vulns" value={data.openVulnerabilities ?? 0} hint="Finding notifications" tone="orange" />
           </section>
-          <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <div className="card"><h2 className="section-title mb-4">Delivery Recommendations</h2><div className="space-y-3">{data.recommendations.map((r) => <div key={r} className="rounded-2xl border border-slate-200 p-4 font-medium dark:border-slate-800">{r}</div>)}</div></div>
-            <div className="card"><h2 className="section-title mb-4">Categories</h2><div className="space-y-3">{data.categories.map((c) => <div key={c.name} className="flex items-center justify-between rounded-2xl border border-slate-200 p-3 dark:border-slate-800"><span className="font-semibold">{c.name}</span><span className="badge bg-brand-600">{c.count}</span></div>)}</div></div>
+
+          <section className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <CyberChartCard
+                title="Notification Categories"
+                description="Current notification volume by category."
+                insight={
+                  data.criticalNotifications > 0
+                    ? `${data.criticalNotifications} critical notification(s) should be reviewed first.`
+                    : "No critical notifications are currently reported."
+                }
+              >
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={data.categories}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#33415555" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                    <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                    <Tooltip
+                      cursor={{ fill: "rgba(20, 184, 166, 0.08)" }}
+                      contentStyle={{
+                        background: "#020617",
+                        border: "1px solid rgba(255, 255, 255, 0.12)",
+                        borderRadius: "14px",
+                        color: "#e2e8f0",
+                        boxShadow: "0 18px 40px rgba(0, 0, 0, 0.35)",
+                      }}
+                      labelStyle={{ color: "#99f6e4", fontWeight: 800 }}
+                      itemStyle={{ color: "#e2e8f0" }}
+                    />
+                    <Bar dataKey="count" radius={[10, 10, 0, 0]} fill="#10B5A6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CyberChartCard>
+            </div>
+
+            <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+              <div className="mb-5 text-center">
+                <h2 className="text-lg font-black tracking-tight text-white">
+                  Delivery Recommendations
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-400">
+                  Improve routing, ownership, and delivery confidence.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {data.recommendations.length === 0 ? (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm text-slate-500">
+                    No recommendations available.
+                  </div>
+                ) : (
+                  data.recommendations.map((item, index) => (
+                    <div
+                      key={`${item}-${index}`}
+                      className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center"
+                    >
+                      <div className="text-xs font-black uppercase tracking-widest text-brand-300">
+                        Action #{index + 1}
+                      </div>
+                      <div className="mt-2 text-sm font-medium leading-6 text-slate-300">
+                        {item}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
           </section>
-        </>
+        </div>
       )}
 
       {(tab === "Inbox" || tab === "Critical" || tab === "Delivery") && (
-        <div className="card">
-          <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div><h2 className="section-title">{tab === "Inbox" ? "Notification Inbox" : tab === "Critical" ? "Critical Alerts" : "Delivery Health"}</h2><p className="section-subtitle">SMTP delivery depends on backend configuration and verified sender credentials.</p></div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3"><input className="input" placeholder="Search notifications..." value={query} onChange={(e) => setQuery(e.target.value)} /><select className="input" value={category} onChange={(e) => setCategory(e.target.value)}><option>All</option>{data.categories.map((c) => <option key={c.name}>{c.name}</option>)}</select><select className="input" value={severity} onChange={(e) => setSeverity(e.target.value)}><option>All</option><option>Critical</option><option>Warning</option><option>Info</option></select></div>
-          </div>
-          <div className="space-y-3">
-            {filtered.filter((n) => tab === "Inbox" || (tab === "Critical" ? n.severity === "Critical" : n.status !== "Delivered" || n.error)).map((n) => (
-              <div key={n.id} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
-                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between"><div><div className="font-bold">{n.title}</div><div className="mt-1 text-sm text-slate-500">{n.message}</div><div className="mt-2 text-xs text-slate-500">To: {n.recipient ?? "N/A"} • {new Date(n.createdUtc).toLocaleString()}</div>{n.error && <div className="mt-2 text-xs text-red-500">{n.error}</div>}</div><div className="flex flex-wrap gap-2"><span className={`badge ${badgeColor(n.severity)}`}>{n.severity}</span><span className={`badge ${badgeColor(n.status)}`}>{n.status}</span></div></div>
-              </div>
-            ))}
-            {filtered.length === 0 && <div className="empty-state"><div className="text-3xl">🔔</div><div className="mt-2 font-bold">No notifications match your filters.</div></div>}
-          </div>
+        <div className="space-y-6">
+          <section className="card grid grid-cols-1 gap-3 xl:grid-cols-[1fr_220px_220px]">
+            <input
+              className="input"
+              placeholder="Search notifications..."
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            <select className="input" value={category} onChange={(event) => setCategory(event.target.value)}>
+              <option>All</option>
+              {data.categories.map((item) => (
+                <option key={item.name}>{item.name}</option>
+              ))}
+            </select>
+            <select className="input" value={severity} onChange={(event) => setSeverity(event.target.value)}>
+              <option>All</option>
+              <option>Critical</option>
+              <option>Warning</option>
+              <option>Info</option>
+            </select>
+          </section>
+
+          <CyberTable
+            title={tab === "Inbox" ? "Notification Inbox" : tab === "Critical" ? "Critical Alerts" : "Delivery Health"}
+            description="SMTP delivery depends on backend configuration and verified sender credentials."
+            data={visibleNotifications}
+            emptyText="No notifications match this view."
+            columns={[
+              {
+                key: "notification",
+                label: "Notification",
+                render: (notification) => (
+                  <div className="mx-auto min-w-80 text-center">
+                    <div className="font-semibold leading-6 text-white">{notification.title}</div>
+                    <div className="mt-1 text-xs text-slate-500">{notification.category}</div>
+                  </div>
+                ),
+              },
+              {
+                key: "severity",
+                label: "Severity",
+                render: (notification) => <CyberStatusBadge value={notification.severity} />,
+              },
+              {
+                key: "status",
+                label: "Status",
+                render: (notification) => <CyberStatusBadge value={notification.status} />,
+              },
+              {
+                key: "delivery",
+                label: "Delivery",
+                render: (notification) => (
+                  <div className="mx-auto min-w-56 text-center text-sm text-slate-300">
+                    {notification.channel ?? "System"}
+                    <br />
+                    {notification.recipient ?? "No recipient"}
+                  </div>
+                ),
+              },
+              {
+                key: "message",
+                label: "Message",
+                render: (notification) => (
+                  <div className="mx-auto min-w-96 text-center text-sm leading-6 text-slate-400">
+                    {notification.message}
+                    {notification.error ? (
+                      <div className="mt-2 text-red-300">Error: {notification.error}</div>
+                    ) : null}
+                  </div>
+                ),
+              },
+              {
+                key: "created",
+                label: "Created",
+                render: (notification) => (
+                  <div className="whitespace-nowrap text-slate-400">
+                    {dateText(notification.createdUtc)}
+                  </div>
+                ),
+              },
+            ]}
+          />
         </div>
       )}
 
       {tab === "Settings" && (
-        <div className="card"><h2 className="section-title mb-2">Notification Settings</h2><p className="section-subtitle">Configure SMTP in backend settings/environment variables. The UI reflects delivery logs from the database.</p><div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">{[["Email SMTP", "Use Gmail App Password, SendGrid, Resend, or another SMTP provider."], ["Risk Reminders", "Notify owners for overdue risks and vulnerabilities."], ["Audit Evidence", "Keep delivery logs for customer support and audit evidence."]].map(([a,b]) => <div key={a} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800"><div className="font-bold">{a}</div><div className="text-sm text-slate-500">{b}</div></div>)}</div></div>
+        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+          <div className="mb-5 text-center">
+            <h2 className="text-lg font-black tracking-tight text-white">
+              Notification Settings
+            </h2>
+            <p className="mx-auto mt-1 max-w-3xl text-sm leading-6 text-slate-400">
+              Before production, verify SMTP sender domain, recipient routing, and alert owners.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {["SMTP verified", "Owners assigned", "Critical routing enabled"].map((item) => (
+              <div
+                key={item}
+                className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center"
+              >
+                <CyberStatusBadge value="Recommended" />
+                <div className="mt-3 font-semibold text-white">{item}</div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
+
+      <div className="text-xs text-slate-400">
+        Generated: {new Date(data.generatedUtc).toLocaleString()}
+      </div>
     </div>
   );
 }
