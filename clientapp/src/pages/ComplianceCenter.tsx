@@ -1,7 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { ComplianceApi } from "../api/endpoints";
-
+import CyberChartCard from "../components/CyberChartCard";
+import CyberStatCard from "../components/CyberStatCard";
+import CyberStatusBadge from "../components/CyberStatusBadge";
+import CyberTable from "../components/CyberTable";
 import ModuleTabs from "../components/ModuleTabs";
+
 type FrameworkScore = {
   name: string;
   score: number;
@@ -54,28 +67,30 @@ type ComplianceSummary = {
   };
 };
 
-const TABS = ["Overview", "Frameworks", "Controls", "Assets", "Recommendations", "Export"];
+const TABS = [
+  "Overview",
+  "Frameworks",
+  "Controls",
+  "Assets",
+  "Recommendations",
+  "Export",
+];
 
-function scoreTone(score: number) {
-  if (score >= 85) return "text-emerald-500";
-  if (score >= 70) return "text-yellow-500";
-  if (score >= 50) return "text-orange-500";
-  return "text-red-500";
+function scoreTone(score: number): "green" | "orange" | "red" {
+  if (score >= 80) return "green";
+  if (score >= 60) return "orange";
+  return "red";
 }
 
-function scoreBar(score: number) {
-  if (score >= 85) return "bg-emerald-500";
-  if (score >= 70) return "bg-yellow-500";
-  if (score >= 50) return "bg-orange-500";
-  return "bg-red-500";
+function scoreStatus(score: number) {
+  if (score >= 85) return "Ready";
+  if (score >= 70) return "Managed";
+  if (score >= 50) return "Needs Review";
+  return "High Risk";
 }
 
-function severityBadge(severity: string) {
-  const s = severity.toLowerCase();
-  if (s.includes("critical")) return "bg-red-700";
-  if (s.includes("high")) return "bg-red-600";
-  if (s.includes("medium")) return "bg-orange-500";
-  return "bg-yellow-500";
+function dateText(value?: string | null) {
+  return value ? new Date(value).toLocaleString() : "-";
 }
 
 function csvSafe(value: unknown) {
@@ -88,12 +103,23 @@ function downloadCsv(filename: string, rows: unknown[][]) {
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
+
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+function controlPriority(control: FailedControl) {
+  const severity = control.severity.toLowerCase();
+
+  if (severity.includes("critical")) return "Immediate";
+  if (severity.includes("high")) return "Priority";
+  if (severity.includes("medium")) return "Planned";
+
+  return "Monitor";
 }
 
 export default function ComplianceCenter() {
@@ -107,6 +133,7 @@ export default function ComplianceCenter() {
     try {
       setLoading(true);
       setError(null);
+
       const result = await ComplianceApi.summary();
       setData(result);
     } catch {
@@ -117,16 +144,25 @@ export default function ComplianceCenter() {
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
   const filteredControls = useMemo(() => {
     if (!data) return [];
+
     const q = query.trim().toLowerCase();
+
     if (!q) return data.failedControls;
 
     return data.failedControls.filter((item) =>
-      [item.domain, item.checkKey, item.title, item.framework, item.control, item.severity]
+      [
+        item.domain,
+        item.checkKey,
+        item.title,
+        item.framework,
+        item.control,
+        item.severity,
+      ]
         .join(" ")
         .toLowerCase()
         .includes(q)
@@ -137,15 +173,23 @@ export default function ComplianceCenter() {
     if (!data) return;
 
     downloadCsv("cybershield360-compliance-controls.csv", [
-      ["Domain", "Framework", "Control", "Check Key", "Title", "Severity", "Recommendation"],
-      ...data.failedControls.map((c) => [
-        c.domain,
-        c.framework,
-        c.control,
-        c.checkKey,
-        c.title,
-        c.severity,
-        c.recommendation,
+      [
+        "Domain",
+        "Framework",
+        "Control",
+        "Check Key",
+        "Title",
+        "Severity",
+        "Recommendation",
+      ],
+      ...data.failedControls.map((control) => [
+        control.domain,
+        control.framework,
+        control.control,
+        control.checkKey,
+        control.title,
+        control.severity,
+        control.recommendation,
       ]),
     ]);
   };
@@ -155,28 +199,40 @@ export default function ComplianceCenter() {
 
     downloadCsv("cybershield360-compliance-frameworks.csv", [
       ["Framework", "Score", "Status"],
-      ...data.frameworks.map((f) => [f.name, f.score, f.status]),
+      ...data.frameworks.map((framework) => [
+        framework.name,
+        framework.score,
+        framework.status,
+      ]),
     ]);
   };
 
   if (error) {
     return (
-      <div className="card border-red-500/30 bg-red-500/10 text-red-500">
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-semibold text-red-300">
         {error}
       </div>
     );
   }
 
   if (loading || !data) {
-    return <div className="card text-sm text-slate-500">Loading compliance center...</div>;
+    return (
+      <div className="card text-sm text-slate-500">
+        Loading compliance center...
+      </div>
+    );
   }
 
   const scannedAssets = data.scannedAssets ?? data.domains.length;
-  const unscanned = data.dataQuality?.assetsWithoutFullPostureScan ?? Math.max(0, data.assetCount - scannedAssets);
+  const unscanned =
+    data.dataQuality?.assetsWithoutFullPostureScan ??
+    Math.max(0, data.assetCount - scannedAssets);
+
+  const highCritical = data.highFailed + data.criticalFailed;
 
   return (
-    <div>
-      <header className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+    <div className="space-y-6">
+      <header className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <div className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">
             Governance Risk Compliance
@@ -184,238 +240,414 @@ export default function ComplianceCenter() {
           <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
             Compliance Center
           </h1>
-          <p className="mt-2 max-w-3xl text-sm text-slate-500 dark:text-slate-400">
-            Real-time compliance readiness calculated from latest Full Posture scans, security controls, and tenant evidence.
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+            Compliance readiness calculated from latest Full Posture scans,
+            security controls, and tenant evidence.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <button onClick={load} disabled={loading} className="btn-ghost disabled:opacity-50">
+          <button
+            type="button"
+            onClick={load}
+            disabled={loading}
+            className="btn-ghost disabled:opacity-50"
+          >
             {loading ? "Refreshing..." : "Refresh"}
           </button>
-          <button onClick={exportControls} className="btn-primary">
+
+          <button type="button" onClick={exportControls} className="btn-primary">
             Export Controls
           </button>
         </div>
       </header>
 
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <div className="card">
-          <div className="text-xs text-slate-500">Overall Readiness</div>
-          <div className={`mt-1 text-4xl font-black ${scoreTone(data.overallScore)}`}>{data.overallScore}%</div>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-            <div className={`h-2 rounded-full ${scoreBar(data.overallScore)}`} style={{ width: `${data.overallScore}%` }} />
-          </div>
-        </div>
-        <div className="card">
-          <div className="text-xs text-slate-500">Assets in Scope</div>
-          <div className="mt-1 text-4xl font-black">{data.assetCount}</div>
-          <div className="mt-2 text-xs text-slate-500">{scannedAssets} with full scans</div>
-        </div>
-        <div className="card">
-          <div className="text-xs text-slate-500">Controls Tested</div>
-          <div className="mt-1 text-4xl font-black">{data.totalControls}</div>
-          <div className="mt-2 text-xs text-emerald-500">{data.passedControls} passed</div>
-        </div>
-        <div className="card">
-          <div className="text-xs text-slate-500">Rule Failures</div>
-          <div className="mt-1 text-4xl font-black text-red-500">{data.failedControlsCount}</div>
-          <div className="mt-2 text-xs text-slate-500">Require review</div>
-        </div>
-        <div className="card">
-          <div className="text-xs text-slate-500">High/Critical</div>
-          <div className="mt-1 text-4xl font-black text-orange-500">{data.highFailed + data.criticalFailed}</div>
-          <div className="mt-2 text-xs text-slate-500">Priority controls</div>
-        </div>
-      </div>
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <CyberStatCard
+          label="Overall Readiness"
+          value={`${data.overallScore}%`}
+          hint={scoreStatus(data.overallScore)}
+          tone={scoreTone(data.overallScore)}
+        />
+        <CyberStatCard
+          label="Assets in Scope"
+          value={data.assetCount}
+          hint={`${scannedAssets} with full scans`}
+          tone="brand"
+        />
+        <CyberStatCard
+          label="Controls Tested"
+          value={data.totalControls}
+          hint={`${data.passedControls} passed`}
+          tone="green"
+        />
+        <CyberStatCard
+          label="Rule Failures"
+          value={data.failedControlsCount}
+          hint="Require review"
+          tone={data.failedControlsCount > 0 ? "red" : "green"}
+        />
+        <CyberStatCard
+          label="High/Critical"
+          value={highCritical}
+          hint="Priority controls"
+          tone={highCritical > 0 ? "orange" : "green"}
+        />
+      </section>
 
       {unscanned > 0 && (
-        <div className="mb-6 rounded-2xl border border-orange-500/30 bg-orange-500/10 p-4 text-sm text-orange-700 dark:text-orange-300">
-          {unscanned} asset(s) do not have a completed Full Posture scan yet. Run Full Posture scans to improve compliance confidence.
+        <div className="rounded-2xl border border-orange-500/30 bg-orange-500/10 p-4 text-center text-sm font-medium text-orange-300">
+          {unscanned} asset(s) do not have a completed Full Posture scan yet.
+          Run Full Posture scans to improve compliance confidence.
         </div>
       )}
 
-      <ModuleTabs tabs={TABS.map((t) => ({ key: t, label: t }))} activeKey={tab} onChange={setTab} />
+      <ModuleTabs
+        tabs={TABS.map((t) => ({ key: t, label: t }))}
+        activeKey={tab}
+        onChange={setTab}
+      />
 
       {tab === "Overview" && (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-          <div className="card xl:col-span-2">
-            <h2 className="mb-4 font-bold">Framework Readiness</h2>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {data.frameworks.map((f) => (
-                <div key={f.name} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="font-bold">{f.name}</div>
-                    <span className={`text-sm font-bold ${scoreTone(f.score)}`}>{f.status}</span>
+        <div className="space-y-6">
+          <section className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+            <div className="xl:col-span-2">
+              <CyberChartCard
+                title="Control Category Readiness"
+                description="Readiness score by compliance control category."
+                insight={
+                  data.categories.length > 0
+                    ? "Use the lowest category scores to prioritize remediation planning."
+                    : "Run Full Posture scans to populate control category readiness."
+                }
+              >
+                {data.categories.length === 0 ? (
+                  <div className="flex h-[250px] items-center justify-center text-sm text-slate-500">
+                    No category readiness data available yet.
                   </div>
-                  <div className="mt-3 flex items-end gap-2">
-                    <span className="text-3xl font-black">{f.score}%</span>
-                    <span className="pb-1 text-xs text-slate-500">readiness</span>
-                  </div>
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-                    <div className={`h-2 rounded-full ${scoreBar(f.score)}`} style={{ width: `${f.score}%` }} />
-                  </div>
-                </div>
-              ))}
+                ) : (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={data.categories}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#33415555" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                      <Tooltip
+                        cursor={{ fill: "rgba(20, 184, 166, 0.08)" }}
+                        contentStyle={{
+                          background: "#020617",
+                          border: "1px solid rgba(255, 255, 255, 0.12)",
+                          borderRadius: "14px",
+                          color: "#e2e8f0",
+                          boxShadow: "0 18px 40px rgba(0, 0, 0, 0.35)",
+                        }}
+                        labelStyle={{
+                          color: "#99f6e4",
+                          fontWeight: 800,
+                        }}
+                        itemStyle={{
+                          color: "#e2e8f0",
+                        }}
+                      />
+                      <Bar dataKey="score" radius={[10, 10, 0, 0]} fill="#10B5A6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CyberChartCard>
             </div>
-          </div>
 
-          <div className="card">
-            <h2 className="mb-4 font-bold">Control Categories</h2>
-            <div className="space-y-4">
-              {data.categories.map((c) => (
-                <div key={c.name}>
-                  <div className="mb-1 flex justify-between text-sm">
-                    <span>{c.name}</span>
-                    <span className={scoreTone(c.score)}>{c.score}%</span>
+            <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+              <div className="mb-5 text-center">
+                <h2 className="text-lg font-black tracking-tight text-white">
+                  Framework Readiness
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-400">
+                  Current readiness across mapped frameworks.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {data.frameworks.length === 0 ? (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm text-slate-500">
+                    No framework readiness data available.
                   </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-                    <div className={`h-2 rounded-full ${scoreBar(c.score)}`} style={{ width: `${c.score}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+                ) : (
+                  data.frameworks.map((framework) => (
+                    <div
+                      key={framework.name}
+                      className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center"
+                    >
+                      <div className="font-black text-white">{framework.name}</div>
+                      <div className="mt-2 text-3xl font-black text-white">
+                        {framework.score}%
+                      </div>
+                      <div className="mt-3 flex justify-center">
+                        <CyberStatusBadge value={framework.status} />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
+          </section>
         </div>
       )}
 
       {tab === "Frameworks" && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {data.frameworks.map((f) => (
-            <div key={f.name} className="card">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-lg font-black">{f.name}</div>
-                  <div className="text-sm text-slate-500">Readiness derived from mapped scan control families.</div>
+        <CyberTable
+          title="Framework Readiness"
+          description="Framework-level readiness derived from mapped scan control families."
+          data={data.frameworks}
+          emptyText="No framework readiness data available."
+          columns={[
+            {
+              key: "framework",
+              label: "Framework",
+              render: (framework) => (
+                <div className="mx-auto min-w-64 text-center font-semibold text-white">
+                  {framework.name}
                 </div>
-                <span className={`badge ${f.score >= 85 ? "bg-emerald-600" : f.score >= 70 ? "bg-yellow-500" : f.score >= 50 ? "bg-orange-500" : "bg-red-600"}`}>
-                  {f.status}
-                </span>
-              </div>
-              <div className="mt-5 text-5xl font-black">{f.score}%</div>
-              <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-                <div className={`h-3 rounded-full ${scoreBar(f.score)}`} style={{ width: `${f.score}%` }} />
-              </div>
-            </div>
-          ))}
-        </div>
+              ),
+            },
+            {
+              key: "score",
+              label: "Score",
+              render: (framework) => (
+                <div className="text-center">
+                  <div className="text-2xl font-black text-white">
+                    {framework.score}%
+                  </div>
+                  <div className="mx-auto mt-3 h-2 w-28 overflow-hidden rounded-full bg-slate-800">
+                    <div
+                      className="h-full rounded-full bg-brand-500"
+                      style={{ width: `${framework.score}%` }}
+                    />
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: "status",
+              label: "Status",
+              render: (framework) => <CyberStatusBadge value={framework.status} />,
+            },
+            {
+              key: "readiness",
+              label: "Readiness",
+              render: (framework) => <CyberStatusBadge value={scoreStatus(framework.score)} />,
+            },
+          ]}
+        />
       )}
 
       {tab === "Controls" && (
-        <div className="card">
-          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h2 className="font-bold">Priority Controls Requiring Review</h2>
-              <p className="text-xs text-slate-500">Failed controls are shown first to support remediation and audit planning.</p>
-            </div>
+        <div className="space-y-6">
+          <section className="card">
             <input
-              className="input max-w-md"
+              className="input"
               placeholder="Search domain, control, framework, severity..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-          </div>
+          </section>
 
-          {filteredControls.length === 0 ? (
-            <div className="rounded-2xl border border-slate-200 p-8 text-center text-sm text-slate-500 dark:border-slate-800">
-              No failed compliance controls matched your filter.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredControls.map((item, index) => (
-                <div key={`${item.domain}-${item.checkKey}-${index}`} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <div className="font-bold">{item.control}</div>
-                      <div className="mt-1 break-words text-sm text-slate-500">
-                        {item.domain} · {item.framework} · {item.checkKey}
-                      </div>
+          <CyberTable
+            title="Priority Controls Requiring Review"
+            description="Failed controls are shown first to support remediation and audit planning."
+            data={filteredControls}
+            emptyText="No failed compliance controls matched your filter."
+            columns={[
+              {
+                key: "control",
+                label: "Control",
+                render: (item) => (
+                  <div className="mx-auto min-w-72 text-center">
+                    <div className="font-semibold leading-6 text-white">
+                      {item.control}
                     </div>
-                    <span className={`badge ${severityBadge(item.severity)}`}>{item.severity}</span>
+                    <div className="mt-1 text-xs text-slate-500">
+                      {item.framework} · {item.checkKey}
+                    </div>
                   </div>
-                  <div className="mt-3 text-sm">{item.title}</div>
-                  <div className="mt-3 rounded-xl bg-slate-100 p-3 text-sm text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                ),
+              },
+              {
+                key: "domain",
+                label: "Domain",
+                render: (item) => (
+                  <div className="mx-auto min-w-56 break-all text-center text-slate-300">
+                    {item.domain}
+                  </div>
+                ),
+              },
+              {
+                key: "severity",
+                label: "Severity",
+                render: (item) => <CyberStatusBadge value={item.severity} />,
+              },
+              {
+                key: "issue",
+                label: "Issue",
+                render: (item) => (
+                  <div className="mx-auto min-w-80 text-center text-sm leading-6 text-slate-400">
+                    {item.title}
+                  </div>
+                ),
+              },
+              {
+                key: "recommendation",
+                label: "Recommended Fix",
+                render: (item) => (
+                  <div className="mx-auto min-w-96 text-center text-sm leading-6 text-slate-400">
                     {item.recommendation}
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ),
+              },
+              {
+                key: "priority",
+                label: "Priority",
+                render: (item) => <CyberStatusBadge value={controlPriority(item)} />,
+              },
+            ]}
+          />
         </div>
       )}
 
       {tab === "Assets" && (
-        <div className="card">
-          <h2 className="mb-4 font-bold">Asset Compliance Ranking</h2>
-          {data.domains.length === 0 ? (
-            <div className="text-sm text-slate-500">No completed Full Posture scans found yet.</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-left text-slate-500 dark:border-slate-800">
-                    <th className="py-3">Domain</th>
-                    <th>Score</th>
-                    <th>Grade</th>
-                    <th>Checks</th>
-                    <th>Failed</th>
-                    <th>Last Full Scan</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.domains.map((d) => (
-                    <tr key={d.domain} className="border-b border-slate-100 dark:border-slate-800">
-                      <td className="py-3 font-semibold">{d.domain}</td>
-                      <td className={scoreTone(d.score)}>{d.score}%</td>
-                      <td>{d.grade}</td>
-                      <td>{d.totalChecks ?? "-"}</td>
-                      <td className="text-red-500">{d.failedChecks ?? "-"}</td>
-                      <td className="text-slate-500">{d.completedUtc ? new Date(d.completedUtc).toLocaleString() : "-"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        <CyberTable
+          title="Asset Compliance Ranking"
+          description="Asset-level compliance score, grade, check count, and latest Full Posture evidence."
+          data={data.domains}
+          emptyText="No completed Full Posture scans found yet."
+          columns={[
+            {
+              key: "domain",
+              label: "Domain",
+              render: (domain) => (
+                <div className="mx-auto min-w-64 break-all text-center font-semibold text-white">
+                  {domain.domain}
+                </div>
+              ),
+            },
+            {
+              key: "score",
+              label: "Score",
+              render: (domain) => (
+                <div className="text-center">
+                  <div className="text-2xl font-black text-white">{domain.score}%</div>
+                  <div className="mt-2">
+                    <CyberStatusBadge value={scoreStatus(domain.score)} />
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: "grade",
+              label: "Grade",
+              render: (domain) => <CyberStatusBadge value={`Grade ${domain.grade}`} />,
+            },
+            {
+              key: "checks",
+              label: "Checks",
+              render: (domain) => (
+                <div className="font-black text-white">
+                  {domain.totalChecks ?? "-"}
+                </div>
+              ),
+            },
+            {
+              key: "failed",
+              label: "Failed",
+              render: (domain) => (
+                <div className="font-black text-red-300">
+                  {domain.failedChecks ?? "-"}
+                </div>
+              ),
+            },
+            {
+              key: "last",
+              label: "Last Full Scan",
+              render: (domain) => (
+                <div className="whitespace-nowrap text-slate-400">
+                  {dateText(domain.completedUtc)}
+                </div>
+              ),
+            },
+          ]}
+        />
       )}
 
       {tab === "Recommendations" && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {data.recommendations.length === 0 ? (
-            <div className="card text-sm text-slate-500">No compliance recommendations available.</div>
-          ) : (
-            data.recommendations.map((item, index) => (
-              <div key={index} className="card">
-                <div className="text-xs font-semibold uppercase tracking-widest text-brand-500">Priority #{index + 1}</div>
-                <div className="mt-2 font-semibold">{item}</div>
+        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+          <div className="mb-5 text-center">
+            <h2 className="text-lg font-black tracking-tight text-white">
+              Compliance Recommendations
+            </h2>
+            <p className="mx-auto mt-1 max-w-3xl text-sm leading-6 text-slate-400">
+              Priority actions to improve audit readiness and reduce failed controls.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {data.recommendations.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center text-sm text-slate-500">
+                No compliance recommendations available.
               </div>
-            ))
-          )}
-        </div>
+            ) : (
+              data.recommendations.map((item, index) => (
+                <div
+                  key={`${item}-${index}`}
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center"
+                >
+                  <div className="text-xs font-black uppercase tracking-widest text-brand-300">
+                    Priority #{index + 1}
+                  </div>
+                  <div className="mt-3 text-sm font-semibold leading-6 text-slate-300">
+                    {item}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
       )}
 
       {tab === "Export" && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="card">
-            <h2 className="font-bold">Compliance Controls CSV</h2>
-            <p className="mt-2 text-sm text-slate-500">Export failed controls with framework mappings and remediation recommendations.</p>
-            <button onClick={exportControls} className="btn-primary mt-4">Download Controls CSV</button>
-          </div>
-          <div className="card">
-            <h2 className="font-bold">Framework Readiness CSV</h2>
-            <p className="mt-2 text-sm text-slate-500">Export framework readiness percentages and status labels.</p>
-            <button onClick={exportFrameworks} className="btn-primary mt-4">Download Frameworks CSV</button>
-          </div>
-          <div className="card md:col-span-2">
-            <h2 className="font-bold">Data Source</h2>
-            <p className="mt-2 text-sm text-slate-500">{data.dataQuality?.source ?? "Latest tenant security records"}</p>
-            <p className="mt-1 text-xs text-slate-400">{data.dataQuality?.note}</p>
-          </div>
+          <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 text-center shadow-2xl shadow-black/10">
+            <h2 className="font-black text-white">Compliance Controls CSV</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Export failed controls with framework mappings and remediation recommendations.
+            </p>
+            <button type="button" onClick={exportControls} className="btn-primary mt-4">
+              Download Controls CSV
+            </button>
+          </section>
+
+          <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 text-center shadow-2xl shadow-black/10">
+            <h2 className="font-black text-white">Framework Readiness CSV</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Export framework readiness percentages and status labels.
+            </p>
+            <button type="button" onClick={exportFrameworks} className="btn-primary mt-4">
+              Download Frameworks CSV
+            </button>
+          </section>
+
+          <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 text-center shadow-2xl shadow-black/10 md:col-span-2">
+            <h2 className="font-black text-white">Data Source</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              {data.dataQuality?.source ?? "Latest tenant security records"}
+            </p>
+            {data.dataQuality?.note && (
+              <p className="mt-1 text-xs text-slate-500">{data.dataQuality.note}</p>
+            )}
+          </section>
         </div>
       )}
 
-      <div className="mt-6 text-xs text-slate-400">Generated: {new Date(data.generatedUtc).toLocaleString()}</div>
+      <div className="text-xs text-slate-400">
+        Generated: {new Date(data.generatedUtc).toLocaleString()}
+      </div>
     </div>
   );
 }
