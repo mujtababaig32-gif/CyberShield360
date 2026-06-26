@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { AssetApi, VulnApi } from "../api/endpoints";
+import CyberStatCard from "../components/CyberStatCard";
+import CyberStatusBadge from "../components/CyberStatusBadge";
+import CyberTable from "../components/CyberTable";
 import type { Asset, Vulnerability } from "../types";
-import { SeverityBadge } from "../components/ui";
 
 const STATUSES = ["Open", "InProgress", "Remediated", "Accepted", "FalsePositive"];
 const SEVERITIES = ["Critical", "High", "Medium", "Low", "Info"];
@@ -45,20 +47,15 @@ function statusLabel(value: string | number | undefined) {
   return STATUS_LABELS[String(value ?? "")] ?? String(value ?? "Unknown");
 }
 
-function statusBadge(status: string) {
-  if (status === "Open") return "bg-red-600";
-  if (status === "InProgress") return "bg-orange-500";
-  if (status === "Remediated") return "bg-green-600";
-  if (status === "Accepted") return "bg-gray-600";
-  return "bg-brand-600";
-}
-
-function daysUntil(date?: string) {
+function daysUntil(date?: string | null) {
   if (!date) return "No due date";
+
   const diff = new Date(date).getTime() - Date.now();
   const days = Math.ceil(diff / 86_400_000);
+
   if (days < 0) return `${Math.abs(days)} days overdue`;
   if (days === 0) return "Due today";
+
   return `${days} days left`;
 }
 
@@ -72,12 +69,84 @@ function downloadCsv(filename: string, rows: unknown[][]) {
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
+
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+function businessImpact(vulnerability: Vulnerability) {
+  const severity = severityLabel(vulnerability.severity);
+
+  if (severity === "Critical") {
+    return "Immediate business risk. This issue may expose sensitive systems or create a serious compromise path.";
+  }
+
+  if (severity === "High") {
+    return "High business impact. Attackers may abuse this weakness if it remains unresolved.";
+  }
+
+  if (severity === "Medium") {
+    return "Moderate risk. This should be planned for remediation before it becomes a larger exposure.";
+  }
+
+  if (severity === "Low") {
+    return "Lower risk, but fixing it improves the overall security posture.";
+  }
+
+  return "Informational finding that helps improve visibility and reporting quality.";
+}
+
+function recommendedFix(vulnerability: Vulnerability) {
+  if (vulnerability.description?.trim()) {
+    return vulnerability.description;
+  }
+
+  const title = vulnerability.title.toLowerCase();
+
+  if (title.includes("dmarc")) {
+    return "Add or strengthen the DMARC DNS record and verify it through a rescan.";
+  }
+
+  if (title.includes("spf")) {
+    return "Review SPF records and limit authorized senders to trusted mail providers.";
+  }
+
+  if (title.includes("ssl") || title.includes("tls") || title.includes("certificate")) {
+    return "Update the certificate/TLS configuration and confirm HTTPS is enforced.";
+  }
+
+  if (title.includes("header") || title.includes("hsts")) {
+    return "Add the recommended HTTP security headers and verify them after deployment.";
+  }
+
+  if (title.includes("admin")) {
+    return "Restrict admin access, enable MFA, and harden authentication controls.";
+  }
+
+  return "Review the finding evidence, apply the recommended remediation, and verify with a follow-up scan.";
+}
+
+function trainingRequired(vulnerability: Vulnerability) {
+  const title = vulnerability.title.toLowerCase();
+  const severity = severityLabel(vulnerability.severity);
+
+  if (title.includes("dmarc") || title.includes("spf") || title.includes("email")) {
+    return "Email spoofing awareness";
+  }
+
+  if (title.includes("admin") || title.includes("password") || title.includes("mfa")) {
+    return "Website admin safety";
+  }
+
+  if (severity === "Critical" || severity === "High") {
+    return "Security awareness briefing";
+  }
+
+  return "Not required";
 }
 
 export default function Vulnerabilities() {
@@ -126,15 +195,22 @@ export default function Vulnerabilities() {
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, [statusFilter, severityFilter]);
 
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
+
     if (!q) return items;
 
     return items.filter((v) =>
-      [v.title, v.cveId, v.assignedToUserId, statusLabel(v.status), severityLabel(v.severity)]
+      [
+        v.title,
+        v.cveId,
+        v.assignedToUserId,
+        statusLabel(v.status),
+        severityLabel(v.severity),
+      ]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(q))
     );
@@ -142,12 +218,15 @@ export default function Vulnerabilities() {
 
   const stats = useMemo(() => {
     const open = items.filter((v) => statusValue(v.status) === "Open");
+
     return {
       total: items.length,
       open: open.length,
       critical: open.filter((v) => severityLabel(v.severity) === "Critical").length,
       high: open.filter((v) => severityLabel(v.severity) === "High").length,
-      overdue: open.filter((v) => v.dueDateUtc && new Date(v.dueDateUtc).getTime() < Date.now()).length,
+      overdue: open.filter(
+        (v) => v.dueDateUtc && new Date(v.dueDateUtc).getTime() < Date.now()
+      ).length,
     };
   }, [items]);
 
@@ -155,7 +234,9 @@ export default function Vulnerabilities() {
     try {
       setMsg("Updating vulnerability status...");
       setError(null);
+
       await VulnApi.updateStatus(id, status);
+
       setMsg("Vulnerability status updated.");
       await load();
     } catch {
@@ -163,7 +244,7 @@ export default function Vulnerabilities() {
     }
   };
 
-  const create = async (e: FormEvent) => {
+  const create = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!form.title.trim()) {
@@ -195,6 +276,7 @@ export default function Vulnerabilities() {
         assetId: "",
         dueDateUtc: "",
       });
+
       setShowCreate(false);
       setMsg("Vulnerability created successfully.");
       await load();
@@ -207,13 +289,27 @@ export default function Vulnerabilities() {
 
   const exportCsv = () => {
     downloadCsv("cybershield360-vulnerabilities.csv", [
-      ["Title", "CVE", "CVSS", "Severity", "Status", "Due Date", "Assigned To"],
+      [
+        "Title",
+        "CVE",
+        "CVSS",
+        "Severity",
+        "Status",
+        "Business Impact",
+        "Recommended Fix",
+        "Training Required",
+        "Due Date",
+        "Assigned To",
+      ],
       ...filteredItems.map((v) => [
         v.title,
         v.cveId ?? "",
         v.cvssScore ?? "",
         severityLabel(v.severity),
         statusLabel(v.status),
+        businessImpact(v),
+        recommendedFix(v),
+        trainingRequired(v),
         v.dueDateUtc ?? "",
         v.assignedToUserId ?? "",
       ]),
@@ -221,85 +317,152 @@ export default function Vulnerabilities() {
   };
 
   return (
-    <div>
-      <header className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-6">
+    <div className="space-y-6">
+      <header className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Vulnerabilities</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Vulnerabilities</h1>
           <p className="text-sm text-gray-500">
-            Track scanner-created and manually-added vulnerabilities through remediation.
+            Track scan findings, business impact, recommended fixes, and remediation status.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
           <button
+            type="button"
             onClick={load}
             disabled={loading}
-            className="border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
+            className="btn-ghost"
           >
             {loading ? "Refreshing..." : "Refresh"}
           </button>
+
           <button
+            type="button"
             onClick={exportCsv}
             disabled={filteredItems.length === 0}
-            className="btn-ghost border border-gray-200 dark:border-gray-700 disabled:opacity-50"
+            className="btn-ghost disabled:opacity-50"
           >
             Export CSV
           </button>
-          <button onClick={() => setShowCreate((v) => !v)} className="btn-primary">
+
+          <button
+            type="button"
+            onClick={() => setShowCreate((v) => !v)}
+            className="btn-primary"
+          >
             {showCreate ? "Close Form" : "Add Vulnerability"}
           </button>
         </div>
       </header>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <div className="card"><div className="text-xs text-gray-500">Total</div><div className="text-3xl font-bold">{stats.total}</div></div>
-        <div className="card"><div className="text-xs text-gray-500">Open</div><div className="text-3xl font-bold text-red-600">{stats.open}</div></div>
-        <div className="card"><div className="text-xs text-gray-500">Critical Open</div><div className="text-3xl font-bold text-red-700">{stats.critical}</div></div>
-        <div className="card"><div className="text-xs text-gray-500">High Open</div><div className="text-3xl font-bold text-orange-500">{stats.high}</div></div>
-        <div className="card"><div className="text-xs text-gray-500">Overdue</div><div className="text-3xl font-bold text-red-600">{stats.overdue}</div></div>
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <CyberStatCard label="Total Findings" value={stats.total} hint="All tracked issues" tone="brand" />
+        <CyberStatCard label="Open" value={stats.open} hint="Need attention" tone="red" />
+        <CyberStatCard label="Critical Open" value={stats.critical} hint="Highest priority" tone="red" />
+        <CyberStatCard label="High Open" value={stats.high} hint="Important risks" tone="orange" />
+        <CyberStatCard label="Overdue" value={stats.overdue} hint="Past due date" tone="red" />
       </section>
 
-      {msg && <div className="rounded-xl border border-brand-500/30 bg-brand-500/10 text-brand-500 p-3 text-sm mb-4">{msg}</div>}
-      {error && <div className="rounded-xl border border-red-200 bg-red-50 text-red-600 p-3 text-sm mb-4 dark:bg-red-950 dark:border-red-900">{error}</div>}
+      {msg && (
+        <div className="rounded-2xl border border-brand-500/30 bg-brand-500/10 p-4 text-sm font-medium text-brand-300">
+          {msg}
+        </div>
+      )}
+
+      {error && (
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-medium text-red-300">
+          {error}
+        </div>
+      )}
 
       {showCreate && (
-        <form onSubmit={create} className="card mb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <form onSubmit={create} className="card grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="lg:col-span-2">
             <h2 className="font-semibold">Create Vulnerability</h2>
-            <p className="text-sm text-gray-500">Use this for manual findings that are not generated by scans.</p>
+            <p className="text-sm text-gray-500">
+              Use this for findings that need to be tracked outside regular scans.
+            </p>
           </div>
 
-          <input className="input" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-          <input className="input" placeholder="CVE ID, e.g. CVE-2026-0001" value={form.cveId} onChange={(e) => setForm({ ...form, cveId: e.target.value })} />
+          <input
+            className="input"
+            placeholder="Title"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+          />
 
-          <select className="input" value={form.severity} onChange={(e) => setForm({ ...form, severity: e.target.value })}>
-            {SEVERITIES.map((s) => <option key={s}>{s}</option>)}
+          <input
+            className="input"
+            placeholder="CVE ID, e.g. CVE-2026-0001"
+            value={form.cveId}
+            onChange={(e) => setForm({ ...form, cveId: e.target.value })}
+          />
+
+          <select
+            className="input"
+            value={form.severity}
+            onChange={(e) => setForm({ ...form, severity: e.target.value })}
+          >
+            {SEVERITIES.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
           </select>
 
-          <input className="input" type="number" min="0" max="10" step="0.1" placeholder="CVSS score" value={form.cvssScore} onChange={(e) => setForm({ ...form, cvssScore: e.target.value })} />
+          <input
+            className="input"
+            type="number"
+            min="0"
+            max="10"
+            step="0.1"
+            placeholder="CVSS score"
+            value={form.cvssScore}
+            onChange={(e) => setForm({ ...form, cvssScore: e.target.value })}
+          />
 
-          <select className="input" value={form.assetId} onChange={(e) => setForm({ ...form, assetId: e.target.value })}>
+          <select
+            className="input"
+            value={form.assetId}
+            onChange={(e) => setForm({ ...form, assetId: e.target.value })}
+          >
             <option value="">No asset selected</option>
-            {assets.map((a) => <option key={a.id} value={a.id}>{a.domain}</option>)}
+            {assets.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.domain}
+              </option>
+            ))}
           </select>
 
-          <input className="input" type="date" value={form.dueDateUtc} onChange={(e) => setForm({ ...form, dueDateUtc: e.target.value })} />
+          <input
+            className="input"
+            type="date"
+            value={form.dueDateUtc}
+            onChange={(e) => setForm({ ...form, dueDateUtc: e.target.value })}
+          />
 
           <textarea
-            className="input lg:col-span-2 min-h-24"
+            className="input min-h-24 lg:col-span-2"
             placeholder="Description / evidence / remediation context"
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
 
-          <div className="lg:col-span-2 flex justify-end gap-2">
-            <button type="button" onClick={() => setShowCreate(false)} className="btn-ghost border border-gray-200 dark:border-gray-700">Cancel</button>
-            <button className="btn-primary disabled:opacity-50" disabled={saving}>{saving ? "Saving..." : "Create Vulnerability"}</button>
+          <div className="flex justify-end gap-2 lg:col-span-2">
+            <button
+              type="button"
+              onClick={() => setShowCreate(false)}
+              className="btn-ghost"
+            >
+              Cancel
+            </button>
+
+            <button className="btn-primary disabled:opacity-50" disabled={saving}>
+              {saving ? "Saving..." : "Create Vulnerability"}
+            </button>
           </div>
         </form>
       )}
 
-      <div className="card mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+      <section className="card grid grid-cols-1 gap-3 md:grid-cols-3">
         <input
           className="input"
           placeholder="Search title, CVE, status, severity..."
@@ -307,68 +470,128 @@ export default function Vulnerabilities() {
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        <select className="input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+        <select
+          className="input"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
           <option value="">All statuses</option>
-          {STATUSES.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
+          {STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {statusLabel(s)}
+            </option>
+          ))}
         </select>
 
-        <select className="input" value={severityFilter} onChange={(e) => setSeverityFilter(e.target.value)}>
+        <select
+          className="input"
+          value={severityFilter}
+          onChange={(e) => setSeverityFilter(e.target.value)}
+        >
           <option value="">All severities</option>
-          {SEVERITIES.map((s) => <option key={s} value={s}>{s}</option>)}
+          {SEVERITIES.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
         </select>
-      </div>
+      </section>
 
-      <div className="card">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-500 border-b border-gray-200 dark:border-gray-800">
-                <th className="py-2">Title</th>
-                <th>CVE</th>
-                <th>CVSS</th>
-                <th>Severity</th>
-                <th>Status</th>
-                <th>Due</th>
-                <th>Action</th>
-              </tr>
-            </thead>
+      <CyberTable
+        title="Security Findings"
+        description="Client-friendly view of detected issues, impact, recommended fixes, and remediation status."
+        data={filteredItems}
+        emptyText={loading ? "Loading vulnerabilities..." : "No vulnerabilities found."}
+        columns={[
+          {
+            key: "issue",
+            label: "Issue",
+            render: (v) => (
+              <div className="min-w-72">
+                <div className="font-semibold text-white">{v.title}</div>
+                <div className="mt-1 text-xs text-slate-500">
+                  {v.assignedToUserId ? `Owner: ${v.assignedToUserId}` : "Unassigned"}
+                </div>
+              </div>
+            ),
+          },
+          {
+            key: "cve",
+            label: "CVE / CVSS",
+            render: (v) => (
+              <div className="whitespace-nowrap">
+                <div>{v.cveId ?? "-"}</div>
+                <div className="mt-1 text-xs text-slate-500">
+                  CVSS: {v.cvssScore ?? "-"}
+                </div>
+              </div>
+            ),
+          },
+          {
+            key: "severity",
+            label: "Severity",
+            render: (v) => <CyberStatusBadge value={severityLabel(v.severity)} />,
+          },
+          {
+            key: "impact",
+            label: "Business Impact",
+            render: (v) => (
+              <div className="min-w-80 text-sm leading-6 text-slate-400">
+                {businessImpact(v)}
+              </div>
+            ),
+          },
+          {
+            key: "fix",
+            label: "Recommended Fix",
+            render: (v) => (
+              <div className="min-w-80 text-sm leading-6 text-slate-400">
+                {recommendedFix(v)}
+              </div>
+            ),
+          },
+          {
+            key: "training",
+            label: "Training",
+            render: (v) => <CyberStatusBadge value={trainingRequired(v)} />,
+          },
+          {
+            key: "status",
+            label: "Status",
+            render: (v) => <CyberStatusBadge value={statusLabel(v.status)} />,
+          },
+          {
+            key: "due",
+            label: "Due",
+            render: (v) => (
+              <div className="whitespace-nowrap text-slate-400">
+                {daysUntil(v.dueDateUtc)}
+              </div>
+            ),
+          },
+          {
+            key: "action",
+            label: "Action",
+            render: (v) => {
+              const currentStatus = statusValue(v.status);
 
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={7} className="py-6 text-center text-gray-500">Loading vulnerabilities...</td></tr>
-              ) : filteredItems.length === 0 ? (
-                <tr><td colSpan={7} className="py-6 text-center text-gray-500">No vulnerabilities found.</td></tr>
-              ) : filteredItems.map((v) => {
-                const currentStatus = statusValue(v.status);
-
-                return (
-                  <tr key={v.id} className="border-b border-gray-100 dark:border-gray-800 align-top">
-                    <td className="py-3 min-w-72">
-                      <div className="font-semibold">{v.title}</div>
-                      <div className="text-xs text-gray-500">{v.assignedToUserId ? `Owner: ${v.assignedToUserId}` : "Unassigned"}</div>
-                    </td>
-                    <td className="text-gray-500 whitespace-nowrap">{v.cveId ?? "-"}</td>
-                    <td>{v.cvssScore ?? "-"}</td>
-                    <td><SeverityBadge severity={severityLabel(v.severity)} /></td>
-                    <td><span className={`badge ${statusBadge(currentStatus)}`}>{statusLabel(v.status)}</span></td>
-                    <td className="text-gray-500 whitespace-nowrap">{daysUntil(v.dueDateUtc)}</td>
-                    <td>
-                      <select
-                        className="input py-1 min-w-40"
-                        value={currentStatus}
-                        onChange={(e) => updateStatus(v.id, e.target.value)}
-                      >
-                        {STATUSES.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
-                      </select>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              return (
+                <select
+                  className="input min-w-40 py-1"
+                  value={currentStatus}
+                  onChange={(e) => updateStatus(v.id, e.target.value)}
+                >
+                  {STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {statusLabel(s)}
+                    </option>
+                  ))}
+                </select>
+              );
+            },
+          },
+        ]}
+      />
     </div>
   );
 }
-
