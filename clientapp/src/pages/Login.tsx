@@ -5,7 +5,7 @@ import { AuthApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 
 const HIGHLIGHTS = [
-  { label: "Security visibility", value: "360Â°" },
+  { label: "Security visibility", value: "360°" },
   { label: "Guided remediation", value: "AI" },
   { label: "Operational control", value: "SOC" },
 ];
@@ -175,15 +175,15 @@ export default function Login() {
                 <div className="ring-3d ring-3d-three" />
 
                 <div className="shield-diamond">
-                  <div className="shield-diamond-inner">ðŸ›¡ï¸</div>
+                  <div className="shield-diamond-inner">🛡️</div>
                 </div>
               </div>
             </div>
           </main>
 
           <footer className="login-footer">
-            <span>Â© 2026 CyberShield360. Built for modern security teams.</span>
-            <span>Secure â€¢ Tenant-aware â€¢ Audit-ready</span>
+            <span>© 2026 CyberShield360. Built for modern security teams.</span>
+            <span>Secure • Tenant-aware • Audit-ready</span>
           </footer>
         </section>
 
@@ -224,47 +224,22 @@ export default function Login() {
                 </>
               ) : (
                 <>
-                 <div className="google-login-cybershield">
-  <button type="button" className="google-login-cybershield-face">
-    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-      <path
-        d="M18.8 10.209C18.8 9.55898 18.7417 8.93398 18.6333 8.33398H10V11.8798H14.9333C14.7208 13.0257 14.075 13.9965 13.1042 14.6465V16.9465H16.0667C17.8 15.3507 18.8 13.0007 18.8 10.209Z"
-        fill="#4285F4"
-      />
-      <path
-        d="M10.0003 19.1672C12.4753 19.1672 14.5503 18.3464 16.0669 16.9464L13.1044 14.6464C12.2836 15.1964 11.2336 15.5214 10.0003 15.5214C7.61276 15.5214 5.59193 13.9089 4.87109 11.7422H1.80859V14.1172C3.31693 17.113 6.41693 19.1672 10.0003 19.1672Z"
-        fill="#34A853"
-      />
-      <path
-        d="M4.86953 11.7411C4.6862 11.1911 4.58203 10.6036 4.58203 9.99948C4.58203 9.39531 4.6862 8.80781 4.86953 8.25781V5.88281H1.80703C1.16536 7.16019 0.831466 8.56999 0.832032 9.99948C0.832032 11.4786 1.1862 12.8786 1.80703 14.1161L4.86953 11.7411Z"
-        fill="#FBBC05"
-      />
-      <path
-        d="M10.0003 4.47982C11.3461 4.47982 12.5544 4.94232 13.5044 5.85065L16.1336 3.22148C14.5461 1.74232 12.4711 0.833984 10.0003 0.833984C6.41693 0.833984 3.31693 2.88815 1.80859 5.88398L4.87109 8.25898C5.59193 6.09232 7.61276 4.47982 10.0003 4.47982Z"
-        fill="#EA4335"
-      />
-    </svg>
-
-    <span>Continue with Google</span>
-  </button>
-
-  <div className="google-login-cybershield-click">
-    <GoogleLogin
-      onSuccess={handleGoogleSuccess}
-      onError={() => {
-        setError("Google login failed. Please try again.");
-      }}
-      useOneTap={false}
-      auto_select={false}
-      theme="outline"
-      size="large"
-      text="signin_with"
-      shape="rectangular"
-      logo_alignment="left"
-      width="360"
-    />
-  </div>
-</div>
+                  <div className="google-login-official">
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={() => {
+                        setError("Google login failed. Please try again.");
+                      }}
+                      useOneTap={false}
+                      auto_select={false}
+                      theme="outline"
+                      size="large"
+                      text="continue_with"
+                      shape="rectangular"
+                      logo_alignment="left"
+                      width="360"
+                    />
+                  </div>
 
                   {googleLoading && (
                     <div className="text-center text-xs text-slate-400">
@@ -323,7 +298,7 @@ export default function Login() {
           </form>
 
           <div className="login-mobile-footer">
-            Â© 2026 CyberShield360. Built for modern security teams.
+            © 2026 CyberShield360. Built for modern security teams.
           </div>
         </section>
       </div>
