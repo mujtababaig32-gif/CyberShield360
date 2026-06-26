@@ -1854,42 +1854,33 @@ table {
 }
 
 /* =========================================================
-   CyberShield360 Login Eyebrow Alignment Fix
-   Aligns AI-ready pill beneath brand with clean spacing.
+   CyberShield360 Login Eyebrow Final Position Fix
+   Keeps main heading aligned, moves AI-ready pill under brand.
+   KEEP THIS ABSOLUTELY LAST.
 ========================================================= */
 
 @media screen and (min-width: 1051px) {
-  .login-hero-main {
-    padding-top: 1.15rem !important;
-  }
-
   .login-copy {
-    padding-left: 0 !important;
+    padding-left: calc(var(--cs360-login-logo-size) + var(--cs360-login-brand-gap)) !important;
   }
 
   .login-eyebrow {
-    margin-left: calc(2.75rem + 0.8rem) !important;
-    margin-top: 0.35rem !important;
+    margin-left: calc((var(--cs360-login-logo-size) + var(--cs360-login-brand-gap)) * -1) !important;
+    margin-top: 1rem !important;
+    margin-bottom: 0.95rem !important;
   }
 }
 
 @media screen and (min-width: 1051px) and (max-width: 1439px) {
-  .login-hero-main {
-    padding-top: 1rem !important;
-  }
-
   .login-eyebrow {
-    margin-left: calc(2.55rem + 0.8rem) !important;
-    margin-top: 0.45rem !important;
+    margin-left: calc((2.55rem + 0.8rem) * -1) !important;
+    margin-top: 1rem !important;
   }
 }
 
 @media screen and (min-width: 1051px) and (max-height: 760px) {
-  .login-hero-main {
-    padding-top: 0.85rem !important;
-  }
-
   .login-eyebrow {
-    margin-top: 0.35rem !important;
+    margin-top: 0.85rem !important;
+    margin-bottom: 0.8rem !important;
   }
 }
