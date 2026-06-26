@@ -487,62 +487,6 @@ select option {
   margin-top: 1.25rem;
 }
 
-.google-button-wrap {
-  position: relative;
-  width: 100%;
-  height: 3.15rem;
-  overflow: hidden;
-  border-radius: 1rem;
-}
-
-.google-button {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 1rem;
-  background: white;
-  color: #334155;
-  font-size: 0.98rem;
-  font-weight: 900;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
-  transition:
-    transform 180ms ease,
-    box-shadow 180ms ease;
-}
-
-.google-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 22px 48px rgba(16, 181, 166, 0.18);
-}
-
-.google-icon {
-  display: flex;
-  width: 1.8rem;
-  height: 1.8rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: white;
-}
-
-.google-icon svg {
-  width: 1.55rem;
-  height: 1.55rem;
-}
-
-.google-hidden-click {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  opacity: 0;
-}
-
 .login-divider {
   display: flex;
   align-items: center;
@@ -974,26 +918,6 @@ select option {
     font-size: 0.9rem !important;
   }
 
-  .google-button-wrap {
-    height: 2.95rem !important;
-    border-radius: 0.92rem !important;
-  }
-
-  .google-button {
-    border-radius: 0.92rem !important;
-    font-size: 0.88rem !important;
-  }
-
-  .google-icon {
-    width: 1.55rem !important;
-    height: 1.55rem !important;
-  }
-
-  .google-icon svg {
-    width: 1.35rem !important;
-    height: 1.35rem !important;
-  }
-
   .login-divider {
     gap: 0.55rem !important;
     font-size: 0.68rem !important;
@@ -1121,7 +1045,6 @@ select option {
   }
 }
 
-
 /* Sticky module header inside every page */
 .page-shell > div > header:first-child {
   position: sticky;
@@ -1142,7 +1065,6 @@ select option {
     padding: 0.75rem 0.15rem;
   }
 }
-
 
 /* =========================================================
    CyberShield360 Mobile Login Final Layout
