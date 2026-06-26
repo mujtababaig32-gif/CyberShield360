@@ -1875,12 +1875,15 @@ table {
 }
 
 /* CyberShield-style custom Google provider button */
+/* CyberShield-style custom Google provider button */
 .google-login-cybershield {
   position: relative;
   width: 100%;
   max-width: 360px;
   height: 56px;
   margin: 0 auto;
+  border-radius: 14px;
+  overflow: hidden;
 }
 
 .google-login-cybershield-face {
@@ -1901,6 +1904,7 @@ table {
   font-weight: 600;
   text-align: center;
   transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+  pointer-events: none;
 }
 
 .google-login-cybershield:hover .google-login-cybershield-face {
@@ -1916,17 +1920,21 @@ table {
 .google-login-cybershield-click {
   position: absolute;
   inset: 0;
-  z-index: 5;
-  opacity: 0;
+  z-index: 10;
+  width: 100%;
+  height: 56px;
+  opacity: 0.01;
   cursor: pointer;
 }
 
 .google-login-cybershield-click > div {
   width: 100% !important;
-  height: 100% !important;
+  height: 56px !important;
 }
 
 .google-login-cybershield-click iframe {
   width: 100% !important;
-  height: 100% !important;
+  height: 56px !important;
+  display: block !important;
+  cursor: pointer !important;
 }
