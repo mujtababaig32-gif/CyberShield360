@@ -215,7 +215,7 @@ export default function Dashboard() {
           <button
             onClick={load}
             disabled={loading}
-            className="rounded-lg border border-gray-200 px-4 py-2 text-sm hover:bg-gray-100 disabled:opacity-50 dark:border-gray-700 dark:hover:bg-gray-800"
+            className="btn-ghost"
           >
             {loading ? "Refreshing..." : "Refresh"}
           </button>

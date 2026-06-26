@@ -303,7 +303,7 @@ export default function UserManagement() {
         <button
           onClick={load}
           disabled={loading}
-          className="border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
+          className="btn-ghost"
         >
           {loading ? "Refreshing..." : "Refresh"}
         </button>
