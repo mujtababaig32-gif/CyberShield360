@@ -1,7 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { PolicyAuditApi } from "../api/endpoints";
-
+import CyberChartCard from "../components/CyberChartCard";
+import CyberStatCard from "../components/CyberStatCard";
+import CyberStatusBadge from "../components/CyberStatusBadge";
+import CyberTable from "../components/CyberTable";
 import ModuleTabs from "../components/ModuleTabs";
+
 type Policy = {
   id: string;
   title: string;
@@ -66,28 +79,45 @@ type PolicyAuditSummary = {
   };
 };
 
-const TABS = ["Overview", "Policies", "Evidence", "Audits", "Findings", "Reports", "Settings"];
+const TABS = [
+  "Overview",
+  "Policies",
+  "Evidence",
+  "Audits",
+  "Findings",
+  "Reports",
+  "Settings",
+];
 
-function badgeColor(value: string) {
-  const v = value.toLowerCase();
-  if (v.includes("approved") || v.includes("collected") || v.includes("ready")) return "bg-emerald-600";
-  if (v.includes("needs") || v.includes("missing") || v.includes("open")) return "bg-red-600";
-  if (v.includes("pending") || v.includes("progress") || v.includes("planned")) return "bg-orange-500";
-  return "bg-slate-600";
+function scoreTone(score: number): "green" | "orange" | "red" {
+  if (score >= 80) return "green";
+  if (score >= 60) return "orange";
+  return "red";
 }
 
-function severityColor(value: string) {
-  const v = value.toLowerCase();
-  if (v.includes("critical") || v.includes("high")) return "bg-red-600";
-  if (v.includes("medium")) return "bg-orange-500";
-  return "bg-yellow-500";
+function scoreStatus(score: number) {
+  if (score >= 85) return "Ready";
+  if (score >= 70) return "Managed";
+  if (score >= 50) return "Needs Review";
+  return "High Risk";
 }
 
-function scoreTone(score: number) {
-  if (score >= 85) return "text-emerald-500";
-  if (score >= 70) return "text-yellow-500";
-  if (score >= 50) return "text-orange-500";
-  return "text-red-500";
+function findingPriority(finding: Finding) {
+  const severity = finding.severity.toLowerCase();
+
+  if (severity.includes("critical")) return "Immediate";
+  if (severity.includes("high")) return "Priority";
+  if (severity.includes("medium")) return "Planned";
+
+  return "Monitor";
+}
+
+function dateText(value?: string | null) {
+  return value ? new Date(value).toLocaleString() : "-";
+}
+
+function dateOnly(value?: string | null) {
+  return value ? new Date(value).toLocaleDateString() : "-";
 }
 
 function csvSafe(value: unknown) {
@@ -100,6 +130,7 @@ function downloadCsv(filename: string, rows: unknown[][]) {
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
+
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
@@ -120,6 +151,7 @@ export default function PolicyAudit() {
     try {
       setLoading(true);
       setError(null);
+
       const result = await PolicyAuditApi.summary();
       setData(result);
     } catch {
@@ -130,30 +162,56 @@ export default function PolicyAudit() {
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
   const filteredPolicies = useMemo(() => {
     if (!data) return [];
+
     const q = query.trim().toLowerCase();
+
     if (!q) return data.policies;
-    return data.policies.filter((p) => [p.title, p.owner, p.category, p.status].join(" ").toLowerCase().includes(q));
+
+    return data.policies.filter((policy) =>
+      [policy.title, policy.owner, policy.category, policy.status]
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
+    );
   }, [data, query]);
+
+  const evidenceChartData = useMemo(() => {
+    if (!data) return [];
+
+    return [
+      { category: "Collected", count: data.evidenceCollected },
+      { category: "Missing", count: data.evidenceMissing },
+    ];
+  }, [data]);
 
   const exportPolicies = () => {
     if (!data) return;
 
     downloadCsv("cybershield360-policy-register.csv", [
-      ["Policy", "Owner", "Category", "Status", "Version", "Acknowledgement", "Last Reviewed", "Next Review"],
-      ...data.policies.map((p) => [
-        p.title,
-        p.owner,
-        p.category,
-        p.status,
-        p.version,
-        `${p.acknowledgementRate}%`,
-        p.lastReviewedUtc,
-        p.nextReviewUtc,
+      [
+        "Policy",
+        "Owner",
+        "Category",
+        "Status",
+        "Version",
+        "Acknowledgement",
+        "Last Reviewed",
+        "Next Review",
+      ],
+      ...data.policies.map((policy) => [
+        policy.title,
+        policy.owner,
+        policy.category,
+        policy.status,
+        policy.version,
+        `${policy.acknowledgementRate}%`,
+        policy.lastReviewedUtc,
+        policy.nextReviewUtc,
       ]),
     ]);
   };
@@ -163,7 +221,14 @@ export default function PolicyAudit() {
 
     downloadCsv("cybershield360-evidence-register.csv", [
       ["Evidence", "Control", "Type", "Status", "Owner", "Collected UTC"],
-      ...data.evidence.map((e) => [e.name, e.control, e.type, e.status, e.owner, e.collectedUtc ?? ""]),
+      ...data.evidence.map((item) => [
+        item.name,
+        item.control,
+        item.type,
+        item.status,
+        item.owner,
+        item.collectedUtc ?? "",
+      ]),
     ]);
   };
 
@@ -173,252 +238,519 @@ export default function PolicyAudit() {
   };
 
   if (error) {
-    return <div className="card border-red-500/30 bg-red-500/10 text-red-500">{error}</div>;
+    return (
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-semibold text-red-300">
+        {error}
+      </div>
+    );
   }
 
   if (loading || !data) {
-    return <div className="card text-sm text-slate-500">Loading policy audit manager...</div>;
+    return (
+      <div className="card text-sm text-slate-500">
+        Loading policy audit manager...
+      </div>
+    );
   }
 
+  const evidenceTotal = Math.max(1, data.evidence.length);
+  const evidenceCoverage = Math.round((data.evidenceCollected * 100) / evidenceTotal);
+
   return (
-    <div>
-      <header className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+    <div className="space-y-6">
+      <header className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">Audit Readiness</div>
-          <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Policy & Audit Manager</h1>
-          <p className="mt-2 max-w-3xl text-sm text-slate-500 dark:text-slate-400">
-            Manage policy readiness, evidence coverage, audit findings, and governance actions using real tenant security records.
+          <div className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">
+            Audit Readiness
+          </div>
+          <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
+            Policy & Audit Manager
+          </h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+            Manage policy readiness, evidence coverage, audit findings, and governance actions using tenant security records.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <button onClick={load} disabled={loading} className="btn-ghost disabled:opacity-50">
+          <button
+            type="button"
+            onClick={load}
+            disabled={loading}
+            className="btn-ghost disabled:opacity-50"
+          >
             {loading ? "Refreshing..." : "Refresh"}
           </button>
-          <button onClick={exportPolicies} className="btn-primary">Export Policies</button>
+
+          <button type="button" onClick={exportPolicies} className="btn-primary">
+            Export Policies
+          </button>
         </div>
       </header>
 
-      <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <div className="card">
-          <div className="text-xs text-slate-500">Audit Readiness</div>
-          <div className={`mt-1 text-4xl font-black ${scoreTone(data.averageAuditReadiness)}`}>{data.averageAuditReadiness}%</div>
-        </div>
-        <div className="card">
-          <div className="text-xs text-slate-500">Policies</div>
-          <div className="mt-1 text-4xl font-black">{data.totalPolicies}</div>
-          <div className="mt-2 text-xs text-emerald-500">{data.approvedPolicies} approved</div>
-        </div>
-        <div className="card">
-          <div className="text-xs text-slate-500">Need Review</div>
-          <div className="mt-1 text-4xl font-black text-red-500">{data.policiesNeedingReview}</div>
-        </div>
-        <div className="card">
-          <div className="text-xs text-slate-500">Evidence Missing</div>
-          <div className="mt-1 text-4xl font-black text-orange-500">{data.evidenceMissing}</div>
-          <div className="mt-2 text-xs text-slate-500">{data.evidenceCollected} collected</div>
-        </div>
-        <div className="card">
-          <div className="text-xs text-slate-500">Scope</div>
-          <div className="mt-1 text-4xl font-black">{data.assetsInScope}</div>
-          <div className="mt-2 text-xs text-slate-500">assets · {data.usersInScope} users</div>
-        </div>
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <CyberStatCard
+          label="Audit Readiness"
+          value={`${data.averageAuditReadiness}%`}
+          hint={scoreStatus(data.averageAuditReadiness)}
+          tone={scoreTone(data.averageAuditReadiness)}
+        />
+        <CyberStatCard
+          label="Policies"
+          value={data.totalPolicies}
+          hint={`${data.approvedPolicies} approved`}
+          tone="brand"
+        />
+        <CyberStatCard
+          label="Need Review"
+          value={data.policiesNeedingReview}
+          hint="Policy updates required"
+          tone={data.policiesNeedingReview > 0 ? "red" : "green"}
+        />
+        <CyberStatCard
+          label="Evidence Missing"
+          value={data.evidenceMissing}
+          hint={`${data.evidenceCollected} collected`}
+          tone={data.evidenceMissing > 0 ? "orange" : "green"}
+        />
+        <CyberStatCard
+          label="Scope"
+          value={data.assetsInScope}
+          hint={`${data.usersInScope} users in scope`}
+          tone="brand"
+        />
       </section>
 
-      <ModuleTabs tabs={TABS.map((t) => ({ key: t, label: t }))} activeKey={tab} onChange={setTab} />
+      <ModuleTabs
+        tabs={TABS.map((tabName) => ({ key: tabName, label: tabName }))}
+        activeKey={tab}
+        onChange={setTab}
+      />
 
       {tab === "Overview" && (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-          <div className="card xl:col-span-2">
-            <h2 className="mb-4 font-bold">Governance Recommendations</h2>
-            {data.recommendations.length === 0 ? (
-              <div className="rounded-2xl border border-slate-200 p-8 text-center text-sm text-slate-500 dark:border-slate-800">
-                No urgent governance recommendations.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {data.recommendations.map((item, index) => (
-                  <div key={index} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
-                    <div className="text-xs font-semibold uppercase tracking-widest text-brand-500">Recommendation #{index + 1}</div>
-                    <div className="mt-2 font-medium">{item}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+        <div className="space-y-6">
+          <section className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+            <div className="xl:col-span-2">
+              <CyberChartCard
+                title="Evidence Coverage"
+                description="Collected versus missing evidence across the current audit workspace."
+                insight={
+                  data.evidenceMissing > 0
+                    ? `${data.evidenceMissing} evidence item(s) still need collection or owner follow-up.`
+                    : "Evidence coverage is complete for the current audit workspace."
+                }
+              >
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={evidenceChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#33415555" />
+                    <XAxis dataKey="category" tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                    <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                    <Tooltip
+                      cursor={{ fill: "rgba(20, 184, 166, 0.08)" }}
+                      contentStyle={{
+                        background: "#020617",
+                        border: "1px solid rgba(255, 255, 255, 0.12)",
+                        borderRadius: "14px",
+                        color: "#e2e8f0",
+                        boxShadow: "0 18px 40px rgba(0, 0, 0, 0.35)",
+                      }}
+                      labelStyle={{
+                        color: "#99f6e4",
+                        fontWeight: 800,
+                      }}
+                      itemStyle={{
+                        color: "#e2e8f0",
+                      }}
+                    />
+                    <Bar dataKey="count" radius={[10, 10, 0, 0]} fill="#10B5A6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CyberChartCard>
+            </div>
 
-          <div className="card">
-            <h2 className="mb-4 font-bold">Evidence Coverage</h2>
-            <div className="space-y-4">
-              <div>
-                <div className="mb-1 flex justify-between text-sm">
-                  <span>Collected</span>
-                  <span className="font-bold text-emerald-500">{data.evidenceCollected}</span>
+            <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+              <div className="mb-5 text-center">
+                <h2 className="text-lg font-black tracking-tight text-white">
+                  Governance Recommendations
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-400">
+                  Priority actions for audit preparation.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {data.recommendations.length === 0 ? (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm text-slate-500">
+                    No urgent governance recommendations.
+                  </div>
+                ) : (
+                  data.recommendations.map((item, index) => (
+                    <div
+                      key={`${item}-${index}`}
+                      className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center"
+                    >
+                      <div className="text-xs font-black uppercase tracking-widest text-brand-300">
+                        Recommendation #{index + 1}
+                      </div>
+                      <div className="mt-2 text-sm font-medium leading-6 text-slate-300">
+                        {item}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
+          </section>
+
+          <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+                <div className="text-xs font-black uppercase tracking-wide text-slate-500">
+                  Evidence Coverage
                 </div>
-                <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-800">
+                <div className="mt-2 text-3xl font-black text-white">
+                  {evidenceCoverage}%
+                </div>
+                <div className="mx-auto mt-3 h-2 max-w-40 overflow-hidden rounded-full bg-slate-800">
                   <div
-                    className="h-2 rounded-full bg-emerald-500"
-                    style={{ width: `${Math.round((data.evidenceCollected * 100) / Math.max(1, data.evidence.length))}%` }}
+                    className="h-full rounded-full bg-brand-500"
+                    style={{ width: `${evidenceCoverage}%` }}
                   />
                 </div>
               </div>
-              <div className="rounded-2xl bg-slate-100 p-4 text-sm dark:bg-slate-900">
-                <div className="text-slate-500">Data Source</div>
-                <div className="mt-1 font-medium">{data.dataQuality?.source ?? "Tenant records"}</div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+                <div className="text-xs font-black uppercase tracking-wide text-slate-500">
+                  Full Scan Coverage
+                </div>
+                <div className="mt-2 text-3xl font-black text-white">
+                  {data.dataQuality?.fullScanCoverage ?? 0}%
+                </div>
+                <div className="mt-2 text-xs text-slate-500">
+                  Average scan score: {data.dataQuality?.avgScanScore ?? 0}
+                </div>
               </div>
-              <div className="text-xs text-slate-400">Generated: {new Date(data.generatedUtc).toLocaleString()}</div>
+
+              <div className="rounded-2xl border border-brand-500/20 bg-brand-500/10 p-4 text-center">
+                <div className="text-xs font-black uppercase tracking-wide text-brand-300">
+                  Data Source
+                </div>
+                <div className="mt-2 text-sm font-semibold leading-6 text-slate-200">
+                  {data.dataQuality?.source ?? "Tenant records"}
+                </div>
+                <div className="mt-2 text-xs text-slate-500">
+                  Generated: {dateText(data.generatedUtc)}
+                </div>
+              </div>
             </div>
-          </div>
+          </section>
         </div>
       )}
 
       {tab === "Policies" && (
-        <div className="card">
-          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <h2 className="font-bold">Policy Register</h2>
-            <input className="input max-w-md" placeholder="Search policies..." value={query} onChange={(e) => setQuery(e.target.value)} />
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-left text-slate-500 dark:border-slate-800">
-                  <th className="py-3">Policy</th>
-                  <th>Owner</th>
-                  <th>Category</th>
-                  <th>Status</th>
-                  <th>Version</th>
-                  <th>Acknowledgement</th>
-                  <th>Next Review</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPolicies.map((policy) => (
-                  <tr key={policy.id} className="border-b border-slate-100 dark:border-slate-800">
-                    <td className="py-3 font-semibold">{policy.title}</td>
-                    <td>{policy.owner}</td>
-                    <td>{policy.category}</td>
-                    <td><span className={`badge ${badgeColor(policy.status)}`}>{policy.status}</span></td>
-                    <td>{policy.version}</td>
-                    <td>{policy.acknowledgementRate}%</td>
-                    <td className="text-slate-500">{new Date(policy.nextReviewUtc).toLocaleDateString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="space-y-6">
+          <section className="card">
+            <input
+              className="input"
+              placeholder="Search policies..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </section>
+
+          <CyberTable
+            title="Policy Register"
+            description="Policy ownership, category, status, version, acknowledgement, and next review date."
+            data={filteredPolicies}
+            emptyText="No policies match the current search."
+            columns={[
+              {
+                key: "policy",
+                label: "Policy",
+                render: (policy) => (
+                  <div className="mx-auto min-w-72 text-center">
+                    <div className="font-semibold leading-6 text-white">
+                      {policy.title}
+                    </div>
+                    <div className="mt-1 text-xs text-slate-500">
+                      Last reviewed: {dateOnly(policy.lastReviewedUtc)}
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                key: "owner",
+                label: "Owner",
+                render: (policy) => (
+                  <div className="min-w-40 text-slate-300">{policy.owner}</div>
+                ),
+              },
+              {
+                key: "category",
+                label: "Category",
+                render: (policy) => (
+                  <div className="min-w-40 text-slate-300">{policy.category}</div>
+                ),
+              },
+              {
+                key: "status",
+                label: "Status",
+                render: (policy) => <CyberStatusBadge value={policy.status} />,
+              },
+              {
+                key: "version",
+                label: "Version",
+                render: (policy) => (
+                  <div className="font-semibold text-white">{policy.version}</div>
+                ),
+              },
+              {
+                key: "acknowledgement",
+                label: "Acknowledgement",
+                render: (policy) => (
+                  <div className="font-semibold text-white">
+                    {policy.acknowledgementRate}%
+                  </div>
+                ),
+              },
+              {
+                key: "next",
+                label: "Next Review",
+                render: (policy) => (
+                  <div className="whitespace-nowrap text-slate-400">
+                    {dateOnly(policy.nextReviewUtc)}
+                  </div>
+                ),
+              },
+            ]}
+          />
         </div>
       )}
 
       {tab === "Evidence" && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {data.evidence.map((item) => (
-            <div key={item.id} className="card">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="font-bold">{item.name}</div>
-                  <div className="mt-1 text-xs text-slate-500">{item.control} · {item.type}</div>
+        <CyberTable
+          title="Evidence Register"
+          description="Audit evidence status, control mapping, evidence type, owner, and collection date."
+          data={data.evidence}
+          emptyText="No evidence records available."
+          columns={[
+            {
+              key: "evidence",
+              label: "Evidence",
+              render: (item) => (
+                <div className="mx-auto min-w-72 text-center">
+                  <div className="font-semibold leading-6 text-white">{item.name}</div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    {item.control} · {item.type}
+                  </div>
                 </div>
-                <span className={`badge ${badgeColor(item.status)}`}>{item.status}</span>
-              </div>
-              <div className="mt-4 text-sm text-slate-500">Owner: {item.owner}</div>
-              <div className="mt-2 text-xs text-slate-500">
-                Collected: {item.collectedUtc ? new Date(item.collectedUtc).toLocaleString() : "Not collected"}
-              </div>
-            </div>
-          ))}
-        </div>
+              ),
+            },
+            {
+              key: "status",
+              label: "Status",
+              render: (item) => <CyberStatusBadge value={item.status} />,
+            },
+            {
+              key: "owner",
+              label: "Owner",
+              render: (item) => (
+                <div className="min-w-40 text-slate-300">{item.owner}</div>
+              ),
+            },
+            {
+              key: "collected",
+              label: "Collected",
+              render: (item) => (
+                <div className="whitespace-nowrap text-slate-400">
+                  {item.collectedUtc ? dateText(item.collectedUtc) : "Not collected"}
+                </div>
+              ),
+            },
+          ]}
+        />
       )}
 
       {tab === "Audits" && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {data.audits.map((audit) => (
-            <div key={audit.id} className="card">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="font-bold">{audit.name}</div>
+        <CyberTable
+          title="Audit Register"
+          description="Active audit readiness, framework, open findings, and due dates."
+          data={data.audits}
+          emptyText="No audits available."
+          columns={[
+            {
+              key: "audit",
+              label: "Audit",
+              render: (audit) => (
+                <div className="mx-auto min-w-72 text-center">
+                  <div className="font-semibold text-white">{audit.name}</div>
                   <div className="mt-1 text-xs text-slate-500">{audit.framework}</div>
                 </div>
-                <span className={`badge ${badgeColor(audit.status)}`}>{audit.status}</span>
-              </div>
-              <div className="mt-5 flex justify-between text-sm">
-                <span>Readiness</span>
-                <span className={scoreTone(audit.readiness)}>{audit.readiness}%</span>
-              </div>
-              <div className="mt-2 h-2 rounded-full bg-slate-200 dark:bg-slate-800">
-                <div className="h-2 rounded-full bg-brand-600" style={{ width: `${audit.readiness}%` }} />
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <div className="rounded-xl bg-slate-100 p-3 dark:bg-slate-900">
-                  <div className="text-slate-500">Open Findings</div>
-                  <div className="text-xl font-black">{audit.openFindings}</div>
+              ),
+            },
+            {
+              key: "status",
+              label: "Status",
+              render: (audit) => <CyberStatusBadge value={audit.status} />,
+            },
+            {
+              key: "readiness",
+              label: "Readiness",
+              render: (audit) => (
+                <div className="text-center">
+                  <div className="text-2xl font-black text-white">
+                    {audit.readiness}%
+                  </div>
+                  <div className="mx-auto mt-3 h-2 w-28 overflow-hidden rounded-full bg-slate-800">
+                    <div
+                      className="h-full rounded-full bg-brand-500"
+                      style={{ width: `${audit.readiness}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="rounded-xl bg-slate-100 p-3 dark:bg-slate-900">
-                  <div className="text-slate-500">Due Date</div>
-                  <div className="font-semibold">{new Date(audit.dueDateUtc).toLocaleDateString()}</div>
+              ),
+            },
+            {
+              key: "findings",
+              label: "Open Findings",
+              render: (audit) => (
+                <div className="font-black text-orange-300">
+                  {audit.openFindings}
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              ),
+            },
+            {
+              key: "due",
+              label: "Due Date",
+              render: (audit) => (
+                <div className="whitespace-nowrap text-slate-400">
+                  {dateOnly(audit.dueDateUtc)}
+                </div>
+              ),
+            },
+          ]}
+        />
       )}
 
       {tab === "Findings" && (
-        <div className="card">
-          <h2 className="mb-4 font-bold">Audit Findings</h2>
-          {data.findings.length === 0 ? (
-            <div className="rounded-2xl border border-slate-200 p-8 text-center text-sm text-slate-500 dark:border-slate-800">
-              No open audit findings.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {data.findings.map((finding) => (
-                <div key={finding.id} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <div className="font-bold">{finding.title}</div>
-                      <div className="mt-1 text-xs text-slate-500">Owner: {finding.owner} · Status: {finding.status}</div>
-                    </div>
-                    <span className={`badge ${severityColor(finding.severity)}`}>{finding.severity}</span>
-                  </div>
-                  <div className="mt-3 rounded-xl bg-slate-100 p-3 text-sm dark:bg-slate-900">{finding.recommendation}</div>
+        <CyberTable
+          title="Audit Findings"
+          description="Open audit findings, ownership, status, severity, and recommended action."
+          data={data.findings}
+          emptyText="No open audit findings."
+          columns={[
+            {
+              key: "finding",
+              label: "Finding",
+              render: (finding) => (
+                <div className="mx-auto min-w-72 text-center font-semibold leading-6 text-white">
+                  {finding.title}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              ),
+            },
+            {
+              key: "severity",
+              label: "Severity",
+              render: (finding) => <CyberStatusBadge value={finding.severity} />,
+            },
+            {
+              key: "status",
+              label: "Status",
+              render: (finding) => <CyberStatusBadge value={finding.status} />,
+            },
+            {
+              key: "owner",
+              label: "Owner",
+              render: (finding) => (
+                <div className="min-w-40 text-slate-300">{finding.owner}</div>
+              ),
+            },
+            {
+              key: "recommendation",
+              label: "Recommended Action",
+              render: (finding) => (
+                <div className="mx-auto min-w-96 text-center text-sm leading-6 text-slate-400">
+                  {finding.recommendation}
+                </div>
+              ),
+            },
+            {
+              key: "priority",
+              label: "Priority",
+              render: (finding) => <CyberStatusBadge value={findingPriority(finding)} />,
+            },
+          ]}
+        />
       )}
 
       {tab === "Reports" && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="card">
-            <h2 className="font-bold">Policy Register Export</h2>
-            <p className="mt-2 text-sm text-slate-500">Download current policy status, ownership, versions, and review dates.</p>
-            <button onClick={exportPolicies} className="btn-primary mt-4">Download CSV</button>
-          </div>
-          <div className="card">
-            <h2 className="font-bold">Evidence Register Export</h2>
-            <p className="mt-2 text-sm text-slate-500">Download audit evidence status and ownership mapping.</p>
-            <button onClick={exportEvidence} className="btn-primary mt-4">Download CSV</button>
-          </div>
+          <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 text-center shadow-2xl shadow-black/10">
+            <h2 className="font-black text-white">Policy Register Export</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Download current policy status, ownership, versions, and review dates.
+            </p>
+            <button type="button" onClick={exportPolicies} className="btn-primary mt-4">
+              Download CSV
+            </button>
+          </section>
+
+          <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 text-center shadow-2xl shadow-black/10">
+            <h2 className="font-black text-white">Evidence Register Export</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Download audit evidence status and ownership mapping.
+            </p>
+            <button type="button" onClick={exportEvidence} className="btn-primary mt-4">
+              Download CSV
+            </button>
+          </section>
         </div>
       )}
 
       {tab === "Settings" && (
-        <div className="card">
-          <h2 className="mb-4 font-bold">Policy Audit Settings</h2>
-          {settingsMessage && <div className="mb-4 rounded-xl bg-brand-500/10 p-3 text-sm text-brand-500">{settingsMessage}</div>}
+        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+          <div className="mb-5 text-center">
+            <h2 className="text-lg font-black tracking-tight text-white">
+              Policy Audit Settings
+            </h2>
+            <p className="mx-auto mt-1 max-w-3xl text-sm leading-6 text-slate-400">
+              Recommended governance controls for stronger audit preparation.
+            </p>
+          </div>
+
+          {settingsMessage && (
+            <div className="mb-4 rounded-2xl border border-brand-500/30 bg-brand-500/10 p-4 text-center text-sm font-medium text-brand-300">
+              {settingsMessage}
+            </div>
+          )}
+
           <div className="space-y-3">
-            {["Quarterly policy reviews", "Evidence owner reminders", "Audit readiness alerts"].map((setting) => (
-              <div key={setting} className="flex flex-col gap-3 rounded-2xl border border-slate-200 p-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="font-semibold">{setting}</div>
-                  <div className="text-sm text-slate-500">Recommended control for stronger audit preparation.</div>
+            {[
+              "Quarterly policy reviews",
+              "Evidence owner reminders",
+              "Audit readiness alerts",
+            ].map((setting) => (
+              <div
+                key={setting}
+                className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="text-center sm:text-left">
+                  <div className="font-semibold text-white">{setting}</div>
+                  <div className="text-sm text-slate-500">
+                    Recommended control for stronger audit preparation.
+                  </div>
                 </div>
-                <button onClick={() => saveSetting(setting)} className="btn-primary">Save</button>
+
+                <button
+                  type="button"
+                  onClick={() => saveSetting(setting)}
+                  className="btn-primary"
+                >
+                  Save
+                </button>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
     </div>
   );
