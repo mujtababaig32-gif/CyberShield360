@@ -1874,67 +1874,59 @@ table {
   box-sizing: border-box !important;
 }
 
-/* CyberShield-style custom Google provider button */
-/* CyberShield-style custom Google provider button */
-.google-login-cybershield {
-  position: relative;
-  width: 100%;
-  max-width: 360px;
-  height: 56px;
+/* Official Google login button wrapper */
+.google-login-official {
+  width: 360px;
+  max-width: 100%;
   margin: 0 auto;
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.google-login-cybershield-face {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
   display: flex;
-  gap: 0.65rem;
-  align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 56px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(15, 23, 42, 0.72);
-  color: #f8fafc;
-  font-size: 0.95rem;
-  font-weight: 600;
-  text-align: center;
-  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
-  pointer-events: none;
+  align-items: center;
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
 }
 
-.google-login-cybershield:hover .google-login-cybershield-face {
-  border-color: rgba(255, 255, 255, 0.35);
-  background: rgba(30, 41, 59, 0.92);
-  transform: translateY(-1px);
+.google-login-official > div {
+  width: 360px !important;
+  max-width: 100% !important;
 }
 
-.google-login-cybershield-face svg {
-  flex-shrink: 0;
+/* CyberShield360 standardized secondary action button */
+.btn-ghost {
+  display: inline-flex !important;
+  min-height: 44px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  border-radius: 1rem !important;
+  border: 1px solid rgba(51, 65, 85, 0.9) !important;
+  background: rgba(15, 23, 42, 0.82) !important;
+  padding: 0.65rem 1rem !important;
+  color: #e2e8f0 !important;
+  font-size: 0.875rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14) !important;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease !important;
 }
 
-.google-login-cybershield-click {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  width: 100%;
-  height: 56px;
-  opacity: 0.01;
-  cursor: pointer;
+.btn-ghost:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(45, 212, 191, 0.55) !important;
+  background: rgba(30, 41, 59, 0.94) !important;
+  color: #99f6e4 !important;
+  box-shadow: 0 14px 30px rgba(20, 184, 166, 0.12) !important;
 }
 
-.google-login-cybershield-click > div {
-  width: 100% !important;
-  height: 56px !important;
-}
-
-.google-login-cybershield-click iframe {
-  width: 100% !important;
-  height: 56px !important;
-  display: block !important;
-  cursor: pointer !important;
+.btn-ghost:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
+  transform: none !important;
 }
