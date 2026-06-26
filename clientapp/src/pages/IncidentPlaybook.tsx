@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { IncidentPlaybookApi } from "../api/endpoints";
 
+import ModuleTabs from "../components/ModuleTabs";
 type Playbook = { id: string; name: string; category: string; severity: string; steps: number; owner: string; status: string; lastTestedUtc?: string | null };
 type Incident = { id: string; title: string; severity: string; status: string; playbook: string; affectedAssets: number; openedUtc?: string | null; owner: string };
 type ResponseStep = { playbook: string; order: number; action: string; status: string; owner: string };
@@ -101,9 +102,7 @@ export default function IncidentPlaybook() {
         <button onClick={load} className="btn-ghost border border-gray-200 dark:border-gray-700">Refresh</button>
       </header>
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        {TABS.map((t) => <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 rounded-xl text-sm border ${tab === t ? "bg-brand-600 text-white border-brand-600" : "border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"}`}>{t}</button>)}
-      </div>
+      <ModuleTabs tabs={TABS.map((t) => ({ key: t, label: t }))} activeKey={tab} onChange={setTab} />
 
       {message && <div className="rounded-xl border border-brand-500/30 bg-brand-500/10 text-brand-500 p-3 text-sm mb-4">{message}</div>}
 

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { UserManagementApi, UserInvitationsApi } from "../api/endpoints";
 
+import ModuleTabs from "../components/ModuleTabs";
 type UserRow = {
   id: string;
   email?: string;
@@ -308,21 +309,7 @@ export default function UserManagement() {
         </button>
       </header>
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-lg text-sm border ${
-              tab === t
-                ? "bg-brand-600 text-white border-brand-600"
-                : "border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
+      <ModuleTabs tabs={TABS.map((t) => ({ key: t, label: t }))} activeKey={tab} onChange={setTab} />
 
       {inviteMessage && (
         <div className="card mb-4 text-sm text-brand-500">

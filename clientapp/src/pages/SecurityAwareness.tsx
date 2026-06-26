@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { SecurityAwarenessApi } from "../api/endpoints";
 
+import ModuleTabs from "../components/ModuleTabs";
 type Learner = {
   userId: string;
   name: string;
@@ -162,21 +163,7 @@ export default function SecurityAwareness() {
         </button>
       </header>
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-xl text-sm border ${
-              tab === t
-                ? "bg-brand-600 text-white border-brand-600"
-                : "border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
+      <ModuleTabs tabs={TABS.map((t) => ({ key: t, label: t }))} activeKey={tab} onChange={setTab} />
 
       {message && (
         <div className="rounded-xl border border-brand-500/30 bg-brand-500/10 text-brand-500 p-3 text-sm mb-4">

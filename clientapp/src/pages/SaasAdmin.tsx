@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { SaasAdminApi } from "../api/endpoints";
 
+import ModuleTabs from "../components/ModuleTabs";
 type SaasUser = {
   id: string;
   fullName?: string;
@@ -118,11 +119,7 @@ export default function SaasAdmin() {
         <button onClick={load} className="btn-ghost">Refresh</button>
       </header>
 
-      <div className="flex flex-wrap gap-2">
-        {TABS.map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={tab === t ? "btn-primary" : "btn-ghost"}>{t}</button>
-        ))}
-      </div>
+      <ModuleTabs tabs={TABS.map((t) => ({ key: t, label: t }))} activeKey={tab} onChange={setTab} />
 
       {tab === "Overview" && (
         <>

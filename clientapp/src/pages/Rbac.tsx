@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { RbacApi } from "../api/endpoints";
 
+import ModuleTabs from "../components/ModuleTabs";
 type RoleCard = { role: string; description: string; users: number; privilege: string; mfaRecommended: boolean };
 type UserAccess = { id: string; email?: string; fullName?: string; isActive: boolean; emailConfirmed: boolean; lastLoginUtc?: string | null; roles: string[]; accessLevel: string };
 type PermissionRow = { module: string; tenantAdmin: boolean; securityAnalyst: boolean; auditor: boolean; member: boolean };
@@ -75,7 +76,7 @@ export default function Rbac() {
         <div className="flex gap-2"><button onClick={load} className="btn-ghost">Refresh</button><button onClick={exportUsers} className="btn-primary">Export Users</button></div>
       </header>
 
-      <div className="flex flex-wrap gap-2">{TABS.map((t) => <button key={t} onClick={() => setTab(t)} className={tab === t ? "btn-primary" : "btn-ghost"}>{t}</button>)}</div>
+      <ModuleTabs tabs={TABS.map((t) => ({ key: t, label: t }))} activeKey={tab} onChange={setTab} />
 
       {tab === "Overview" && <>
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">

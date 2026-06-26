@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { NotificationsApi } from "../api/endpoints";
 
+import ModuleTabs from "../components/ModuleTabs";
 type NotificationItem = {
   id: string;
   title: string;
@@ -107,7 +108,7 @@ export default function NotificationsCenter() {
         <div className="flex gap-2"><button onClick={load} className="btn-ghost">Refresh</button><button onClick={exportNotifications} className="btn-primary">Export CSV</button></div>
       </header>
 
-      <div className="flex flex-wrap gap-2">{TABS.map((t) => <button key={t} onClick={() => setTab(t)} className={tab === t ? "btn-primary" : "btn-ghost"}>{t}</button>)}</div>
+      <ModuleTabs tabs={TABS.map((t) => ({ key: t, label: t }))} activeKey={tab} onChange={setTab} />
 
       {tab === "Overview" && (
         <>

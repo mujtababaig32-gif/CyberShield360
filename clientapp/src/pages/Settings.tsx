@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { SettingsApi } from "../api/endpoints";
 
+import ModuleTabs from "../components/ModuleTabs";
 type Branding = { name?: string; brandName?: string; logoUrl?: string; primaryColorHex?: string; customReportFooter?: string; whiteLabelEnabled?: boolean };
 type SettingsSummary = { generatedUtc: string; branding: Branding; readiness: { item: string; status: string; priority: string }[]; recommendations: string[] };
 
@@ -69,7 +70,7 @@ export default function Settings() {
 
   return <div className="space-y-6">
     <header className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"><div><h1 className="text-2xl font-black tracking-tight">Settings</h1><p className="section-subtitle">Branding, deployment readiness, white-label reports, and production safeguards.</p></div><button onClick={load} className="btn-ghost">Refresh</button></header>
-    <div className="flex flex-wrap gap-2">{TABS.map((t) => <button key={t} onClick={() => setTab(t)} className={tab === t ? "btn-primary" : "btn-ghost"}>{t}</button>)}</div>
+    <ModuleTabs tabs={TABS.map((t) => ({ key: t, label: t }))} activeKey={tab} onChange={setTab} />
     {msg && <div className="rounded-2xl border border-brand-500/30 bg-brand-500/10 p-4 text-sm font-medium text-brand-600 dark:text-brand-300">{msg}</div>}
     {error && <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-600 dark:border-red-900 dark:bg-red-950">{error}</div>}
 

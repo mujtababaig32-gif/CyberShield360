@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CloudPostureApi } from "../api/endpoints";
 
+import ModuleTabs from "../components/ModuleTabs";
 type CloudAccount = {
   id: string;
   provider: string;
@@ -196,11 +197,7 @@ export default function CloudPosture() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        {TABS.map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={tab === t ? "btn-primary" : "btn-ghost"}>{t}</button>
-        ))}
-      </div>
+      <ModuleTabs tabs={TABS.map((t) => ({ key: t, label: t }))} activeKey={tab} onChange={setTab} />
 
       {tab === "Overview" && (
         <div>

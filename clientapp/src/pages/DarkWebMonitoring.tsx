@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { DarkWebApi } from "../api/endpoints";
 
+import ModuleTabs from "../components/ModuleTabs";
 type Exposure = { domain: string; exposureType: string; leakedCredentialSignals: number; breachMentions: number; exposureScore: number; riskLevel: string; status: string; lastSeenUtc: string; recommendation: string };
 type CredentialLeak = { domain: string; emailPattern: string; leakType: string; severity: string; source: string; lastSeenUtc: string; action: string };
 type Integration = { name: string; status: string };
@@ -47,7 +48,7 @@ export default function DarkWebMonitoring() {
 
       <div className="card mb-5 border-orange-500/30 bg-orange-500/5"><div className="font-semibold">{data.connectorMode ?? "Dark-web provider not configured"}</div><p className="section-subtitle mt-1">{data.evidenceQuality ?? "This module currently shows domain exposure signals only. Configure a breach-intelligence provider for verified leaked credential results."}</p></div>
 
-      <div className="flex flex-wrap gap-2 mb-6">{TABS.map((t) => <button key={t} onClick={() => setTab(t)} className={tab === t ? "btn-primary" : "btn-ghost"}>{t}</button>)}</div>
+      <ModuleTabs tabs={TABS.map((t) => ({ key: t, label: t }))} activeKey={tab} onChange={setTab} />
 
       {tab === "Overview" && <div><section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-6"><div className="metric-card"><div className="section-subtitle">Monitored Domains</div><div className="text-3xl font-bold">{data.monitoredDomains}</div></div><div className="metric-card"><div className="section-subtitle">Risk Score</div><div className="text-3xl font-bold">{data.darkWebRiskScore}/100</div></div><div className="metric-card"><div className="section-subtitle">High Risk</div><div className="text-3xl font-bold text-red-600">{data.highRiskExposures}</div></div><div className="metric-card"><div className="section-subtitle">Credential Signals</div><div className="text-3xl font-bold text-orange-600">{data.leakedCredentialSignals}</div></div><div className="metric-card"><div className="section-subtitle">Breach Mentions</div><div className="text-3xl font-bold">{data.breachMentions}</div></div></section><div className="card"><h2 className="section-title mb-4">Executive Actions</h2>{data.executiveActions.length === 0 ? <p className="section-subtitle">No verified dark-web actions are available yet. Configure an intelligence provider to enable breach evidence.</p> : <div className="space-y-3">{data.executiveActions.map((a, i) => <div key={i} className="rounded-xl border p-4 text-sm dark:border-slate-700"><b>#{i + 1}</b> {a}</div>)}</div>}</div></div>}
 
