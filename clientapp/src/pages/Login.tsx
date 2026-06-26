@@ -232,7 +232,7 @@ export default function Login() {
                       }}
                       useOneTap={false}
                       auto_select={false}
-                      theme="filled_blue"
+                      theme="filled_black"
                       size="large"
                       text="signin_with"
                       shape="pill"
