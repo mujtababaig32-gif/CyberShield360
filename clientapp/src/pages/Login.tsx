@@ -252,7 +252,7 @@ export default function Login() {
                     disabled
                     className="w-full cursor-not-allowed rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-500"
                   >
-                    Continue with Microsoft-Coming Soon
+                    Continue with Microsoft - Coming Soon
                   </button>
 
                   <div className="login-divider">
