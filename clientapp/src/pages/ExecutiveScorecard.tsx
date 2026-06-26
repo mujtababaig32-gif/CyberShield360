@@ -9,8 +9,12 @@ import {
   YAxis,
 } from "recharts";
 import { ExecutiveScorecardApi } from "../api/endpoints";
+import CyberChartCard from "../components/CyberChartCard";
+import CyberStatCard from "../components/CyberStatCard";
+import CyberStatusBadge from "../components/CyberStatusBadge";
+import CyberTable from "../components/CyberTable";
 
- type ScorecardData = {
+type ScorecardData = {
   generatedUtc: string;
   overallScore: number;
   overallGrade?: string;
@@ -48,26 +52,21 @@ import { ExecutiveScorecardApi } from "../api/endpoints";
   executiveActions: string[];
 };
 
-function scoreColor(score: number) {
-  if (score >= 85) return "text-green-600";
-  if (score >= 70) return "text-yellow-600";
-  if (score >= 50) return "text-orange-600";
-  return "text-red-600";
+function scoreTone(score: number): "green" | "orange" | "red" {
+  if (score >= 80) return "green";
+  if (score >= 60) return "orange";
+  return "red";
 }
 
-function riskColor(risk: string) {
-  if (risk === "Critical") return "text-red-600";
-  if (risk === "High") return "text-orange-600";
-  if (risk === "Medium") return "text-yellow-600";
-  return "text-green-600";
+function scoreStatus(score: number) {
+  if (score >= 85) return "Strong";
+  if (score >= 70) return "Managed";
+  if (score >= 50) return "Needs Review";
+  return "High Risk";
 }
 
-function badgeColor(severity: string) {
-  if (severity === "Critical") return "bg-red-700";
-  if (severity === "High") return "bg-red-600";
-  if (severity === "Medium") return "bg-orange-500";
-  if (severity === "Low") return "bg-yellow-600";
-  return "bg-gray-600";
+function dateText(value?: string | null) {
+  return value ? new Date(value).toLocaleString() : "-";
 }
 
 function csvSafe(value: unknown) {
@@ -79,6 +78,7 @@ function downloadTextFile(filename: string, content: string) {
   const blob = new Blob([content], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
+
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
@@ -96,6 +96,7 @@ export default function ExecutiveScorecard() {
     try {
       setLoading(true);
       setError(null);
+
       const result = await ExecutiveScorecardApi.summary();
       setData(result);
     } catch {
@@ -106,7 +107,7 @@ export default function ExecutiveScorecard() {
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
   const boardSummary = useMemo(() => {
@@ -130,6 +131,8 @@ export default function ExecutiveScorecard() {
   const exportScorecard = () => {
     if (!data) return;
 
+    const highCritical = data.highCriticalFindings ?? data.highFindings + data.criticalFindings;
+
     const summaryRows = [
       ["Metric", "Value"],
       ["Generated UTC", data.generatedUtc],
@@ -141,26 +144,26 @@ export default function ExecutiveScorecard() {
       ["Full Posture Coverage", `${data.fullPostureCoverage ?? 0}%`],
       ["Compliance Readiness", `${data.complianceReadiness}%`],
       ["Failed Findings", data.failedFindings],
-      ["High/Critical Findings", data.highCriticalFindings ?? data.highFindings + data.criticalFindings],
+      ["High/Critical Findings", highCritical],
       ["Attack Surface Issues", data.attackSurfaceIssues],
       [],
       ["Top Risks"],
       ["Title", "Severity", "Affected Assets", "Recommendation"],
-      ...data.topRisks.map((r) => [
-        r.title,
-        r.severity,
-        r.affectedAssets?.join("; ") || "",
-        r.recommendation,
+      ...data.topRisks.map((risk) => [
+        risk.title,
+        risk.severity,
+        risk.affectedAssets?.join("; ") || "",
+        risk.recommendation,
       ]),
     ];
 
-    const csv = summaryRows.map((r) => r.map(csvSafe).join(",")).join("\n");
+    const csv = summaryRows.map((row) => row.map(csvSafe).join(",")).join("\n");
     downloadTextFile("cybershield360-executive-scorecard.csv", csv);
   };
 
   if (error) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 text-red-600 p-4 text-sm dark:bg-red-950 dark:border-red-900">
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-semibold text-red-300">
         {error}
       </div>
     );
@@ -171,205 +174,317 @@ export default function ExecutiveScorecard() {
   }
 
   const highCritical = data.highCriticalFindings ?? data.highFindings + data.criticalFindings;
+  const coverage = data.fullPostureCoverage ?? 0;
+  const scoreInsight =
+    data.scoreTrend.length >= 2
+      ? `Latest score is ${
+          data.scoreTrend[data.scoreTrend.length - 1]?.score ?? data.overallScore
+        }/100 across the available score trend.`
+      : "Run more Full Posture scans to build a stronger score trend.";
 
   return (
-    <div>
-      <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-6">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Executive Security Scorecard</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Executive Security Scorecard</h1>
           <p className="text-sm text-gray-500">
-            Board-level view of maturity, compliance readiness, and full-posture security risk.
+            Board-level view of maturity, compliance readiness, asset coverage, and business risk.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
           <button
+            type="button"
             onClick={load}
             disabled={loading}
-            className="border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
+            className="btn-ghost"
           >
             {loading ? "Refreshing..." : "Refresh"}
           </button>
 
-          <button onClick={exportScorecard} className="btn-primary">
+          <button type="button" onClick={exportScorecard} className="btn-primary">
             Export Scorecard
           </button>
         </div>
       </header>
 
-      <section className="card mb-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-center">
-          <div>
-            <div className="text-xs text-gray-500">Overall Score</div>
-            <div className={`text-5xl font-extrabold ${scoreColor(data.overallScore)}`}>
-              {data.overallScore}/100
+      <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/10">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+          <div className="rounded-3xl border border-white/10 bg-slate-950/55 p-6">
+            <div className="text-xs font-black uppercase tracking-wide text-slate-500">
+              Overall Security Score
             </div>
-            <div className="text-sm text-gray-500 mt-1">
-              Grade {data.overallGrade ?? "-"} · {data.maturity} maturity
+
+            <div className="mt-4 flex items-end gap-3">
+              <div className="text-6xl font-black tracking-tight text-white">
+                {data.overallScore}
+              </div>
+              <div className="pb-2 text-xl font-black text-slate-500">/100</div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <CyberStatusBadge value={`Grade ${data.overallGrade ?? "-"}`} />
+              <CyberStatusBadge value={scoreStatus(data.overallScore)} />
+              <CyberStatusBadge value={data.riskLevel} />
+            </div>
+
+            <div className="mt-5 text-sm leading-6 text-slate-400">
+              {data.maturity} maturity · latest scan {dateText(data.latestScanUtc)}
             </div>
           </div>
 
-          <div className="lg:col-span-2">
-            <div className="text-xs text-gray-500 mb-2">Executive Summary</div>
-            <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 text-sm font-medium">
+          <div>
+            <div className="mb-3 text-xs font-black uppercase tracking-wide text-slate-500">
+              Executive Summary
+            </div>
+
+            <div className="rounded-3xl border border-brand-500/20 bg-brand-500/10 p-5 text-sm font-medium leading-7 text-slate-200">
               {boardSummary}
             </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="text-xs font-black uppercase text-slate-500">Assets</div>
+                <div className="mt-2 text-2xl font-black text-white">{data.assetCount}</div>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="text-xs font-black uppercase text-slate-500">Checks</div>
+                <div className="mt-2 text-2xl font-black text-white">{data.totalChecks ?? 0}</div>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="text-xs font-black uppercase text-slate-500">Coverage</div>
+                <div className="mt-2 text-2xl font-black text-white">{coverage}%</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <div className="card">
-          <div className="text-xs text-gray-500">Risk Level</div>
-          <div className={`text-2xl font-bold ${riskColor(data.riskLevel)}`}>{data.riskLevel}</div>
-        </div>
-
-        <div className="card">
-          <div className="text-xs text-gray-500">Compliance Ready</div>
-          <div className={`text-3xl font-bold ${scoreColor(data.complianceReadiness)}`}>
-            {data.complianceReadiness}%
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="text-xs text-gray-500">Full Scan Coverage</div>
-          <div className={`text-3xl font-bold ${scoreColor(data.fullPostureCoverage ?? 0)}`}>
-            {data.fullPostureCoverage ?? 0}%
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="text-xs text-gray-500">Failed Findings</div>
-          <div className="text-3xl font-bold text-red-600">{data.failedFindings}</div>
-        </div>
-
-        <div className="card">
-          <div className="text-xs text-gray-500">High/Critical</div>
-          <div className="text-3xl font-bold text-orange-600">{highCritical}</div>
-        </div>
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <CyberStatCard
+          label="Risk Level"
+          value={data.riskLevel}
+          hint="Overall business risk"
+          tone={scoreTone(data.overallScore)}
+        />
+        <CyberStatCard
+          label="Compliance Ready"
+          value={`${data.complianceReadiness}%`}
+          hint="Readiness score"
+          tone={scoreTone(data.complianceReadiness)}
+        />
+        <CyberStatCard
+          label="Full Scan Coverage"
+          value={`${coverage}%`}
+          hint="Assets with full posture"
+          tone={scoreTone(coverage)}
+        />
+        <CyberStatCard
+          label="Failed Findings"
+          value={data.failedFindings}
+          hint="Controls needing attention"
+          tone={data.failedFindings > 0 ? "red" : "green"}
+        />
+        <CyberStatCard
+          label="High/Critical"
+          value={highCritical}
+          hint="Priority risks"
+          tone={highCritical > 0 ? "orange" : "green"}
+        />
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <div className="card lg:col-span-2">
-          <h2 className="font-semibold mb-3">Full Posture Score Trend</h2>
-          {data.scoreTrend.length === 0 ? (
-            <div className="text-sm text-gray-500">No score trend available yet.</div>
-          ) : (
-            <ResponsiveContainer width="100%" height={250}>
-              <AreaChart data={data.scoreTrend}>
-                <defs>
-                  <linearGradient id="scorecardTrend" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10B5A6" stopOpacity={0.45} />
-                    <stop offset="100%" stopColor="#10B5A6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#33415555" />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Area type="monotone" dataKey="score" stroke="#10B5A6" fill="url(#scorecardTrend)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <CyberChartCard
+            title="Full Posture Score Trend"
+            description="Shows how the overall security score changes after scans and remediation work."
+            insight={scoreInsight}
+          >
+            {data.scoreTrend.length === 0 ? (
+              <div className="flex h-[250px] items-center justify-center text-sm text-slate-500">
+                No score trend available yet.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <AreaChart data={data.scoreTrend}>
+                  <defs>
+                    <linearGradient id="scorecardTrend" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10B5A6" stopOpacity={0.45} />
+                      <stop offset="100%" stopColor="#10B5A6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#33415555" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                  <Tooltip />
+                  <Area
+                    type="monotone"
+                    dataKey="score"
+                    stroke="#10B5A6"
+                    fill="url(#scorecardTrend)"
+                    strokeWidth={3}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </CyberChartCard>
         </div>
 
-        <div className="card">
-          <h2 className="font-semibold mb-4">Executive Actions</h2>
+        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+          <div className="mb-5">
+            <h2 className="text-lg font-black tracking-tight text-white">
+              Executive Actions
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-400">
+              Recommended next steps for leadership and security owners.
+            </p>
+          </div>
+
           <div className="space-y-3">
             {data.executiveActions.length === 0 ? (
-              <div className="text-sm text-gray-500">No actions available.</div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-500">
+                No actions available.
+              </div>
             ) : (
               data.executiveActions.map((action, index) => (
-                <div key={`${action}-${index}`} className="border border-gray-200 dark:border-gray-700 rounded-xl p-3">
-                  <div className="text-xs text-gray-500 mb-1">Action #{index + 1}</div>
-                  <div className="text-sm font-medium">{action}</div>
+                <div
+                  key={`${action}-${index}`}
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                >
+                  <div className="mb-1 text-xs font-black uppercase tracking-wide text-slate-500">
+                    Action #{index + 1}
+                  </div>
+                  <div className="text-sm font-medium leading-6 text-slate-300">
+                    {action}
+                  </div>
                 </div>
               ))
             )}
           </div>
-        </div>
+        </section>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <div className="card">
-          <h2 className="font-semibold mb-4">Weakest Assets</h2>
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <CyberTable
+          title="Weakest Assets"
+          description="Assets with the lowest score or highest failed finding count."
+          data={data.weakestAssets}
+          emptyText="Run Full Posture scans to populate weakest assets."
+          columns={[
+            {
+              key: "domain",
+              label: "Domain",
+              render: (asset) => (
+                <div className="min-w-64">
+                  <div className="break-all font-semibold text-white">{asset.domain}</div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    Last scan: {dateText(asset.lastScanUtc)}
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: "score",
+              label: "Score",
+              render: (asset) => (
+                <div>
+                  <div className="font-semibold text-white">{asset.score}/100</div>
+                  <div className="mt-2">
+                    <CyberStatusBadge value={`Grade ${asset.grade}`} />
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: "failed",
+              label: "Failed",
+              render: (asset) => (
+                <div className="text-slate-300">{asset.failedFindings ?? 0}</div>
+              ),
+              align: "center",
+            },
+            {
+              key: "priority",
+              label: "Priority",
+              render: (asset) => (
+                <CyberStatusBadge value={scoreStatus(asset.score)} />
+              ),
+            },
+          ]}
+        />
 
-          {data.weakestAssets.length === 0 ? (
-            <div className="text-sm text-gray-500">Run Full Posture scans to populate weakest assets.</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-500 border-b border-gray-200 dark:border-gray-800">
-                    <th className="py-2">Domain</th>
-                    <th>Score</th>
-                    <th>Failed</th>
-                    <th>Last Scan</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.weakestAssets.map((asset) => (
-                    <tr key={asset.domain} className="border-b border-gray-100 dark:border-gray-800">
-                      <td className="py-3 font-medium break-all">{asset.domain}</td>
-                      <td className={scoreColor(asset.score)}>{asset.score}/100</td>
-                      <td>{asset.failedFindings ?? 0}</td>
-                      <td className="text-gray-500">
-                        {asset.lastScanUtc ? new Date(asset.lastScanUtc).toLocaleString() : "-"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+          <div className="mb-5">
+            <h2 className="text-lg font-black tracking-tight text-white">
+              Top Business Risks
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-400">
+              Highest-priority findings translated into business-focused actions.
+            </p>
+          </div>
 
-        <div className="card">
-          <h2 className="font-semibold mb-4">Top Business Risks</h2>
-
-          {data.topRisks.length === 0 ? (
-            <div className="text-sm text-gray-500">No failed high-priority findings found.</div>
-          ) : (
-            <div className="space-y-3">
-              {data.topRisks.map((risk, index) => (
-                <div key={`${risk.title}-${index}`} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-                  <div className="flex items-start justify-between gap-3 mb-2">
+          <div className="space-y-3">
+            {data.topRisks.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-500">
+                No failed high-priority findings found.
+              </div>
+            ) : (
+              data.topRisks.map((risk, index) => (
+                <div
+                  key={`${risk.title}-${index}`}
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                >
+                  <div className="mb-2 flex items-start justify-between gap-3">
                     <div>
-                      <div className="font-semibold">{risk.title}</div>
+                      <div className="font-semibold text-white">{risk.title}</div>
                       {risk.affectedAssets?.length ? (
-                        <div className="text-xs text-gray-500 mt-1 break-all">
+                        <div className="mt-1 break-all text-xs text-slate-500">
                           Assets: {risk.affectedAssets.join(", ")}
                         </div>
                       ) : null}
                     </div>
-                    <span className={`badge ${badgeColor(risk.severity)} shrink-0`}>{risk.severity}</span>
+
+                    <CyberStatusBadge value={risk.severity} />
                   </div>
-                  <div className="text-sm text-gray-500">{risk.recommendation}</div>
+
+                  <div className="text-sm leading-6 text-slate-400">
+                    {risk.recommendation}
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              ))
+            )}
+          </div>
+        </section>
       </section>
 
-      <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="card">
-          <div className="text-xs text-gray-500">Assets</div>
-          <div className="text-3xl font-bold">{data.assetCount}</div>
-        </div>
-        <div className="card">
-          <div className="text-xs text-gray-500">Total Evaluated Checks</div>
-          <div className="text-3xl font-bold">{data.totalChecks ?? 0}</div>
-        </div>
-        <div className="card">
-          <div className="text-xs text-gray-500">Attack Surface Issues</div>
-          <div className="text-3xl font-bold">{data.attackSurfaceIssues}</div>
-        </div>
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <CyberStatCard
+          label="Assets"
+          value={data.assetCount}
+          hint={`${data.monitoredAssetCount ?? data.assetCount} monitored`}
+          tone="brand"
+        />
+        <CyberStatCard
+          label="Evaluated Checks"
+          value={data.totalChecks ?? 0}
+          hint={`${data.passedFindings ?? 0} passed checks`}
+          tone="green"
+        />
+        <CyberStatCard
+          label="Attack Surface Issues"
+          value={data.attackSurfaceIssues}
+          hint="External exposure indicators"
+          tone={data.attackSurfaceIssues > 0 ? "orange" : "green"}
+        />
       </section>
 
       <div className="text-xs text-gray-400">
         Generated: {new Date(data.generatedUtc).toLocaleString()}
-        {data.latestScanUtc ? ` · Latest scan: ${new Date(data.latestScanUtc).toLocaleString()}` : ""}
+        {data.latestScanUtc
+          ? ` · Latest scan: ${new Date(data.latestScanUtc).toLocaleString()}`
+          : ""}
       </div>
     </div>
   );
