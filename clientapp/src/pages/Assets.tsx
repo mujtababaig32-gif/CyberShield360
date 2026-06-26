@@ -1,16 +1,37 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { AssetApi } from "../api/endpoints";
+import CyberStatCard from "../components/CyberStatCard";
+import CyberStatusBadge from "../components/CyberStatusBadge";
 import type { Asset } from "../types";
 
 const SCAN_TYPES = [
-  { v: 6, label: "Full Posture" },
-  { v: 0, label: "SSL/TLS" },
-  { v: 1, label: "Headers" },
-  { v: 2, label: "DNS" },
-  { v: 3, label: "SPF" },
-  { v: 4, label: "DKIM" },
-  { v: 5, label: "DMARC" },
+  { v: 6, label: "Full Posture", hint: "Complete assessment" },
+  { v: 0, label: "SSL/TLS", hint: "Certificate check" },
+  { v: 1, label: "Headers", hint: "Browser protection" },
+  { v: 2, label: "DNS", hint: "Domain records" },
+  { v: 3, label: "SPF", hint: "Sender policy" },
+  { v: 4, label: "DKIM", hint: "Email signing" },
+  { v: 5, label: "DMARC", hint: "Spoofing defense" },
 ];
+
+function formatDate(value?: string | null) {
+  if (!value) return "Never";
+  return new Date(value).toLocaleString();
+}
+
+function scoreTone(score?: number | null): "green" | "orange" | "red" | "slate" {
+  if (score === undefined || score === null) return "slate";
+  if (score >= 80) return "green";
+  if (score >= 60) return "orange";
+  return "red";
+}
+
+function scoreStatus(score?: number | null) {
+  if (score === undefined || score === null) return "Not Scanned";
+  if (score >= 80) return "Healthy";
+  if (score >= 60) return "Needs Review";
+  return "High Risk";
+}
 
 export default function Assets() {
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -38,10 +59,37 @@ export default function Assets() {
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
-  const add = async (e: React.FormEvent) => {
+  const stats = useMemo(() => {
+    const scanned = assets.filter(
+      (asset) => asset.latestScore !== undefined && asset.latestScore !== null
+    );
+
+    const highRisk = assets.filter(
+      (asset) => asset.latestScore !== undefined && asset.latestScore !== null && asset.latestScore < 60
+    );
+
+    const averageScore =
+      scanned.length === 0
+        ? "-"
+        : Math.round(
+            scanned.reduce((total, asset) => total + Number(asset.latestScore ?? 0), 0) /
+              scanned.length
+          );
+
+    return {
+      total: assets.length,
+      primary: assets.filter((asset) => asset.isPrimary).length,
+      discovered: assets.filter((asset) => !asset.isPrimary).length,
+      scanned: scanned.length,
+      highRisk: highRisk.length,
+      averageScore,
+    };
+  }, [assets]);
+
+  const add = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const cleanDomain = domain.trim().toLowerCase();
@@ -145,25 +193,27 @@ export default function Assets() {
   };
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+    <div className="space-y-6">
+      <header className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Assets & Scans</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Assets & Scans</h1>
           <p className="text-sm text-gray-500">
-            Add assets, run posture scans, discover subdomains, and download reports.
+            Add client domains, run security assessments, discover subdomains, and download client-ready reports.
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
+            type="button"
             onClick={load}
             disabled={loading}
-            className="border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
+            className="btn-ghost"
           >
             {loading ? "Refreshing..." : "Refresh"}
           </button>
 
           <button
+            type="button"
             onClick={scanAll}
             disabled={scanAllLoading || assets.length === 0}
             className="btn-primary disabled:opacity-50"
@@ -171,32 +221,52 @@ export default function Assets() {
             {scanAllLoading ? "Scanning..." : "Scan All Assets"}
           </button>
         </div>
-      </div>
+      </header>
 
-      <form onSubmit={add} className="card flex flex-col sm:flex-row gap-3 mb-4">
-        <input
-          className="input"
-          placeholder="example.com"
-          value={domain}
-          onChange={(e) => setDomain(e.target.value)}
-        />
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <CyberStatCard label="Total Assets" value={stats.total} hint="All domains in scope" tone="brand" />
+        <CyberStatCard label="Primary Assets" value={stats.primary} hint="Client-provided targets" tone="green" />
+        <CyberStatCard label="Discovered" value={stats.discovered} hint="Found during discovery" tone="slate" />
+        <CyberStatCard label="Scanned" value={stats.scanned} hint="Have latest score" tone="brand" />
+        <CyberStatCard label="Avg Score" value={stats.averageScore} hint="Across scanned assets" tone="orange" />
+      </section>
 
-        <button
-          className="btn-primary justify-center disabled:opacity-50"
-          disabled={adding}
-        >
-          {adding ? "Adding..." : "Add Asset"}
-        </button>
+      <form
+        onSubmit={add}
+        className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10"
+      >
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+          <div className="flex-1">
+            <label className="text-sm font-bold text-slate-200">Add website or domain</label>
+            <p className="mt-1 text-sm text-slate-500">
+              Add the client’s main domain. CyberShield360 can then scan posture and discover related assets.
+            </p>
+
+            <input
+              className="input mt-3"
+              placeholder="example.com"
+              value={domain}
+              onChange={(e) => setDomain(e.target.value)}
+            />
+          </div>
+
+          <button
+            className="btn-primary justify-center disabled:opacity-50"
+            disabled={adding}
+          >
+            {adding ? "Adding..." : "Add Asset"}
+          </button>
+        </div>
       </form>
 
       {msg && (
-        <div className="rounded-xl border border-brand-500/30 bg-brand-500/10 text-brand-500 p-3 text-sm mb-4">
+        <div className="rounded-2xl border border-brand-500/30 bg-brand-500/10 p-4 text-sm font-medium text-brand-300">
           {msg}
         </div>
       )}
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 text-red-600 p-3 text-sm mb-4 dark:bg-red-950 dark:border-red-900">
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-medium text-red-300">
           {error}
         </div>
       )}
@@ -206,110 +276,151 @@ export default function Assets() {
       )}
 
       {!loading && assets.length === 0 && (
-        <div className="card">
-          <h2 className="font-semibold mb-2">No assets added yet</h2>
-          <p className="text-sm text-gray-500">
-            Add your first domain above, then run scans and discover subdomains.
+        <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-8 text-center shadow-2xl shadow-black/10">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-500/10 text-2xl">
+            🌐
+          </div>
+          <h2 className="text-xl font-black text-white">No assets added yet</h2>
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-400">
+            Add your first domain above. After that, you can run scans, discover subdomains,
+            review exposure, and generate client-ready reports.
           </p>
         </div>
       )}
 
       {!loading && assets.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {assets.map((a) => {
-            const isBusy = busyAssetId === a.id;
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+          {assets.map((asset) => {
+            const isBusy = busyAssetId === asset.id;
+            const latestScore = asset.latestScore ?? null;
 
             return (
-              <div key={a.id} className="card overflow-hidden">
-                <div className="flex items-start justify-between gap-3 min-w-0">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-semibold break-all leading-snug">
-                      {a.domain}
+              <section
+                key={asset.id}
+                className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10"
+              >
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="break-all text-lg font-black text-white">
+                        {asset.domain}
+                      </h2>
+
+                      <CyberStatusBadge value={asset.isPrimary ? "Primary" : "Discovered"} />
+                      <CyberStatusBadge value={scoreStatus(latestScore)} />
                     </div>
 
-                    <div className="text-xs text-gray-500 mt-1">
-                      Last scanned:{" "}
-                      {a.lastScannedUtc
-                        ? new Date(a.lastScannedUtc).toLocaleString()
-                        : "Never"}
-                    </div>
-
-                    {a.latestScore !== undefined && a.latestScore !== null && (
-                      <div className="text-xs text-gray-500 mt-1 break-words">
-                        Latest Score:{" "}
-                        <span className="font-semibold text-brand-500">
-                          {a.latestScore}/100
-                        </span>{" "}
-                        | Grade:{" "}
-                        <span className="font-semibold">
-                          {a.latestGrade ?? "-"}
-                        </span>
+                    <div className="mt-3 grid gap-3 text-sm md:grid-cols-3">
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                        <div className="text-xs font-bold uppercase text-slate-500">
+                          Last Checked
+                        </div>
+                        <div className="mt-1 text-slate-300">
+                          {formatDate(asset.lastScannedUtc)}
+                        </div>
                       </div>
-                    )}
+
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                        <div className="text-xs font-bold uppercase text-slate-500">
+                          Security Score
+                        </div>
+                        <div className="mt-1 text-slate-300">
+                          {latestScore !== null ? `${latestScore}/100` : "Not scanned"}
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                        <div className="text-xs font-bold uppercase text-slate-500">
+                          Grade
+                        </div>
+                        <div className="mt-1 text-slate-300">
+                          {asset.latestGrade ?? "-"}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="shrink-0 flex flex-col items-end gap-2 max-w-[110px]">
-                    {a.isPrimary ? (
-                      <span className="badge bg-brand-600 whitespace-nowrap text-xs">
-                        Primary
-                      </span>
+                  <div className="shrink-0">
+                    {isBusy ? (
+                      <CyberStatusBadge value="Working" />
                     ) : (
-                      <span className="badge bg-gray-500 whitespace-nowrap text-xs">
-                        Discovered
-                      </span>
-                    )}
-
-                    {isBusy && (
-                      <span className="text-xs text-gray-500 whitespace-nowrap">
-                        Working...
-                      </span>
+                      <CyberStatusBadge value={scoreTone(latestScore) === "green" ? "Ready" : "Needs Review"} />
                     )}
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 mt-4">
-                  <button
-                    onClick={() => discover(a.id)}
-                    disabled={isBusy}
-                    className="btn-primary text-xs disabled:opacity-50"
-                  >
-                    Discover Subdomains
-                  </button>
+                <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/45 p-4">
+                  <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="font-black text-white">Assessment Actions</h3>
+                      <p className="text-xs text-slate-500">
+                        Run targeted checks or a complete posture scan.
+                      </p>
+                    </div>
 
-                  {SCAN_TYPES.map((t) => (
                     <button
-                      key={t.v}
-                      onClick={() => scan(a.id, t.v)}
+                      type="button"
+                      onClick={() => discover(asset.id)}
                       disabled={isBusy}
-                      className="btn-ghost text-xs border border-gray-200 dark:border-gray-700 disabled:opacity-50"
+                      className="btn-primary text-xs disabled:opacity-50"
                     >
-                      {t.label}
+                      Discover Subdomains
                     </button>
-                  ))}
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {SCAN_TYPES.map((scanType) => (
+                      <button
+                        key={scanType.v}
+                        type="button"
+                        onClick={() => scan(asset.id, scanType.v)}
+                        disabled={isBusy}
+                        className="rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-3 text-left transition hover:border-brand-500/40 hover:bg-brand-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <div className="text-sm font-black text-white">
+                          {scanType.label}
+                        </div>
+                        <div className="mt-1 text-xs text-slate-500">
+                          {scanType.hint}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                {a.latestScanId ? (
-                  <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <button
-                      onClick={() => downloadReport(a.id, "pdf")}
-                      className="btn-primary text-xs"
-                    >
-                      Download PDF
-                    </button>
+                {asset.latestScanId ? (
+                  <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="text-sm font-black text-white">Report Ready</div>
+                      <div className="text-xs text-slate-500">
+                        Download the latest full posture report for this asset.
+                      </div>
+                    </div>
 
-                    <button
-                      onClick={() => downloadReport(a.id, "xlsx")}
-                      className="btn-ghost text-xs border border-gray-200 dark:border-gray-700"
-                    >
-                      Download Excel
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => downloadReport(asset.id, "pdf")}
+                        className="btn-primary text-xs"
+                      >
+                        Download PDF
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => downloadReport(asset.id, "xlsx")}
+                        className="btn-ghost text-xs"
+                      >
+                        Download Excel
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <div className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-500">
                     Run a Full Posture scan to enable executive report downloads.
                   </div>
                 )}
-              </div>
+              </section>
             );
           })}
         </div>
