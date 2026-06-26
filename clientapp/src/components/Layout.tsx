@@ -24,29 +24,29 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: "/", label: "Dashboard", icon: "📊", hint: "Command center" },
       { to: "/executive-scorecard", label: "Executive Scorecard", icon: "📈", hint: "Board view" },
-      { to: "/ai-copilot", label: "AI Copilot", icon: "🤖", hint: "Assistant" },
+      { to: "/ai-copilot", label: "AI Copilot", icon: "🤖", hint: "Security advisor" },
       { to: "/search", label: "Global Search", icon: "🔍", hint: "Find anything" },
     ],
   },
   {
     title: "Client Success Hub",
     icon: "◆",
-    description: "One-time service workflow",
+    description: "Assess, explain, fix",
     items: [
       { to: "/service-overview", label: "Service Overview", icon: "🧭", hint: "Service model" },
-      { to: "/client-onboarding", label: "Client Onboarding", icon: "🤝", hint: "Intake" },
-      { to: "/client-packages", label: "Client Packages", icon: "📦", hint: "Offers" },
+      { to: "/client-onboarding", label: "Client Onboarding", icon: "🤝", hint: "Client intake" },
+      { to: "/client-packages", label: "Client Packages", icon: "📦", hint: "One-time offers" },
       { to: "/fix-plan", label: "Fix Plan", icon: "🛠️", hint: "Remediation" },
     ],
   },
   {
     title: "Deal Desk",
     icon: "◇",
-    description: "Quotes, reports, billing",
+    description: "Quote, report, close",
     items: [
       { to: "/client-quotation", label: "Client Quotation", icon: "💼", hint: "Proposal" },
-      { to: "/report-builder", label: "Report Builder", icon: "📄", hint: "Deliverables" },
-      { to: "/billing", label: "Billing", icon: "💳", hint: "Plans" },
+      { to: "/report-builder", label: "Report Builder", icon: "📄", hint: "Client report" },
+      { to: "/billing", label: "Billing", icon: "💳", hint: "Payment" },
     ],
   },
   {
@@ -65,9 +65,9 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "Risk & Trust",
     icon: "◒",
-    description: "GRC and third-party trust",
+    description: "GRC and business risk",
     items: [
-      { to: "/risks", label: "Risk Register", icon: "⚠️", hint: "Risk" },
+      { to: "/risks", label: "Risk Register", icon: "⚠️", hint: "Business risk" },
       { to: "/compliance", label: "Compliance Center", icon: "📋", hint: "GRC" },
       { to: "/policy-audit", label: "Policy & Audit", icon: "📑", hint: "Audit" },
       { to: "/framework-mapping", label: "Framework Mapping", icon: "🧩", hint: "Controls" },
@@ -77,30 +77,30 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "Human Defense",
     icon: "◐",
-    description: "Awareness and training",
+    description: "Training and awareness",
     items: [
-      { to: "/security-awareness", label: "Security Awareness", icon: "🎓", hint: "Training" },
+      { to: "/security-awareness", label: "Security Awareness", icon: "🎓", hint: "Awareness" },
       { to: "/phishing-simulation", label: "Phishing Simulation", icon: "🎣", hint: "Testing" },
-      { to: "/client-training", label: "Client Training", icon: "🧑‍🏫", hint: "Education" },
+      { to: "/client-training", label: "Client Training", icon: "🧑‍🏫", hint: "Client education" },
     ],
   },
   {
     title: "Threat Ops",
     icon: "✦",
-    description: "Monitoring and response",
+    description: "Monitor and respond",
     items: [
       { to: "/soc", label: "SOC Center", icon: "🚨", hint: "Alerts" },
       { to: "/threat-intelligence", label: "Threat Intelligence", icon: "🎯", hint: "Intel" },
       { to: "/dark-web", label: "Dark Web", icon: "🕶️", hint: "Exposure" },
       { to: "/incident-playbooks", label: "Incident Playbooks", icon: "🧯", hint: "Response" },
-      { to: "/ai-remediation", label: "AI Remediation", icon: "🛠️", hint: "Fixes" },
+      { to: "/ai-remediation", label: "AI Remediation", icon: "🛠️", hint: "Fix guidance" },
       { to: "/audit-logs", label: "Audit Logs", icon: "🧾", hint: "Evidence" },
     ],
   },
   {
     title: "Control Room",
     icon: "⚙",
-    description: "Platform access and settings",
+    description: "Platform administration",
     items: [
       { to: "/saas-admin", label: "SaaS Admin", icon: "🏗️", hint: "Tenants" },
       { to: "/user-management", label: "User Management", icon: "👥", hint: "Users" },
@@ -134,7 +134,7 @@ function getPageTitle(pathname: string) {
 function getPageHint(pathname: string) {
   const exact = getAllItems().find((item) => item.to === pathname);
   if (exact) return exact.hint;
-  return "Unified visibility across risk, exposure, compliance, and operations";
+  return "Identify, explain, report, fix, and train clients with CyberShield360";
 }
 
 function forceDarkMode() {
@@ -199,9 +199,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <div className="flex items-center justify-between gap-2">
             <div>
               <div className="text-[10px] uppercase tracking-wide text-slate-400">
-                Workspace
+                Service Model
               </div>
-              <div className="text-sm font-bold">CyberShield360 Tenant</div>
+              <div className="text-sm font-bold">Assessment + Remediation</div>
             </div>
 
             <span className="rounded-full bg-brand-500/15 px-2 py-1 text-[10px] font-bold text-brand-300 ring-1 ring-brand-500/30">
@@ -218,10 +218,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <nav className="flex-1 overflow-y-auto px-3 py-4 text-sm">
         <div className="mb-3 px-3">
           <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-            SaaS Navigation
+            CyberShield Workflow
           </div>
           <div className="mt-1 text-xs text-slate-400">
-            Assess → Fix → Report → Control
+            Assess → Explain → Fix → Report → Train
           </div>
         </div>
 

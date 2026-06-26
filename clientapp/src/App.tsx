@@ -9,11 +9,16 @@ import Assets from "./pages/Assets";
 import AttackPath from "./pages/AttackPath";
 import AuditLogs from "./pages/AuditLogs";
 import Billing from "./pages/Billing";
+import ClientOnboarding from "./pages/ClientOnboarding";
+import ClientPackages from "./pages/ClientPackages";
+import ClientQuotation from "./pages/ClientQuotation";
+import ClientTraining from "./pages/ClientTraining";
 import CloudPosture from "./pages/CloudPosture";
 import ComplianceCenter from "./pages/ComplianceCenter";
 import DarkWebMonitoring from "./pages/DarkWebMonitoring";
 import Dashboard from "./pages/Dashboard";
 import ExecutiveScorecard from "./pages/ExecutiveScorecard";
+import FixPlan from "./pages/FixPlan";
 import FrameworkMapping from "./pages/FrameworkMapping";
 import GlobalSearch from "./pages/GlobalSearch";
 import GoogleAuth from "./pages/GoogleAuth";
@@ -25,10 +30,12 @@ import PhishingSimulation from "./pages/PhishingSimulation";
 import PolicyAudit from "./pages/PolicyAudit";
 import Profile from "./pages/Profile";
 import Rbac from "./pages/Rbac";
+import ReportBuilder from "./pages/ReportBuilder";
 import Risks from "./pages/Risks";
 import SaasAdmin from "./pages/SaasAdmin";
 import ScheduledScans from "./pages/ScheduledScans";
 import SecurityAwareness from "./pages/SecurityAwareness";
+import ServiceOverview from "./pages/ServiceOverview";
 import Settings from "./pages/Settings";
 import SocCenter from "./pages/SocCenter";
 import TenantRegistration from "./pages/TenantRegistration";
@@ -56,37 +63,62 @@ export default function App() {
         }
       >
         <Route path="/" element={<Dashboard />} />
-        <Route path="/profile" element={<Profile />} />
+
+        {/* Command Center */}
         <Route path="/executive-scorecard" element={<ExecutiveScorecard />} />
-        <Route path="/threat-intelligence" element={<ThreatIntelligence />} />
         <Route path="/ai-copilot" element={<AiCopilot />} />
-        <Route path="/dark-web" element={<DarkWebMonitoring />} />
-        <Route path="/security-awareness" element={<SecurityAwareness />} />
-        <Route path="/phishing-simulation" element={<PhishingSimulation />} />
-        <Route path="/policy-audit" element={<PolicyAudit />} />
-        <Route path="/framework-mapping" element={<FrameworkMapping />} />
-        <Route path="/cloud-posture" element={<CloudPosture />} />
-        <Route path="/attack-path" element={<AttackPath />} />
-        <Route path="/incident-playbooks" element={<IncidentPlaybook />} />
-        <Route path="/soc" element={<SocCenter />} />
-        <Route path="/asset-inventory" element={<AssetInventory />} />
-        <Route path="/vendor-risk" element={<VendorRisk />} />
-        <Route path="/compliance" element={<ComplianceCenter />} />
-        <Route path="/ai-remediation" element={<AiRemediation />} />
+        <Route path="/search" element={<GlobalSearch />} />
+
+        {/* Client Success Hub */}
+        <Route path="/service-overview" element={<ServiceOverview />} />
+        <Route path="/client-onboarding" element={<ClientOnboarding />} />
+        <Route path="/client-packages" element={<ClientPackages />} />
+        <Route path="/fix-plan" element={<FixPlan />} />
+
+        {/* Deal Desk */}
+        <Route path="/client-quotation" element={<ClientQuotation />} />
+        <Route path="/report-builder" element={<ReportBuilder />} />
+        <Route path="/billing" element={<Billing />} />
+
+        {/* Attack Surface */}
         <Route path="/assets" element={<Assets />} />
+        <Route path="/asset-inventory" element={<AssetInventory />} />
         <Route path="/scheduled-scans" element={<ScheduledScans />} />
         <Route path="/vulnerabilities" element={<Vulnerabilities />} />
+        <Route path="/cloud-posture" element={<CloudPosture />} />
+        <Route path="/attack-path" element={<AttackPath />} />
+
+        {/* Risk & Trust */}
         <Route path="/risks" element={<Risks />} />
-        <Route path="/notifications" element={<NotificationsCenter />} />
+        <Route path="/compliance" element={<ComplianceCenter />} />
+        <Route path="/policy-audit" element={<PolicyAudit />} />
+        <Route path="/framework-mapping" element={<FrameworkMapping />} />
+        <Route path="/vendor-risk" element={<VendorRisk />} />
+
+        {/* Human Defense */}
+        <Route path="/security-awareness" element={<SecurityAwareness />} />
+        <Route path="/phishing-simulation" element={<PhishingSimulation />} />
+        <Route path="/client-training" element={<ClientTraining />} />
+
+        {/* Threat Ops */}
+        <Route path="/soc" element={<SocCenter />} />
+        <Route path="/threat-intelligence" element={<ThreatIntelligence />} />
+        <Route path="/dark-web" element={<DarkWebMonitoring />} />
+        <Route path="/incident-playbooks" element={<IncidentPlaybook />} />
+        <Route path="/ai-remediation" element={<AiRemediation />} />
+        <Route path="/audit-logs" element={<AuditLogs />} />
+
+        {/* Control Room */}
         <Route path="/saas-admin" element={<SaasAdmin />} />
-        <Route path="/microsoft-auth" element={<MicrosoftAuth />} />
-        <Route path="/google-auth" element={<GoogleAuth />} />
         <Route path="/user-management" element={<UserManagement />} />
         <Route path="/rbac" element={<Rbac />} />
-        <Route path="/audit-logs" element={<AuditLogs />} />
-        <Route path="/billing" element={<Billing />} />
-        <Route path="/search" element={<GlobalSearch />} />
+        <Route path="/notifications" element={<NotificationsCenter />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />
+
+        {/* Auth Callback Pages */}
+        <Route path="/microsoft-auth" element={<MicrosoftAuth />} />
+        <Route path="/google-auth" element={<GoogleAuth />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
