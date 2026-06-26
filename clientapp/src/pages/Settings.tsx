@@ -60,12 +60,12 @@ export default function Settings() {
     setWhiteLabelEnabled(s.whiteLabelEnabled ?? true);
   };
 
-  const load = async (showSuccessMessage = false) => {
+  const load = async (showMessage = false) => {
     try {
       setLoading(true);
       setError(null);
 
-      if (showSuccessMessage) {
+      if (showMessage) {
         setMsg("Refreshing settings...");
       }
 
@@ -73,7 +73,7 @@ export default function Settings() {
       setSummary(result);
       applyBranding(result.branding ?? {});
 
-      if (showSuccessMessage) {
+      if (showMessage) {
         setMsg("Settings refreshed successfully.");
       }
     } catch {
@@ -81,7 +81,7 @@ export default function Settings() {
         const branding = await SettingsApi.getBranding();
         applyBranding(branding);
 
-        if (showSuccessMessage) {
+        if (showMessage) {
           setMsg("Branding settings refreshed successfully.");
         }
       } catch {
@@ -216,6 +216,7 @@ export default function Settings() {
                 checked={whiteLabelEnabled}
                 onChange={(e) => setWhiteLabelEnabled(e.target.checked)}
               />
+
               <span>
                 <span className="block font-bold">Enable white-label branding</span>
                 <span className="text-sm text-slate-500">
