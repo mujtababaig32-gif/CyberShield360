@@ -1,22 +1,68 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { AttackPathApi } from "../api/endpoints";
-
+import CyberChartCard from "../components/CyberChartCard";
+import CyberStatCard from "../components/CyberStatCard";
+import CyberStatusBadge from "../components/CyberStatusBadge";
+import CyberTable from "../components/CyberTable";
 import ModuleTabs from "../components/ModuleTabs";
-type CrownJewel = { id: string; asset: string; criticality: string; exposureScore: number; attackPaths: number };
-type AttackPath = { id: string; source: string; target: string; risk: string; pathLength: number; likelihood: number; recommendation: string };
-type ExposureChain = { chain: string; severity: string; status: string };
-type AttackPathSummary = { generatedUtc: string; assetsInScope: number; vulnerabilitiesInScope?: number; crownJewelCount: number; attackPathCount: number; criticalPaths: number; averageLikelihood: number; crownJewels: CrownJewel[]; attackPaths: AttackPath[]; exposureChains: ExposureChain[]; recommendations: string[] };
 
-const TABS = ["Overview", "Crown Jewels", "Attack Paths", "Exposure Chains", "Reports", "Settings"];
+type CrownJewel = {
+  id: string;
+  asset: string;
+  criticality: string;
+  exposureScore: number;
+  attackPaths: number;
+};
 
-function badgeColor(value: string) {
-  const v = value.toLowerCase();
-  if (v.includes("critical")) return "bg-red-700";
-  if (v.includes("high")) return "bg-red-600";
-  if (v.includes("medium") || v.includes("review")) return "bg-orange-500";
-  if (v.includes("low")) return "bg-green-600";
-  return "bg-gray-600";
-}
+type AttackPathItem = {
+  id: string;
+  source: string;
+  target: string;
+  risk: string;
+  pathLength: number;
+  likelihood: number;
+  recommendation: string;
+};
+
+type ExposureChain = {
+  chain: string;
+  severity: string;
+  status: string;
+};
+
+type AttackPathSummary = {
+  generatedUtc: string;
+  assetsInScope: number;
+  vulnerabilitiesInScope?: number;
+  crownJewelCount: number;
+  attackPathCount: number;
+  criticalPaths: number;
+  averageLikelihood: number;
+  crownJewels: CrownJewel[];
+  attackPaths: AttackPathItem[];
+  exposureChains: ExposureChain[];
+  recommendations: string[];
+};
+
+const TABS = [
+  "Overview",
+  "Crown Jewels",
+  "Attack Paths",
+  "Exposure Chains",
+  "Reports",
+  "Settings",
+];
+
+const RISK_ORDER = ["Critical", "High", "Medium", "Low", "Info"];
 
 function csvSafe(value: unknown) {
   const text = String(value ?? "");
@@ -27,6 +73,7 @@ function downloadTextFile(filename: string, content: string) {
   const blob = new Blob([content], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
+
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
@@ -40,6 +87,20 @@ function formatDate(value?: string | null) {
   return new Date(value).toLocaleString();
 }
 
+function exposureStatus(score: number) {
+  if (score >= 80) return "Critical Exposure";
+  if (score >= 60) return "High Exposure";
+  if (score >= 40) return "Medium Exposure";
+  return "Lower Exposure";
+}
+
+function riskPriority(risk: string) {
+  if (risk === "Critical") return "Immediate";
+  if (risk === "High") return "Priority";
+  if (risk === "Medium") return "Planned";
+  return "Monitor";
+}
+
 export default function AttackPath() {
   const [data, setData] = useState<AttackPathSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -47,42 +108,73 @@ export default function AttackPath() {
   const [query, setQuery] = useState("");
   const [riskFilter, setRiskFilter] = useState("All");
   const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const load = async () => {
     try {
+      setLoading(true);
       setError(null);
+
       const result = await AttackPathApi.summary();
       setData(result);
     } catch {
       setError("Failed to load attack path analysis.");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
   const filteredPaths = useMemo(() => {
     if (!data) return [];
+
     const q = query.toLowerCase();
-    return data.attackPaths.filter((p) => {
+
+    return data.attackPaths.filter((path) => {
       const matchesQuery =
-        p.source.toLowerCase().includes(q) ||
-        p.target.toLowerCase().includes(q) ||
-        p.recommendation.toLowerCase().includes(q) ||
-        p.risk.toLowerCase().includes(q);
-      const matchesRisk = riskFilter === "All" || p.risk === riskFilter;
+        path.source.toLowerCase().includes(q) ||
+        path.target.toLowerCase().includes(q) ||
+        path.recommendation.toLowerCase().includes(q) ||
+        path.risk.toLowerCase().includes(q);
+
+      const matchesRisk = riskFilter === "All" || path.risk === riskFilter;
+
       return matchesQuery && matchesRisk;
     });
   }, [data, query, riskFilter]);
 
+  const riskDistribution = useMemo(() => {
+    if (!data) return [];
+
+    return RISK_ORDER.map((risk) => ({
+      risk,
+      count: data.attackPaths.filter((path) => path.risk === risk).length,
+    })).filter((row) => row.count > 0);
+  }, [data]);
+
   const exportPaths = () => {
     if (!data) return;
+
     const rows = [
-      ["Source", "Target", "Risk", "Path Length", "Likelihood", "Recommendation"],
-      ...filteredPaths.map((p) => [p.source, p.target, p.risk, p.pathLength, `${p.likelihood}%`, p.recommendation]),
+      ["Source", "Target", "Risk", "Path Length", "Likelihood", "Recommended Fix"],
+      ...filteredPaths.map((path) => [
+        path.source,
+        path.target,
+        path.risk,
+        path.pathLength,
+        `${path.likelihood}%`,
+        path.recommendation,
+      ]),
     ];
-    downloadTextFile("cybershield360-attack-paths.csv", rows.map((r) => r.map(csvSafe).join(",")).join("\n"));
+
+    downloadTextFile(
+      "cybershield360-attack-paths.csv",
+      rows.map((row) => row.map(csvSafe).join(",")).join("\n")
+    );
+
     setMessage("Attack path report downloaded.");
   };
 
@@ -91,67 +183,442 @@ export default function AttackPath() {
     setMessage(`${setting} saved locally.`);
   };
 
-  if (error) return <div className="text-red-500">{error}</div>;
-  if (!data) return <div className="text-gray-500">Loading attack path analysis...</div>;
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-semibold text-red-300">
+        {error}
+      </div>
+    );
+  }
+
+  if (!data) {
+    return <div className="text-gray-500">Loading attack path analysis...</div>;
+  }
 
   return (
-    <div>
-      <header className="mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div className="space-y-6">
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Attack Path Analysis</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">Attack Path Analysis</h1>
           <p className="text-sm text-gray-500">
-            Build attack paths from real scan findings, risks, vulnerabilities, and internet-facing asset evidence.
+            Review how exposed assets, vulnerabilities, and crown jewels could connect into business-impacting paths.
           </p>
         </div>
-        <button onClick={load} className="btn-ghost border border-gray-200 dark:border-gray-700">Refresh</button>
+
+        <button type="button" onClick={load} disabled={loading} className="btn-ghost">
+          {loading ? "Refreshing..." : "Refresh"}
+        </button>
       </header>
 
-      <ModuleTabs tabs={TABS.map((t) => ({ key: t, label: t }))} activeKey={tab} onChange={setTab} />
+      <ModuleTabs
+        tabs={TABS.map((t) => ({ key: t, label: t }))}
+        activeKey={tab}
+        onChange={setTab}
+      />
 
-      {message && <div className="rounded-xl border border-brand-500/30 bg-brand-500/10 text-brand-500 p-3 text-sm mb-4">{message}</div>}
+      {message && (
+        <div className="rounded-2xl border border-brand-500/30 bg-brand-500/10 p-4 text-sm font-medium text-brand-300">
+          {message}
+        </div>
+      )}
 
       {tab === "Overview" && (
-        <div>
-          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-            <div className="card"><div className="text-xs text-gray-500">Assets in Scope</div><div className="text-3xl font-bold">{data.assetsInScope}</div></div>
-            <div className="card"><div className="text-xs text-gray-500">Crown Jewels</div><div className="text-3xl font-bold">{data.crownJewelCount}</div></div>
-            <div className="card"><div className="text-xs text-gray-500">Attack Paths</div><div className="text-3xl font-bold text-orange-500">{data.attackPathCount}</div></div>
-            <div className="card"><div className="text-xs text-gray-500">Critical Paths</div><div className="text-3xl font-bold text-red-600">{data.criticalPaths}</div></div>
-            <div className="card"><div className="text-xs text-gray-500">Avg Likelihood</div><div className="text-3xl font-bold">{data.averageLikelihood}%</div></div>
+        <div className="space-y-6">
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <CyberStatCard
+              label="Assets in Scope"
+              value={data.assetsInScope}
+              hint="Assets reviewed"
+              tone="brand"
+            />
+            <CyberStatCard
+              label="Crown Jewels"
+              value={data.crownJewelCount}
+              hint="High-value targets"
+              tone="orange"
+            />
+            <CyberStatCard
+              label="Attack Paths"
+              value={data.attackPathCount}
+              hint="Potential routes"
+              tone="brand"
+            />
+            <CyberStatCard
+              label="Critical Paths"
+              value={data.criticalPaths}
+              hint="Priority paths"
+              tone={data.criticalPaths > 0 ? "red" : "green"}
+            />
+            <CyberStatCard
+              label="Avg Likelihood"
+              value={`${data.averageLikelihood}%`}
+              hint="Path probability"
+              tone={data.averageLikelihood >= 70 ? "red" : "orange"}
+            />
           </section>
 
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="card"><h2 className="font-semibold mb-4">Top Recommendations</h2><div className="space-y-3">{data.recommendations.map((r, i) => <div key={i} className="rounded-xl border border-gray-200 dark:border-gray-700 p-4"><div className="text-xs text-gray-500 mb-1">Action #{i + 1}</div><div className="font-medium">{r}</div></div>)}</div></div>
-            <div className="card"><h2 className="font-semibold mb-4">Analysis Scope</h2><div className="space-y-3 text-sm"><div className="flex justify-between"><span>Assets</span><span className="font-bold">{data.assetsInScope}</span></div><div className="flex justify-between"><span>Open Vulnerabilities</span><span className="font-bold">{data.vulnerabilitiesInScope ?? 0}</span></div><div className="flex justify-between"><span>Exposure Chains</span><span className="font-bold">{data.exposureChains.length}</span></div><div className="pt-4 text-xs text-gray-500">Generated: {formatDate(data.generatedUtc)}</div></div></div>
+          <section className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <CyberChartCard
+                title="Attack Paths by Risk"
+                description="Risk distribution across the current attack path analysis."
+                insight={
+                  data.criticalPaths > 0
+                    ? `${data.criticalPaths} critical path(s) should be reviewed first.`
+                    : "No critical paths were identified in the current analysis."
+                }
+              >
+                {riskDistribution.length === 0 ? (
+                  <div className="flex h-[250px] items-center justify-center text-sm text-slate-500">
+                    No attack path risk data available yet.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={riskDistribution}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#33415555" />
+                      <XAxis dataKey="risk" tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                      <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                      <Tooltip />
+                      <Bar dataKey="count" radius={[10, 10, 0, 0]} fill="#10B5A6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CyberChartCard>
+            </div>
+
+            <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+              <div className="mb-5">
+                <h2 className="text-lg font-black tracking-tight text-white">
+                  Analysis Scope
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-400">
+                  Summary of what was included in this path review.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  ["Assets", data.assetsInScope],
+                  ["Open Vulnerabilities", data.vulnerabilitiesInScope ?? 0],
+                  ["Exposure Chains", data.exposureChains.length],
+                ].map(([label, value]) => (
+                  <div
+                    key={label}
+                    className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm"
+                  >
+                    <span className="text-slate-400">{label}</span>
+                    <span className="font-black text-white">{value}</span>
+                  </div>
+                ))}
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-xs leading-6 text-slate-500">
+                  Generated: {formatDate(data.generatedUtc)}
+                </div>
+              </div>
+            </section>
+          </section>
+
+          <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+            <div className="mb-5">
+              <h2 className="text-lg font-black tracking-tight text-white">
+                Top Recommendations
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-slate-400">
+                Highest-value actions to reduce exposure and protect key assets.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              {data.recommendations.length === 0 ? (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm text-slate-500">
+                  No recommendations available yet.
+                </div>
+              ) : (
+                data.recommendations.map((recommendation, index) => (
+                  <div
+                    key={`${recommendation}-${index}`}
+                    className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center"
+                  >
+                    <div className="mb-2 text-xs font-black uppercase tracking-wide text-slate-500">
+                      Action #{index + 1}
+                    </div>
+                    <div className="text-sm font-medium leading-6 text-slate-300">
+                      {recommendation}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </section>
         </div>
       )}
 
       {tab === "Crown Jewels" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {data.crownJewels.length === 0 ? <div className="card text-sm text-gray-500">No crown jewel candidates yet. Run full posture scans to identify exposed high-value assets.</div> : data.crownJewels.map((c) => <div key={c.id} className="card"><div className="flex justify-between gap-3 mb-2"><div><div className="font-semibold break-all">{c.asset}</div><div className="text-xs text-gray-500">Potential paths: {c.attackPaths}</div></div><span className={`badge ${badgeColor(c.criticality)}`}>{c.criticality}</span></div><div className="flex justify-between text-sm mb-1"><span>Exposure Score</span><span>{c.exposureScore}/100</span></div><div className="h-2 rounded-full bg-gray-200 dark:bg-gray-800 overflow-hidden"><div className="h-full bg-brand-600" style={{ width: `${c.exposureScore}%` }} /></div></div>)}
-        </div>
+        <CyberTable
+          title="Crown Jewel Candidates"
+          description="High-value assets that may create stronger business impact if reached through an attack path."
+          data={data.crownJewels}
+          emptyText="No crown jewel candidates yet. Run full posture scans to identify exposed high-value assets."
+          columns={[
+            {
+              key: "asset",
+              label: "Asset",
+              render: (crownJewel) => (
+                <div className="mx-auto min-w-72 text-center">
+                  <div className="break-all font-semibold text-white">
+                    {crownJewel.asset}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    {crownJewel.attackPaths} possible path(s)
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: "criticality",
+              label: "Criticality",
+              render: (crownJewel) => (
+                <CyberStatusBadge value={crownJewel.criticality} />
+              ),
+            },
+            {
+              key: "score",
+              label: "Exposure Score",
+              render: (crownJewel) => (
+                <div className="text-center">
+                  <div className="font-black text-white">
+                    {crownJewel.exposureScore}/100
+                  </div>
+                  <div className="mx-auto mt-2 h-2 w-28 overflow-hidden rounded-full bg-slate-800">
+                    <div
+                      className="h-full rounded-full bg-brand-500"
+                      style={{ width: `${crownJewel.exposureScore}%` }}
+                    />
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: "paths",
+              label: "Paths",
+              render: (crownJewel) => (
+                <div className="font-black text-white">{crownJewel.attackPaths}</div>
+              ),
+            },
+            {
+              key: "priority",
+              label: "Priority",
+              render: (crownJewel) => (
+                <CyberStatusBadge value={exposureStatus(crownJewel.exposureScore)} />
+              ),
+            },
+          ]}
+        />
       )}
 
       {tab === "Attack Paths" && (
-        <div className="card">
-          <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 mb-4"><h2 className="font-semibold">Prioritized Attack Paths</h2><div className="flex flex-col sm:flex-row gap-2"><input className="input" placeholder="Search source, target, recommendation..." value={query} onChange={(e) => setQuery(e.target.value)} /><select className="input" value={riskFilter} onChange={(e) => setRiskFilter(e.target.value)}><option>All</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select><button onClick={exportPaths} className="btn-primary">Export CSV</button></div></div>
-          {filteredPaths.length === 0 ? <div className="text-sm text-gray-500">No attack paths match the selected filters.</div> : <div className="space-y-3">{filteredPaths.map((p) => <div key={p.id} className="rounded-xl border border-gray-200 dark:border-gray-700 p-4"><div className="flex justify-between gap-3 mb-2"><div><div className="font-semibold">{p.source} → {p.target}</div><div className="text-xs text-gray-500">Path length: {p.pathLength} · Likelihood: {p.likelihood}%</div></div><span className={`badge ${badgeColor(p.risk)}`}>{p.risk}</span></div><div className="text-sm text-gray-500">{p.recommendation}</div></div>)}</div>}
+        <div className="space-y-6">
+          <section className="card grid grid-cols-1 gap-3 md:grid-cols-[1fr_220px_auto]">
+            <input
+              className="input"
+              placeholder="Search source, target, recommendation..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+
+            <select
+              className="input"
+              value={riskFilter}
+              onChange={(e) => setRiskFilter(e.target.value)}
+            >
+              <option>All</option>
+              <option>Critical</option>
+              <option>High</option>
+              <option>Medium</option>
+              <option>Low</option>
+            </select>
+
+            <button type="button" onClick={exportPaths} className="btn-primary">
+              Export CSV
+            </button>
+          </section>
+
+          <CyberTable
+            title="Prioritized Attack Paths"
+            description="Potential paths from exposed sources to important targets, with likelihood and recommended action."
+            data={filteredPaths}
+            emptyText="No attack paths match the selected filters."
+            columns={[
+              {
+                key: "source",
+                label: "Source",
+                render: (path) => (
+                  <div className="mx-auto min-w-52 break-all text-center font-semibold text-white">
+                    {path.source}
+                  </div>
+                ),
+              },
+              {
+                key: "target",
+                label: "Target",
+                render: (path) => (
+                  <div className="mx-auto min-w-52 break-all text-center font-semibold text-white">
+                    {path.target}
+                  </div>
+                ),
+              },
+              {
+                key: "risk",
+                label: "Risk",
+                render: (path) => <CyberStatusBadge value={path.risk} />,
+              },
+              {
+                key: "length",
+                label: "Path Length",
+                render: (path) => (
+                  <div className="font-black text-white">{path.pathLength}</div>
+                ),
+              },
+              {
+                key: "likelihood",
+                label: "Likelihood",
+                render: (path) => (
+                  <div className="font-black text-white">{path.likelihood}%</div>
+                ),
+              },
+              {
+                key: "recommendation",
+                label: "Recommended Fix",
+                render: (path) => (
+                  <div className="mx-auto min-w-80 text-center text-sm leading-6 text-slate-400">
+                    {path.recommendation}
+                  </div>
+                ),
+              },
+              {
+                key: "priority",
+                label: "Priority",
+                render: (path) => <CyberStatusBadge value={riskPriority(path.risk)} />,
+              },
+            ]}
+          />
         </div>
       )}
 
       {tab === "Exposure Chains" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {data.exposureChains.length === 0 ? <div className="card text-sm text-gray-500">No exposure chains generated yet.</div> : data.exposureChains.map((c, index) => <div key={`${c.chain}-${index}`} className="card"><div className="flex justify-between gap-3 mb-2"><div className="font-semibold">{c.chain}</div><span className={`badge ${badgeColor(c.severity)}`}>{c.severity}</span></div><div className="text-sm text-gray-500">Status: {c.status}</div></div>)}
-        </div>
+        <CyberTable
+          title="Exposure Chains"
+          description="Chain-level exposure narratives that explain how weaknesses may connect."
+          data={data.exposureChains}
+          emptyText="No exposure chains generated yet."
+          columns={[
+            {
+              key: "chain",
+              label: "Chain",
+              render: (chain) => (
+                <div className="mx-auto min-w-96 text-center font-semibold leading-6 text-white">
+                  {chain.chain}
+                </div>
+              ),
+            },
+            {
+              key: "severity",
+              label: "Severity",
+              render: (chain) => <CyberStatusBadge value={chain.severity} />,
+            },
+            {
+              key: "status",
+              label: "Status",
+              render: (chain) => <CyberStatusBadge value={chain.status} />,
+            },
+          ]}
+        />
       )}
 
       {tab === "Reports" && (
-        <div className="card"><h2 className="font-semibold mb-4">Attack Path Reports</h2><div className="grid grid-cols-1 md:grid-cols-3 gap-4"><div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4"><div className="font-semibold">Attack Path Export</div><div className="text-sm text-gray-500 mt-1">Download filtered attack path data.</div><button onClick={exportPaths} className="btn-primary mt-4">Download CSV</button></div><div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4"><div className="font-semibold">Crown Jewel Review</div><div className="text-sm text-gray-500 mt-1">Review highest exposure assets.</div><button onClick={() => setTab("Crown Jewels")} className="btn-primary mt-4">Open Review</button></div><div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4"><div className="font-semibold">Exposure Chains</div><div className="text-sm text-gray-500 mt-1">Review chain-level exposure narratives.</div><button onClick={() => setTab("Exposure Chains")} className="btn-primary mt-4">View Chains</button></div></div></div>
+        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+          <div className="mb-5">
+            <h2 className="text-lg font-black tracking-tight text-white">
+              Attack Path Reports
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-400">
+              Export path data or jump into focused reviews for high-value assets and exposure chains.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {[
+              {
+                title: "Attack Path Export",
+                text: "Download filtered attack path data.",
+                action: "Download CSV",
+                onClick: exportPaths,
+              },
+              {
+                title: "Crown Jewel Review",
+                text: "Review highest exposure assets.",
+                action: "Open Review",
+                onClick: () => setTab("Crown Jewels"),
+              },
+              {
+                title: "Exposure Chains",
+                text: "Review chain-level exposure narratives.",
+                action: "View Chains",
+                onClick: () => setTab("Exposure Chains"),
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center"
+              >
+                <div className="font-black text-white">{item.title}</div>
+                <div className="mt-2 min-h-10 text-sm leading-6 text-slate-400">
+                  {item.text}
+                </div>
+                <button type="button" onClick={item.onClick} className="btn-primary mt-4">
+                  {item.action}
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {tab === "Settings" && (
-        <div className="card"><h2 className="font-semibold mb-4">Attack Path Settings</h2><div className="space-y-3">{["Prioritize Internet-Facing Assets", "Include Risk Register Signals", "Require Full Posture Scan Evidence"].map((item) => <div key={item} className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between gap-4"><div><div className="font-semibold">{item}</div><div className="text-sm text-gray-500">Stored locally until dedicated settings endpoints are connected.</div></div><button onClick={() => saveSetting(item)} className="btn-primary">Save</button></div>)}</div></div>
+        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+          <div className="mb-5">
+            <h2 className="text-lg font-black tracking-tight text-white">
+              Attack Path Settings
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-400">
+              Local settings for how path reviews should prioritize evidence.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {[
+              "Prioritize Internet-Facing Assets",
+              "Include Risk Register Signals",
+              "Require Full Posture Scan Evidence",
+            ].map((item) => (
+              <div
+                key={item}
+                className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="text-center sm:text-left">
+                  <div className="font-semibold text-white">{item}</div>
+                  <div className="text-sm text-slate-500">
+                    Stored locally until dedicated settings endpoints are connected.
+                  </div>
+                </div>
+
+                <button type="button" onClick={() => saveSetting(item)} className="btn-primary">
+                  Save
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );
