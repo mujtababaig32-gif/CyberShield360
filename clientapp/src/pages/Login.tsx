@@ -5,7 +5,7 @@ import { AuthApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 
 const HIGHLIGHTS = [
-  { label: "Security visibility", value: "360°" },
+  { label: "Security visibility", value: "360Â°" },
   { label: "Guided remediation", value: "AI" },
   { label: "Operational control", value: "SOC" },
 ];
@@ -175,15 +175,15 @@ export default function Login() {
                 <div className="ring-3d ring-3d-three" />
 
                 <div className="shield-diamond">
-                  <div className="shield-diamond-inner">🛡️</div>
+                  <div className="shield-diamond-inner">ðŸ›¡ï¸</div>
                 </div>
               </div>
             </div>
           </main>
 
           <footer className="login-footer">
-            <span>© 2026 CyberShield360. Built for modern security teams.</span>
-            <span>Secure • Tenant-aware • Audit-ready</span>
+            <span>Â© 2026 CyberShield360. Built for modern security teams.</span>
+            <span>Secure â€¢ Tenant-aware â€¢ Audit-ready</span>
           </footer>
         </section>
 
@@ -230,19 +230,6 @@ export default function Login() {
                       onError={() => {
                         setError("Google login failed. Please try again.");
                       }}
-                     ghost w-full border-white/10 bg-white/5 text-white hover:bg-white/10"
-                  >
-                    Create company account
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div className="google-login-reliable">
-                    <GoogleLogin
-                      onSuccess={handleGoogleSuccess}
-                      onError={() => {
-                        setError("Google login failed. Please try again.");
-                      }}
                       useOneTap={false}
                       auto_select={false}
                       theme="filled_blue"
@@ -265,7 +252,7 @@ export default function Login() {
                     disabled
                     className="w-full cursor-not-allowed rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-500"
                   >
-                    Continue with Microsoft — Coming Soon
+                    Continue with Microsoft â€” Coming Soon
                   </button>
 
                   <div className="login-divider">
@@ -301,9 +288,9 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => navigate("/tenant-registration")}
-                    className="text-sm font-semibold text-brand-300 hover:text-brand-200"
+                    className="btn-ghost w-full border-white/10 bg-white/5 text-white hover:bg-white/10"
                   >
-                    Create a company account
+                    Create company account
                   </button>
                 </>
               )}
@@ -311,7 +298,7 @@ export default function Login() {
           </form>
 
           <div className="login-mobile-footer">
-            © 2026 CyberShield360. Built for modern security teams.
+            Â© 2026 CyberShield360. Built for modern security teams.
           </div>
         </section>
       </div>
