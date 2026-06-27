@@ -109,6 +109,7 @@ function downloadCsv(filename: string, rows: unknown[][]) {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+
   URL.revokeObjectURL(url);
 }
 
@@ -120,6 +121,33 @@ function controlPriority(control: FailedControl) {
   if (severity.includes("medium")) return "Planned";
 
   return "Monitor";
+}
+
+function DarkTooltip({ active, payload, label, suffix = "%" }: any) {
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div className="rounded-2xl border border-brand-500/30 bg-slate-950/95 px-4 py-3 text-sm shadow-2xl shadow-black/40 backdrop-blur-xl">
+      <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-brand-300">
+        {label}
+      </div>
+
+      <div className="space-y-1">
+        {payload.map((item: any) => (
+          <div
+            key={`${item.dataKey}-${item.value}`}
+            className="flex items-center justify-between gap-5 text-slate-300"
+          >
+            <span className="capitalize">{item.name || item.dataKey}</span>
+            <span className="font-black text-white">
+              {item.value}
+              {suffix}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function ComplianceCenter() {
@@ -209,7 +237,7 @@ export default function ComplianceCenter() {
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-semibold text-red-300">
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center text-sm font-semibold text-red-300">
         {error}
       </div>
     );
@@ -217,50 +245,64 @@ export default function ComplianceCenter() {
 
   if (loading || !data) {
     return (
-      <div className="card text-sm text-slate-500">
+      <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 text-center text-sm text-slate-400 shadow-2xl shadow-black/10">
         Loading compliance center...
       </div>
     );
   }
 
-  const scannedAssets = data.scannedAssets ?? data.domains.length;
+  const frameworks = data.frameworks ?? [];
+  const domains = data.domains ?? [];
+  const categories = data.categories ?? [];
+  const recommendations = data.recommendations ?? [];
+
+  const scannedAssets = data.scannedAssets ?? domains.length;
   const unscanned =
     data.dataQuality?.assetsWithoutFullPostureScan ??
     Math.max(0, data.assetCount - scannedAssets);
 
   const highCritical = data.highFailed + data.criticalFailed;
+  const passRate =
+    data.totalControls > 0
+      ? Math.round((data.passedControls / data.totalControls) * 100)
+      : 0;
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-500">
-            Governance Risk Compliance
+      <section className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/20">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="max-w-4xl">
+            <div className="mb-3 inline-flex rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-brand-300">
+              Risk & Trust
+            </div>
+
+            <h1 className="text-3xl font-black tracking-tight text-white">
+              Compliance Center
+            </h1>
+
+            <p className="mt-3 text-sm leading-7 text-slate-400">
+              Compliance readiness calculated from latest Full Posture scans,
+              mapped control families, failed security checks, asset evidence,
+              and tenant-level remediation recommendations.
+            </p>
           </div>
-          <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
-            Compliance Center
-          </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-            Compliance readiness calculated from latest Full Posture scans,
-            security controls, and tenant evidence.
-          </p>
-        </div>
 
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={load}
-            disabled={loading}
-            className="btn-ghost disabled:opacity-50"
-          >
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={load}
+              disabled={loading}
+              className="btn-ghost disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loading ? "Refreshing..." : "Refresh"}
+            </button>
 
-          <button type="button" onClick={exportControls} className="btn-primary">
-            Export Controls
-          </button>
+            <button type="button" onClick={exportControls} className="btn-primary">
+              Export Controls
+            </button>
+          </div>
         </div>
-      </header>
+      </section>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <CyberStatCard
@@ -295,6 +337,42 @@ export default function ComplianceCenter() {
         />
       </section>
 
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 text-center shadow-2xl shadow-black/10">
+          <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+            Pass Rate
+          </div>
+          <div className="mt-2 text-3xl font-black text-brand-300">{passRate}%</div>
+          <div className="mt-1 text-xs leading-5 text-slate-500">
+            Passed controls out of total tested controls.
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 text-center shadow-2xl shadow-black/10">
+          <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+            Critical Failed
+          </div>
+          <div className="mt-2 text-3xl font-black text-red-300">
+            {data.criticalFailed}
+          </div>
+          <div className="mt-1 text-xs leading-5 text-slate-500">
+            Immediate remediation controls.
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 text-center shadow-2xl shadow-black/10">
+          <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+            High Failed
+          </div>
+          <div className="mt-2 text-3xl font-black text-orange-300">
+            {data.highFailed}
+          </div>
+          <div className="mt-1 text-xs leading-5 text-slate-500">
+            Priority controls for governance readiness.
+          </div>
+        </div>
+      </section>
+
       {unscanned > 0 && (
         <div className="rounded-2xl border border-orange-500/30 bg-orange-500/10 p-4 text-center text-sm font-medium text-orange-300">
           {unscanned} asset(s) do not have a completed Full Posture scan yet.
@@ -303,7 +381,7 @@ export default function ComplianceCenter() {
       )}
 
       <ModuleTabs
-        tabs={TABS.map((t) => ({ key: t, label: t }))}
+        tabs={TABS.map((item) => ({ key: item, label: item }))}
         activeKey={tab}
         onChange={setTab}
       />
@@ -316,39 +394,37 @@ export default function ComplianceCenter() {
                 title="Control Category Readiness"
                 description="Readiness score by compliance control category."
                 insight={
-                  data.categories.length > 0
+                  categories.length > 0
                     ? "Use the lowest category scores to prioritize remediation planning."
                     : "Run Full Posture scans to populate control category readiness."
                 }
               >
-                {data.categories.length === 0 ? (
-                  <div className="flex h-[250px] items-center justify-center text-sm text-slate-500">
+                {categories.length === 0 ? (
+                  <div className="flex h-[250px] items-center justify-center text-center text-sm text-slate-500">
                     No category readiness data available yet.
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={data.categories}>
+                    <BarChart data={categories}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#33415555" />
-                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#94a3b8" }} />
-                      <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#94a3b8" }} />
-                      <Tooltip
-                        cursor={{ fill: "rgba(20, 184, 166, 0.08)" }}
-                        contentStyle={{
-                          background: "#020617",
-                          border: "1px solid rgba(255, 255, 255, 0.12)",
-                          borderRadius: "14px",
-                          color: "#e2e8f0",
-                          boxShadow: "0 18px 40px rgba(0, 0, 0, 0.35)",
-                        }}
-                        labelStyle={{
-                          color: "#99f6e4",
-                          fontWeight: 800,
-                        }}
-                        itemStyle={{
-                          color: "#e2e8f0",
-                        }}
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 11, fill: "#94a3b8" }}
                       />
-                      <Bar dataKey="score" radius={[10, 10, 0, 0]} fill="#10B5A6" />
+                      <YAxis
+                        domain={[0, 100]}
+                        tick={{ fontSize: 11, fill: "#94a3b8" }}
+                      />
+                      <Tooltip
+                        content={<DarkTooltip suffix="%" />}
+                        cursor={{ fill: "rgba(20, 184, 166, 0.08)" }}
+                      />
+                      <Bar
+                        dataKey="score"
+                        name="Readiness"
+                        radius={[10, 10, 0, 0]}
+                        fill="#10B5A6"
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -366,20 +442,29 @@ export default function ComplianceCenter() {
               </div>
 
               <div className="space-y-3">
-                {data.frameworks.length === 0 ? (
+                {frameworks.length === 0 ? (
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm text-slate-500">
                     No framework readiness data available.
                   </div>
                 ) : (
-                  data.frameworks.map((framework) => (
+                  frameworks.map((framework) => (
                     <div
                       key={framework.name}
                       className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center"
                     >
                       <div className="font-black text-white">{framework.name}</div>
+
                       <div className="mt-2 text-3xl font-black text-white">
                         {framework.score}%
                       </div>
+
+                      <div className="mx-auto mt-3 h-2 w-full max-w-48 overflow-hidden rounded-full bg-slate-800">
+                        <div
+                          className="h-full rounded-full bg-brand-500"
+                          style={{ width: `${framework.score}%` }}
+                        />
+                      </div>
+
                       <div className="mt-3 flex justify-center">
                         <CyberStatusBadge value={framework.status} />
                       </div>
@@ -389,6 +474,42 @@ export default function ComplianceCenter() {
               </div>
             </section>
           </section>
+
+          <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/10">
+            <h2 className="text-xl font-black text-white">Compliance Confidence</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Compliance readiness becomes more accurate when every asset has a completed Full Posture scan and failed controls are tied to real remediation evidence.
+            </p>
+
+            <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+                <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                  Data Source
+                </div>
+                <div className="mt-2 text-sm font-semibold leading-6 text-slate-300">
+                  {data.dataQuality?.source ?? "Latest tenant security records"}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+                <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                  Evidence Coverage
+                </div>
+                <div className="mt-2 text-sm font-semibold text-slate-300">
+                  {scannedAssets}/{data.assetCount} assets scanned
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+                <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                  Next Step
+                </div>
+                <div className="mt-2 text-sm font-semibold leading-6 text-slate-300">
+                  Fix failed controls, rescan, and export evidence.
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       )}
 
@@ -396,7 +517,7 @@ export default function ComplianceCenter() {
         <CyberTable
           title="Framework Readiness"
           description="Framework-level readiness derived from mapped scan control families."
-          data={data.frameworks}
+          data={frameworks}
           emptyText="No framework readiness data available."
           columns={[
             {
@@ -428,12 +549,20 @@ export default function ComplianceCenter() {
             {
               key: "status",
               label: "Status",
-              render: (framework) => <CyberStatusBadge value={framework.status} />,
+              render: (framework) => (
+                <div className="flex justify-center">
+                  <CyberStatusBadge value={framework.status} />
+                </div>
+              ),
             },
             {
               key: "readiness",
               label: "Readiness",
-              render: (framework) => <CyberStatusBadge value={scoreStatus(framework.score)} />,
+              render: (framework) => (
+                <div className="flex justify-center">
+                  <CyberStatusBadge value={scoreStatus(framework.score)} />
+                </div>
+              ),
             },
           ]}
         />
@@ -441,9 +570,12 @@ export default function ComplianceCenter() {
 
       {tab === "Controls" && (
         <div className="space-y-6">
-          <section className="card">
+          <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+            <label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+              Search Controls
+            </label>
             <input
-              className="input"
+              className="input mt-3"
               placeholder="Search domain, control, framework, severity..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -482,7 +614,11 @@ export default function ComplianceCenter() {
               {
                 key: "severity",
                 label: "Severity",
-                render: (item) => <CyberStatusBadge value={item.severity} />,
+                render: (item) => (
+                  <div className="flex justify-center">
+                    <CyberStatusBadge value={item.severity} />
+                  </div>
+                ),
               },
               {
                 key: "issue",
@@ -505,7 +641,11 @@ export default function ComplianceCenter() {
               {
                 key: "priority",
                 label: "Priority",
-                render: (item) => <CyberStatusBadge value={controlPriority(item)} />,
+                render: (item) => (
+                  <div className="flex justify-center">
+                    <CyberStatusBadge value={controlPriority(item)} />
+                  </div>
+                ),
               },
             ]}
           />
@@ -516,7 +656,7 @@ export default function ComplianceCenter() {
         <CyberTable
           title="Asset Compliance Ranking"
           description="Asset-level compliance score, grade, check count, and latest Full Posture evidence."
-          data={data.domains}
+          data={domains}
           emptyText="No completed Full Posture scans found yet."
           columns={[
             {
@@ -534,7 +674,7 @@ export default function ComplianceCenter() {
               render: (domain) => (
                 <div className="text-center">
                   <div className="text-2xl font-black text-white">{domain.score}%</div>
-                  <div className="mt-2">
+                  <div className="mt-2 flex justify-center">
                     <CyberStatusBadge value={scoreStatus(domain.score)} />
                   </div>
                 </div>
@@ -543,13 +683,17 @@ export default function ComplianceCenter() {
             {
               key: "grade",
               label: "Grade",
-              render: (domain) => <CyberStatusBadge value={`Grade ${domain.grade}`} />,
+              render: (domain) => (
+                <div className="flex justify-center">
+                  <CyberStatusBadge value={`Grade ${domain.grade}`} />
+                </div>
+              ),
             },
             {
               key: "checks",
               label: "Checks",
               render: (domain) => (
-                <div className="font-black text-white">
+                <div className="text-center font-black text-white">
                   {domain.totalChecks ?? "-"}
                 </div>
               ),
@@ -558,7 +702,7 @@ export default function ComplianceCenter() {
               key: "failed",
               label: "Failed",
               render: (domain) => (
-                <div className="font-black text-red-300">
+                <div className="text-center font-black text-red-300">
                   {domain.failedChecks ?? "-"}
                 </div>
               ),
@@ -567,7 +711,7 @@ export default function ComplianceCenter() {
               key: "last",
               label: "Last Full Scan",
               render: (domain) => (
-                <div className="whitespace-nowrap text-slate-400">
+                <div className="mx-auto min-w-48 whitespace-nowrap text-center text-slate-400">
                   {dateText(domain.completedUtc)}
                 </div>
               ),
@@ -588,12 +732,12 @@ export default function ComplianceCenter() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {data.recommendations.length === 0 ? (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center text-sm text-slate-500">
+            {recommendations.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center text-sm text-slate-500 lg:col-span-2">
                 No compliance recommendations available.
               </div>
             ) : (
-              data.recommendations.map((item, index) => (
+              recommendations.map((item, index) => (
                 <div
                   key={`${item}-${index}`}
                   className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center"
@@ -635,17 +779,19 @@ export default function ComplianceCenter() {
 
           <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 text-center shadow-2xl shadow-black/10 md:col-span-2">
             <h2 className="font-black text-white">Data Source</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
+            <p className="mx-auto mt-2 max-w-3xl text-sm leading-6 text-slate-400">
               {data.dataQuality?.source ?? "Latest tenant security records"}
             </p>
             {data.dataQuality?.note && (
-              <p className="mt-1 text-xs text-slate-500">{data.dataQuality.note}</p>
+              <p className="mx-auto mt-2 max-w-3xl text-xs leading-5 text-slate-500">
+                {data.dataQuality.note}
+              </p>
             )}
           </section>
         </div>
       )}
 
-      <div className="text-xs text-slate-400">
+      <div className="text-center text-xs text-slate-500">
         Generated: {new Date(data.generatedUtc).toLocaleString()}
       </div>
     </div>

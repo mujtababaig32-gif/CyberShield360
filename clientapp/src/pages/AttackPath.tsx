@@ -101,6 +101,30 @@ function riskPriority(risk: string) {
   return "Monitor";
 }
 
+function DarkTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div className="rounded-2xl border border-brand-500/30 bg-slate-950/95 px-4 py-3 text-sm shadow-2xl shadow-black/40 backdrop-blur-xl">
+      <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-brand-300">
+        {label}
+      </div>
+
+      <div className="space-y-1">
+        {payload.map((item: any) => (
+          <div
+            key={`${item.dataKey}-${item.value}`}
+            className="flex items-center justify-between gap-5 text-slate-300"
+          >
+            <span className="capitalize">{item.name || item.dataKey}</span>
+            <span className="font-black text-white">{item.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function AttackPath() {
   const [data, setData] = useState<AttackPathSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -192,7 +216,11 @@ export default function AttackPath() {
   }
 
   if (!data) {
-    return <div className="text-gray-500">Loading attack path analysis...</div>;
+    return (
+      <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 text-center text-sm text-slate-400 shadow-2xl shadow-black/10">
+        Loading attack path analysis...
+      </div>
+    );
   }
 
   return (
@@ -278,7 +306,7 @@ export default function AttackPath() {
                       <CartesianGrid strokeDasharray="3 3" stroke="#33415555" />
                       <XAxis dataKey="risk" tick={{ fontSize: 11, fill: "#94a3b8" }} />
                       <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} />
-                      <Tooltip />
+                      <Tooltip content={<DarkTooltip />} cursor={{ fill: "rgba(20, 184, 166, 0.08)" }} />
                       <Bar dataKey="count" radius={[10, 10, 0, 0]} fill="#10B5A6" />
                     </BarChart>
                   </ResponsiveContainer>

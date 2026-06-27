@@ -43,7 +43,6 @@ type VendorRiskSummary = {
 
 const RATINGS = ["All", "Critical", "High", "Medium", "Low", "Not Assessed"];
 
-
 function dateText(value?: string | null) {
   return value ? new Date(value).toLocaleString() : "Not reviewed";
 }
@@ -53,6 +52,12 @@ function vendorPriority(vendor: Vendor) {
   if (vendor.riskRating === "High") return "Priority";
   if (vendor.riskRating === "Medium") return "Planned";
   return "Monitor";
+}
+
+function scoreTextClass(score: number) {
+  if (score >= 80) return "text-green-300";
+  if (score >= 60) return "text-orange-300";
+  return "text-red-300";
 }
 
 function csvSafe(value: unknown) {
@@ -70,7 +75,32 @@ function downloadTextFile(filename: string, content: string) {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+
   URL.revokeObjectURL(url);
+}
+
+function DarkTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div className="rounded-2xl border border-brand-500/30 bg-slate-950/95 px-4 py-3 text-sm shadow-2xl shadow-black/40 backdrop-blur-xl">
+      <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-brand-300">
+        {label}
+      </div>
+
+      <div className="space-y-1">
+        {payload.map((item: any) => (
+          <div
+            key={`${item.dataKey}-${item.value}`}
+            className="flex items-center justify-between gap-5 text-slate-300"
+          >
+            <span className="capitalize">{item.name || item.dataKey}</span>
+            <span className="font-black text-white">{item.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function VendorRisk() {
@@ -105,7 +135,7 @@ export default function VendorRisk() {
 
     return data.vendors.filter((vendor) => {
       const matchesRating = rating === "All" || vendor.riskRating === rating;
-      const text = `${vendor.vendorName} ${vendor.website} ${vendor.reviewStatus} ${vendor.recommendedAction}`.toLowerCase();
+      const text = `${vendor.vendorName} ${vendor.website} ${vendor.reviewStatus} ${vendor.businessCriticality} ${vendor.recommendedAction}`.toLowerCase();
 
       return matchesRating && (!q || text.includes(q));
     });
@@ -129,10 +159,12 @@ export default function VendorRisk() {
         "Grade",
         "Risk",
         "Review Status",
+        "Business Criticality",
         "Failed Findings",
         "High Findings",
         "Email Issues",
         "Attack Surface Issues",
+        "Last Reviewed",
         "Recommended Action",
       ],
       ...vendors.map((vendor) => [
@@ -142,10 +174,12 @@ export default function VendorRisk() {
         vendor.grade,
         vendor.riskRating,
         vendor.reviewStatus,
+        vendor.businessCriticality,
         vendor.failedFindings,
         vendor.highFindings,
         vendor.emailSecurityIssues,
         vendor.attackSurfaceIssues,
+        vendor.lastReviewedUtc ?? "",
         vendor.recommendedAction,
       ]),
     ];
@@ -157,12 +191,16 @@ export default function VendorRisk() {
   };
 
   if (loading && !data) {
-    return <div className="card text-sm text-slate-500">Loading vendor risk center...</div>;
+    return (
+      <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 text-center text-sm text-slate-400 shadow-2xl shadow-black/10">
+        Loading vendor risk center...
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-semibold text-red-300">
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center text-sm font-semibold text-red-300">
         {error}
       </div>
     );
@@ -170,37 +208,116 @@ export default function VendorRisk() {
 
   if (!data) return null;
 
+  const approvalRate =
+    data.totalVendors > 0
+      ? Math.round((data.approvedVendors / data.totalVendors) * 100)
+      : 0;
+
+  const reviewBacklog =
+    data.totalVendors > 0
+      ? Math.round((data.pendingReviews / data.totalVendors) * 100)
+      : 0;
+
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-500">
-            Third-Party Risk
-          </p>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Vendor Risk Center
-          </h1>
-          <p className="section-subtitle mt-1">
-            Vendor scorecards derived from latest scans, attack-surface findings, and email-security evidence.
-          </p>
-        </div>
+      <section className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/20">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="max-w-4xl">
+            <div className="mb-3 inline-flex rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-brand-300">
+              Risk & Trust
+            </div>
 
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={load} disabled={loading} className="btn-ghost">
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
-          <button type="button" onClick={exportVendors} className="btn-primary">
-            Export Vendors
-          </button>
+            <h1 className="text-3xl font-black tracking-tight text-white">
+              Vendor Risk Center
+            </h1>
+
+            <p className="mt-3 text-sm leading-7 text-slate-400">
+              Vendor scorecards derived from latest scans, attack-surface findings,
+              business criticality, review status, and email-security evidence.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={load} disabled={loading} className="btn-ghost">
+              {loading ? "Refreshing..." : "Refresh"}
+            </button>
+
+            <button type="button" onClick={exportVendors} className="btn-primary">
+              Export Vendors
+            </button>
+          </div>
         </div>
-      </header>
+      </section>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <CyberStatCard label="Total Vendors" value={data.totalVendors} hint="Vendors in scope" tone="brand" />
-        <CyberStatCard label="Critical" value={data.criticalVendors} hint="Immediate risk" tone="red" />
-        <CyberStatCard label="High Risk" value={data.highRiskVendors} hint="Priority review" tone="orange" />
-        <CyberStatCard label="Pending Reviews" value={data.pendingReviews} hint="Needs decision" tone="orange" />
-        <CyberStatCard label="Approved" value={data.approvedVendors} hint="Accepted vendors" tone="green" />
+        <CyberStatCard
+          label="Total Vendors"
+          value={data.totalVendors}
+          hint="Vendors in scope"
+          tone="brand"
+        />
+        <CyberStatCard
+          label="Critical"
+          value={data.criticalVendors}
+          hint="Immediate risk"
+          tone="red"
+        />
+        <CyberStatCard
+          label="High Risk"
+          value={data.highRiskVendors}
+          hint="Priority review"
+          tone="orange"
+        />
+        <CyberStatCard
+          label="Pending Reviews"
+          value={data.pendingReviews}
+          hint="Needs decision"
+          tone="orange"
+        />
+        <CyberStatCard
+          label="Approved"
+          value={data.approvedVendors}
+          hint="Accepted vendors"
+          tone="green"
+        />
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 text-center shadow-2xl shadow-black/10">
+          <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+            Approval Rate
+          </div>
+          <div className="mt-2 text-3xl font-black text-green-300">
+            {approvalRate}%
+          </div>
+          <div className="mt-1 text-xs leading-5 text-slate-500">
+            Approved vendors out of total vendors.
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 text-center shadow-2xl shadow-black/10">
+          <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+            Review Backlog
+          </div>
+          <div className="mt-2 text-3xl font-black text-orange-300">
+            {reviewBacklog}%
+          </div>
+          <div className="mt-1 text-xs leading-5 text-slate-500">
+            Vendors waiting for review or decision.
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 text-center shadow-2xl shadow-black/10">
+          <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+            Filtered View
+          </div>
+          <div className="mt-2 text-3xl font-black text-brand-300">
+            {vendors.length}
+          </div>
+          <div className="mt-1 text-xs leading-5 text-slate-500">
+            Vendors matching current search/filter.
+          </div>
+        </div>
       </section>
 
       <section className="grid grid-cols-1 gap-5 lg:grid-cols-3">
@@ -218,20 +335,12 @@ export default function VendorRisk() {
               <BarChart data={riskBreakdown}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#33415555" />
                 <XAxis dataKey="risk" tick={{ fontSize: 11, fill: "#94a3b8" }} />
-                <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#94a3b8" }} />
                 <Tooltip
+                  content={<DarkTooltip />}
                   cursor={{ fill: "rgba(20, 184, 166, 0.08)" }}
-                  contentStyle={{
-                    background: "#020617",
-                    border: "1px solid rgba(255, 255, 255, 0.12)",
-                    borderRadius: "14px",
-                    color: "#e2e8f0",
-                    boxShadow: "0 18px 40px rgba(0, 0, 0, 0.35)",
-                  }}
-                  labelStyle={{ color: "#99f6e4", fontWeight: 800 }}
-                  itemStyle={{ color: "#e2e8f0" }}
                 />
-                <Bar dataKey="count" radius={[10, 10, 0, 0]} fill="#10B5A6" />
+                <Bar dataKey="count" name="Vendors" radius={[10, 10, 0, 0]} fill="#10B5A6" />
               </BarChart>
             </ResponsiveContainer>
           </CyberChartCard>
@@ -242,9 +351,12 @@ export default function VendorRisk() {
             <h2 className="text-lg font-black tracking-tight text-white">
               Review Guidance
             </h2>
+
             <p className="mt-2 text-sm leading-6 text-slate-400">
-              Focus first on vendors with high findings, poor security scores, email-security issues, or external exposure.
+              Focus first on vendors with high findings, poor security scores,
+              weak email-security posture, business criticality, or exposed attack surface.
             </p>
+
             <div className="mt-5 rounded-2xl border border-brand-500/20 bg-brand-500/10 p-4 text-xs leading-6 text-slate-300">
               Generated: {new Date(data.generatedUtc).toLocaleString()}
             </div>
@@ -252,18 +364,35 @@ export default function VendorRisk() {
         </section>
       </section>
 
-      <section className="card grid grid-cols-1 gap-3 md:grid-cols-[1fr_240px]">
-        <input
-          className="input"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search vendor, domain, status, action..."
-        />
-        <select className="input" value={rating} onChange={(event) => setRating(event.target.value)}>
-          {RATINGS.map((item) => (
-            <option key={item}>{item}</option>
-          ))}
-        </select>
+      <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_240px]">
+          <div>
+            <label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+              Search Vendors
+            </label>
+            <input
+              className="input mt-2"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search vendor, domain, status, action..."
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+              Risk Rating
+            </label>
+            <select
+              className="input mt-2"
+              value={rating}
+              onChange={(event) => setRating(event.target.value)}
+            >
+              {RATINGS.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          </div>
+        </div>
       </section>
 
       <CyberTable
@@ -286,9 +415,11 @@ export default function VendorRisk() {
             key: "score",
             label: "Score",
             render: (vendor) => (
-              <div>
-                <div className="font-black text-white">{vendor.securityScore}/100</div>
-                <div className="mt-2">
+              <div className="mx-auto min-w-28 text-center">
+                <div className={`font-black ${scoreTextClass(vendor.securityScore)}`}>
+                  {vendor.securityScore}/100
+                </div>
+                <div className="mt-2 flex justify-center">
                   <CyberStatusBadge value={`Grade ${vendor.grade}`} />
                 </div>
               </div>
@@ -297,23 +428,35 @@ export default function VendorRisk() {
           {
             key: "risk",
             label: "Risk",
-            render: (vendor) => <CyberStatusBadge value={vendor.riskRating} />,
+            render: (vendor) => (
+              <div className="flex justify-center">
+                <CyberStatusBadge value={vendor.riskRating} />
+              </div>
+            ),
           },
           {
             key: "status",
             label: "Review Status",
-            render: (vendor) => <CyberStatusBadge value={vendor.reviewStatus} />,
+            render: (vendor) => (
+              <div className="flex justify-center">
+                <CyberStatusBadge value={vendor.reviewStatus} />
+              </div>
+            ),
           },
           {
             key: "criticality",
             label: "Criticality",
-            render: (vendor) => <CyberStatusBadge value={vendor.businessCriticality} />,
+            render: (vendor) => (
+              <div className="flex justify-center">
+                <CyberStatusBadge value={vendor.businessCriticality} />
+              </div>
+            ),
           },
           {
             key: "findings",
             label: "Findings",
             render: (vendor) => (
-              <div className="text-sm text-slate-300">
+              <div className="mx-auto min-w-56 text-center text-sm leading-6 text-slate-300">
                 Failed {vendor.failedFindings} · High {vendor.highFindings}
                 <br />
                 Email {vendor.emailSecurityIssues} · ASM {vendor.attackSurfaceIssues}
@@ -332,13 +475,17 @@ export default function VendorRisk() {
           {
             key: "priority",
             label: "Priority",
-            render: (vendor) => <CyberStatusBadge value={vendorPriority(vendor)} />,
+            render: (vendor) => (
+              <div className="flex justify-center">
+                <CyberStatusBadge value={vendorPriority(vendor)} />
+              </div>
+            ),
           },
           {
             key: "reviewed",
             label: "Last Reviewed",
             render: (vendor) => (
-              <div className="whitespace-nowrap text-slate-400">
+              <div className="mx-auto min-w-48 whitespace-nowrap text-center text-slate-400">
                 {dateText(vendor.lastReviewedUtc)}
               </div>
             ),

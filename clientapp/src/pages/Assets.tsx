@@ -5,13 +5,13 @@ import CyberStatusBadge from "../components/CyberStatusBadge";
 import type { Asset } from "../types";
 
 const SCAN_TYPES = [
-  { v: 6, label: "Full Posture", hint: "Complete assessment" },
-  { v: 0, label: "SSL/TLS", hint: "Certificate check" },
-  { v: 1, label: "Headers", hint: "Browser protection" },
-  { v: 2, label: "DNS", hint: "Domain records" },
-  { v: 3, label: "SPF", hint: "Sender policy" },
-  { v: 4, label: "DKIM", hint: "Email signing" },
-  { v: 5, label: "DMARC", hint: "Spoofing defense" },
+  { v: 6, label: "Full Posture", hint: "Complete assessment", primary: true },
+  { v: 0, label: "SSL/TLS", hint: "Certificate check", primary: false },
+  { v: 1, label: "Headers", hint: "Browser protection", primary: false },
+  { v: 2, label: "DNS", hint: "Domain records", primary: false },
+  { v: 3, label: "SPF", hint: "Sender policy", primary: false },
+  { v: 4, label: "DKIM", hint: "Email signing", primary: false },
+  { v: 5, label: "DMARC", hint: "Spoofing defense", primary: false },
 ];
 
 function formatDate(value?: string | null) {
@@ -31,6 +31,24 @@ function scoreStatus(score?: number | null) {
   if (score >= 80) return "Healthy";
   if (score >= 60) return "Needs Review";
   return "High Risk";
+}
+
+function scoreTextClass(score?: number | null) {
+  if (score === undefined || score === null) return "text-slate-400";
+  if (score >= 80) return "text-green-300";
+  if (score >= 60) return "text-orange-300";
+  return "text-red-300";
+}
+
+function cleanDomain(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//i, "")
+    .replace(/^www\./i, "")
+    .split("/")[0]
+    .split("?")[0]
+    .split("#")[0];
 }
 
 export default function Assets() {
@@ -68,7 +86,10 @@ export default function Assets() {
     );
 
     const highRisk = assets.filter(
-      (asset) => asset.latestScore !== undefined && asset.latestScore !== null && asset.latestScore < 60
+      (asset) =>
+        asset.latestScore !== undefined &&
+        asset.latestScore !== null &&
+        asset.latestScore < 60
     );
 
     const averageScore =
@@ -86,16 +107,18 @@ export default function Assets() {
       scanned: scanned.length,
       highRisk: highRisk.length,
       averageScore,
+      reportReady: assets.filter((asset) => Boolean(asset.latestScanId)).length,
     };
   }, [assets]);
 
   const add = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const cleanDomain = domain.trim().toLowerCase();
+    const normalizedDomain = cleanDomain(domain);
 
-    if (!cleanDomain) {
-      setMsg("Enter a domain first.");
+    if (!normalizedDomain) {
+      setMsg(null);
+      setError("Enter a domain first.");
       return;
     }
 
@@ -104,12 +127,13 @@ export default function Assets() {
       setMsg("Adding asset...");
       setError(null);
 
-      await AssetApi.create(cleanDomain);
+      await AssetApi.create(normalizedDomain);
 
       setDomain("");
-      setMsg(`Asset added: ${cleanDomain}`);
+      setMsg(`Asset added: ${normalizedDomain}`);
       await load();
     } catch {
+      setMsg(null);
       setError("Failed to add asset. Make sure the domain is valid and not already added.");
     } finally {
       setAdding(false);
@@ -132,6 +156,7 @@ export default function Assets() {
 
       await load();
     } catch {
+      setMsg(null);
       setError("Scan failed. Check backend logs or try again.");
     } finally {
       setBusyAssetId(null);
@@ -154,6 +179,7 @@ export default function Assets() {
 
       await load();
     } catch {
+      setMsg(null);
       setError("Subdomain discovery failed. Try again later.");
     } finally {
       setBusyAssetId(null);
@@ -168,9 +194,10 @@ export default function Assets() {
 
       await AssetApi.scanAll();
 
-      setMsg("All assets scan started/completed.");
+      setMsg("All asset scans started/completed.");
       await load();
     } catch {
+      setMsg(null);
       setError("Scan all failed. Check backend logs.");
     } finally {
       setScanAllLoading(false);
@@ -179,67 +206,111 @@ export default function Assets() {
 
   const downloadReport = async (assetId: string, format: "pdf" | "xlsx") => {
     try {
-      setMsg(`Downloading latest full posture ${format.toUpperCase()} report...`);
+      setMsg(`Downloading latest Full Posture ${format.toUpperCase()} report...`);
       setError(null);
 
       await AssetApi.downloadReport(assetId, format);
 
-      setMsg(`${format.toUpperCase()} full posture report downloaded.`);
+      setMsg(`${format.toUpperCase()} Full Posture report downloaded.`);
     } catch {
+      setMsg(null);
       setError(
-        `Full posture ${format.toUpperCase()} report failed. Run a Full Posture scan first.`
+        `Full Posture ${format.toUpperCase()} report failed. Run a Full Posture scan first.`
       );
     }
   };
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-xl font-bold sm:text-2xl">Assets & Scans</h1>
-          <p className="text-sm text-gray-500">
-            Add client domains, run security assessments, discover subdomains, and download client-ready reports.
-          </p>
+      <section className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/20">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="max-w-4xl">
+            <div className="mb-3 inline-flex rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-brand-300">
+              Attack Surface
+            </div>
+
+            <h1 className="text-3xl font-black tracking-tight text-white">
+              Assets & Scans
+            </h1>
+
+            <p className="mt-3 text-sm leading-7 text-slate-400">
+              Add client domains, run targeted security checks, perform complete Full Posture
+              assessments, discover subdomains, and download client-ready PDF/Excel reports.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={load}
+              disabled={loading}
+              className="btn-ghost"
+            >
+              {loading ? "Refreshing..." : "Refresh"}
+            </button>
+
+            <button
+              type="button"
+              onClick={scanAll}
+              disabled={scanAllLoading || assets.length === 0}
+              className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {scanAllLoading ? "Scanning..." : "Scan All Assets"}
+            </button>
+          </div>
         </div>
+      </section>
 
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={load}
-            disabled={loading}
-            className="btn-ghost"
-          >
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
-
-          <button
-            type="button"
-            onClick={scanAll}
-            disabled={scanAllLoading || assets.length === 0}
-            className="btn-primary disabled:opacity-50"
-          >
-            {scanAllLoading ? "Scanning..." : "Scan All Assets"}
-          </button>
-        </div>
-      </header>
-
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <CyberStatCard label="Total Assets" value={stats.total} hint="All domains in scope" tone="brand" />
-        <CyberStatCard label="Primary Assets" value={stats.primary} hint="Client-provided targets" tone="green" />
-        <CyberStatCard label="Discovered" value={stats.discovered} hint="Found during discovery" tone="slate" />
-        <CyberStatCard label="Scanned" value={stats.scanned} hint="Have latest score" tone="brand" />
-        <CyberStatCard label="Avg Score" value={stats.averageScore} hint="Across scanned assets" tone="orange" />
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
+        <CyberStatCard
+          label="Total Assets"
+          value={stats.total}
+          hint="All domains in scope"
+          tone="brand"
+        />
+        <CyberStatCard
+          label="Primary Assets"
+          value={stats.primary}
+          hint="Client-provided targets"
+          tone="green"
+        />
+        <CyberStatCard
+          label="Discovered"
+          value={stats.discovered}
+          hint="Found during discovery"
+          tone="slate"
+        />
+        <CyberStatCard
+          label="Scanned"
+          value={stats.scanned}
+          hint="Have latest score"
+          tone="brand"
+        />
+        <CyberStatCard
+          label="Avg Score"
+          value={stats.averageScore}
+          hint="Across scanned assets"
+          tone="orange"
+        />
+        <CyberStatCard
+          label="Reports"
+          value={stats.reportReady}
+          hint="Full Posture ready"
+          tone="green"
+        />
       </section>
 
       <form
         onSubmit={add}
         className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10"
       >
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
           <div className="flex-1">
-            <label className="text-sm font-bold text-slate-200">Add website or domain</label>
-            <p className="mt-1 text-sm text-slate-500">
-              Add the client’s main domain. CyberShield360 can then scan posture and discover related assets.
+            <label className="text-sm font-black text-white">Add Website or Domain</label>
+
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Add the client’s main domain. CyberShield360 will normalize the input,
+              then you can scan posture and discover related public assets.
             </p>
 
             <input
@@ -251,7 +322,8 @@ export default function Assets() {
           </div>
 
           <button
-            className="btn-primary justify-center disabled:opacity-50"
+            type="submit"
+            className="btn-primary justify-center disabled:cursor-not-allowed disabled:opacity-50"
             disabled={adding}
           >
             {adding ? "Adding..." : "Add Asset"}
@@ -260,30 +332,34 @@ export default function Assets() {
       </form>
 
       {msg && (
-        <div className="rounded-2xl border border-brand-500/30 bg-brand-500/10 p-4 text-sm font-medium text-brand-300">
+        <div className="rounded-2xl border border-brand-500/30 bg-brand-500/10 p-4 text-center text-sm font-semibold text-brand-300">
           {msg}
         </div>
       )}
 
       {error && (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-medium text-red-300">
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center text-sm font-semibold text-red-300">
           {error}
         </div>
       )}
 
       {loading && (
-        <div className="card text-sm text-gray-500">Loading assets...</div>
+        <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 text-center text-sm text-slate-400 shadow-2xl shadow-black/10">
+          Loading assets...
+        </div>
       )}
 
       {!loading && assets.length === 0 && (
         <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-8 text-center shadow-2xl shadow-black/10">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-500/10 text-2xl">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-brand-500/10 text-3xl">
             🌐
           </div>
-          <h2 className="text-xl font-black text-white">No assets added yet</h2>
-          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-400">
-            Add your first domain above. After that, you can run scans, discover subdomains,
-            review exposure, and generate client-ready reports.
+
+          <h2 className="text-xl font-black text-white">No Assets Added Yet</h2>
+
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-slate-400">
+            Add your first domain above. After that, you can run security scans,
+            discover subdomains, review exposure, and generate professional client reports.
           </p>
         </div>
       )}
@@ -293,6 +369,8 @@ export default function Assets() {
           {assets.map((asset) => {
             const isBusy = busyAssetId === asset.id;
             const latestScore = asset.latestScore ?? null;
+            const fullPostureScan = SCAN_TYPES.find((scanType) => scanType.primary);
+            const targetedScans = SCAN_TYPES.filter((scanType) => !scanType.primary);
 
             return (
               <section
@@ -300,7 +378,7 @@ export default function Assets() {
                 className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10"
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="break-all text-lg font-black text-white">
                         {asset.domain}
@@ -310,30 +388,30 @@ export default function Assets() {
                       <CyberStatusBadge value={scoreStatus(latestScore)} />
                     </div>
 
-                    <div className="mt-3 grid gap-3 text-sm md:grid-cols-3">
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                        <div className="text-xs font-bold uppercase text-slate-500">
+                    <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-center">
+                        <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
                           Last Checked
                         </div>
-                        <div className="mt-1 text-slate-300">
+                        <div className="mt-1 text-xs leading-5 text-slate-300">
                           {formatDate(asset.lastScannedUtc)}
                         </div>
                       </div>
 
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                        <div className="text-xs font-bold uppercase text-slate-500">
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-center">
+                        <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
                           Security Score
                         </div>
-                        <div className="mt-1 text-slate-300">
+                        <div className={`mt-1 text-lg font-black ${scoreTextClass(latestScore)}`}>
                           {latestScore !== null ? `${latestScore}/100` : "Not scanned"}
                         </div>
                       </div>
 
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                        <div className="text-xs font-bold uppercase text-slate-500">
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-center">
+                        <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
                           Grade
                         </div>
-                        <div className="mt-1 text-slate-300">
+                        <div className="mt-1 text-lg font-black text-white">
                           {asset.latestGrade ?? "-"}
                         </div>
                       </div>
@@ -344,17 +422,41 @@ export default function Assets() {
                     {isBusy ? (
                       <CyberStatusBadge value="Working" />
                     ) : (
-                      <CyberStatusBadge value={scoreTone(latestScore) === "green" ? "Ready" : "Needs Review"} />
+                      <CyberStatusBadge
+                        value={scoreTone(latestScore) === "green" ? "Ready" : "Needs Review"}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-brand-500/20 bg-brand-500/10 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="font-black text-white">Full Posture Assessment</h3>
+                      <p className="mt-1 text-xs leading-5 text-slate-400">
+                        Recommended for client reporting, remediation planning, and executive scorecards.
+                      </p>
+                    </div>
+
+                    {fullPostureScan && (
+                      <button
+                        type="button"
+                        onClick={() => scan(asset.id, fullPostureScan.v)}
+                        disabled={isBusy}
+                        className="btn-primary justify-center text-xs disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isBusy ? "Running..." : "Run Full Posture"}
+                      </button>
                     )}
                   </div>
                 </div>
 
                 <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/45 p-4">
-                  <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h3 className="font-black text-white">Assessment Actions</h3>
-                      <p className="text-xs text-slate-500">
-                        Run targeted checks or a complete posture scan.
+                      <h3 className="font-black text-white">Targeted Checks</h3>
+                      <p className="text-xs leading-5 text-slate-500">
+                        Run focused checks for TLS, headers, DNS, and email authentication.
                       </p>
                     </div>
 
@@ -362,20 +464,20 @@ export default function Assets() {
                       type="button"
                       onClick={() => discover(asset.id)}
                       disabled={isBusy}
-                      className="btn-primary text-xs disabled:opacity-50"
+                      className="btn-ghost justify-center text-xs disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Discover Subdomains
                     </button>
                   </div>
 
                   <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    {SCAN_TYPES.map((scanType) => (
+                    {targetedScans.map((scanType) => (
                       <button
                         key={scanType.v}
                         type="button"
                         onClick={() => scan(asset.id, scanType.v)}
                         disabled={isBusy}
-                        className="rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-3 text-left transition hover:border-brand-500/40 hover:bg-brand-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-3 text-center transition hover:border-brand-500/40 hover:bg-brand-500/10 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <div className="text-sm font-black text-white">
                           {scanType.label}
@@ -390,18 +492,18 @@ export default function Assets() {
 
                 {asset.latestScanId ? (
                   <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
+                    <div className="text-center sm:text-left">
                       <div className="text-sm font-black text-white">Report Ready</div>
-                      <div className="text-xs text-slate-500">
-                        Download the latest full posture report for this asset.
+                      <div className="text-xs leading-5 text-slate-500">
+                        Download the latest Full Posture report for this asset.
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap justify-center gap-2">
                       <button
                         type="button"
                         onClick={() => downloadReport(asset.id, "pdf")}
-                        className="btn-primary text-xs"
+                        className="btn-primary justify-center text-xs"
                       >
                         Download PDF
                       </button>
@@ -409,15 +511,15 @@ export default function Assets() {
                       <button
                         type="button"
                         onClick={() => downloadReport(asset.id, "xlsx")}
-                        className="btn-ghost text-xs"
+                        className="btn-ghost justify-center text-xs"
                       >
                         Download Excel
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-500">
-                    Run a Full Posture scan to enable executive report downloads.
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm leading-6 text-slate-500">
+                    Run a Full Posture scan to enable executive PDF and Excel report downloads.
                   </div>
                 )}
               </section>

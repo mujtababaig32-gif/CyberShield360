@@ -110,6 +110,7 @@ function downloadTextFile(filename: string, content: string) {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+
   URL.revokeObjectURL(url);
 }
 
@@ -118,6 +119,30 @@ function findingPriority(finding: CloudFinding) {
   if (finding.severity === "High") return "Priority";
   if (finding.severity === "Medium") return "Planned";
   return "Monitor";
+}
+
+function DarkTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div className="rounded-2xl border border-brand-500/30 bg-slate-950/95 px-4 py-3 text-sm shadow-2xl shadow-black/40 backdrop-blur-xl">
+      <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-brand-300">
+        {label}
+      </div>
+
+      <div className="space-y-1">
+        {payload.map((item: any) => (
+          <div
+            key={`${item.dataKey}-${item.value}`}
+            className="flex items-center justify-between gap-5 text-slate-300"
+          >
+            <span className="capitalize">{item.name || item.dataKey}</span>
+            <span className="font-black text-white">{item.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function CloudPosture() {
@@ -227,12 +252,20 @@ export default function CloudPosture() {
         {
           key: "severity",
           label: "Severity",
-          render: (finding) => <CyberStatusBadge value={finding.severity} />,
+          render: (finding) => (
+            <div className="flex justify-center">
+              <CyberStatusBadge value={finding.severity} />
+            </div>
+          ),
         },
         {
           key: "status",
           label: "Status",
-          render: (finding) => <CyberStatusBadge value={finding.status} />,
+          render: (finding) => (
+            <div className="flex justify-center">
+              <CyberStatusBadge value={finding.status} />
+            </div>
+          ),
         },
         {
           key: "recommendation",
@@ -246,19 +279,27 @@ export default function CloudPosture() {
         {
           key: "priority",
           label: "Priority",
-          render: (finding) => <CyberStatusBadge value={findingPriority(finding)} />,
+          render: (finding) => (
+            <div className="flex justify-center">
+              <CyberStatusBadge value={findingPriority(finding)} />
+            </div>
+          ),
         },
       ]}
     />
   );
 
   if (loading && !data) {
-    return <div className="card text-sm text-slate-500">Loading cloud posture...</div>;
+    return (
+      <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 text-center text-sm text-slate-400 shadow-2xl shadow-black/10">
+        Loading cloud posture...
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-semibold text-red-300">
+      <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center text-sm font-semibold text-red-300">
         {error}
       </div>
     );
@@ -266,36 +307,54 @@ export default function CloudPosture() {
 
   if (!data) return null;
 
+  const accounts = data.accounts ?? [];
+  const findings = data.findings ?? [];
+  const iamRisks = data.iamRisks ?? [];
+  const storageRisks = data.storageRisks ?? [];
+  const networkRisks = data.networkRisks ?? [];
+  const recommendations = data.recommendations ?? [];
+  const integrations = data.integrations ?? [];
+
+  const connectionRate =
+    data.totalAccounts > 0
+      ? Math.round((data.connectedAccounts / data.totalAccounts) * 100)
+      : 0;
+
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-brand-500">
-            Cloud Security
-          </p>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Cloud Security Posture
-          </h1>
-          <p className="section-subtitle mt-1">
-            AWS, Azure, and GCP readiness with evidence from connected cloud sources and tenant scan signals.
-          </p>
-        </div>
+      <section className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/20">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="max-w-4xl">
+            <div className="mb-3 inline-flex rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-brand-300">
+              Attack Surface
+            </div>
 
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={load} disabled={loading} className="btn-ghost">
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
+            <h1 className="text-3xl font-black tracking-tight text-white">
+              Cloud Security Posture
+            </h1>
 
-          <button type="button" onClick={exportFindings} className="btn-primary">
-            Export Findings
-          </button>
+            <p className="mt-3 text-sm leading-7 text-slate-400">
+              AWS, Azure, and GCP readiness with evidence from connected cloud sources,
+              tenant scan signals, IAM posture, storage exposure, and network risk.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={load} disabled={loading} className="btn-ghost">
+              {loading ? "Refreshing..." : "Refresh"}
+            </button>
+
+            <button type="button" onClick={exportFindings} className="btn-primary">
+              Export Findings
+            </button>
+          </div>
         </div>
-      </header>
+      </section>
 
       <section className="rounded-3xl border border-brand-500/20 bg-brand-500/10 p-5 shadow-2xl shadow-black/10">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <div className="text-xs font-black uppercase tracking-wide text-brand-300">
+            <div className="text-xs font-black uppercase tracking-[0.16em] text-brand-300">
               Connector Status
             </div>
             <div className="mt-1 text-lg font-black text-white">
@@ -316,47 +375,85 @@ export default function CloudPosture() {
         </div>
       </section>
 
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <CyberStatCard
+          label="Connected Accounts"
+          value={`${data.connectedAccounts}/${data.totalAccounts}`}
+          hint="Cloud accounts linked"
+          tone={data.connectedAccounts > 0 ? "green" : "orange"}
+        />
+        <CyberStatCard
+          label="Cloud Score"
+          value={`${data.averagePostureScore}/100`}
+          hint={scoreStatus(data.averagePostureScore)}
+          tone={scoreTone(data.averagePostureScore)}
+        />
+        <CyberStatCard
+          label="Open Findings"
+          value={data.openFindings}
+          hint="Needs review"
+          tone={data.openFindings > 0 ? "red" : "green"}
+        />
+        <CyberStatCard
+          label="High/Critical"
+          value={data.highFindings}
+          hint="Priority cloud risks"
+          tone={data.highFindings > 0 ? "orange" : "green"}
+        />
+        <CyberStatCard
+          label="Assets in Scope"
+          value={data.assetsInScope}
+          hint="Cloud-linked assets"
+          tone="brand"
+        />
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 text-center shadow-2xl shadow-black/10">
+          <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+            Connection Rate
+          </div>
+          <div className="mt-2 text-3xl font-black text-brand-300">
+            {connectionRate}%
+          </div>
+          <div className="mt-1 text-xs leading-5 text-slate-500">
+            Connected cloud accounts out of total configured accounts.
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 text-center shadow-2xl shadow-black/10">
+          <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+            IAM Risks
+          </div>
+          <div className="mt-2 text-3xl font-black text-orange-300">
+            {data.iamRiskCount}
+          </div>
+          <div className="mt-1 text-xs leading-5 text-slate-500">
+            Identity and access issues requiring review.
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 text-center shadow-2xl shadow-black/10">
+          <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+            Total Findings
+          </div>
+          <div className="mt-2 text-3xl font-black text-white">
+            {findings.length}
+          </div>
+          <div className="mt-1 text-xs leading-5 text-slate-500">
+            Current cloud posture findings in scope.
+          </div>
+        </div>
+      </section>
+
       <ModuleTabs
-        tabs={TABS.map((t) => ({ key: t, label: t }))}
+        tabs={TABS.map((item) => ({ key: item, label: item }))}
         activeKey={tab}
         onChange={setTab}
       />
 
       {tab === "Overview" && (
         <div className="space-y-6">
-          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <CyberStatCard
-              label="Connected Accounts"
-              value={`${data.connectedAccounts}/${data.totalAccounts}`}
-              hint="Cloud accounts linked"
-              tone={data.connectedAccounts > 0 ? "green" : "orange"}
-            />
-            <CyberStatCard
-              label="Cloud Score"
-              value={`${data.averagePostureScore}/100`}
-              hint={scoreStatus(data.averagePostureScore)}
-              tone={scoreTone(data.averagePostureScore)}
-            />
-            <CyberStatCard
-              label="Open Findings"
-              value={data.openFindings}
-              hint="Needs review"
-              tone={data.openFindings > 0 ? "red" : "green"}
-            />
-            <CyberStatCard
-              label="High/Critical"
-              value={data.highFindings}
-              hint="Priority cloud risks"
-              tone={data.highFindings > 0 ? "orange" : "green"}
-            />
-            <CyberStatCard
-              label="Assets in Scope"
-              value={data.assetsInScope}
-              hint="Cloud-linked assets"
-              tone="brand"
-            />
-          </section>
-
           <section className="grid grid-cols-1 gap-5 lg:grid-cols-3">
             <div className="lg:col-span-2">
               <CyberChartCard
@@ -372,16 +469,24 @@ export default function CloudPosture() {
                   <BarChart data={riskBreakdown}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#33415555" />
                     <XAxis dataKey="category" tick={{ fontSize: 11, fill: "#94a3b8" }} />
-                    <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} />
-                    <Tooltip />
-                    <Bar dataKey="count" radius={[10, 10, 0, 0]} fill="#10B5A6" />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                    <Tooltip
+                      content={<DarkTooltip />}
+                      cursor={{ fill: "rgba(20, 184, 166, 0.08)" }}
+                    />
+                    <Bar
+                      dataKey="count"
+                      name="Findings"
+                      radius={[10, 10, 0, 0]}
+                      fill="#10B5A6"
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </CyberChartCard>
             </div>
 
             <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
-              <div className="mb-5">
+              <div className="mb-5 text-center">
                 <h2 className="text-lg font-black tracking-tight text-white">
                   Recommended Actions
                 </h2>
@@ -391,17 +496,17 @@ export default function CloudPosture() {
               </div>
 
               <div className="space-y-3">
-                {data.recommendations.length === 0 ? (
+                {recommendations.length === 0 ? (
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm text-slate-500">
                     No cloud-specific remediation actions are available yet.
                   </div>
                 ) : (
-                  data.recommendations.map((recommendation, index) => (
+                  recommendations.map((recommendation, index) => (
                     <div
                       key={`${recommendation}-${index}`}
                       className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center"
                     >
-                      <div className="mb-1 text-xs font-black uppercase tracking-wide text-slate-500">
+                      <div className="mb-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
                         Action #{index + 1}
                       </div>
                       <div className="text-sm font-medium leading-6 text-slate-300">
@@ -420,7 +525,7 @@ export default function CloudPosture() {
         <CyberTable
           title="Cloud Accounts"
           description="Connected cloud accounts, provider status, score, regions, and last scan evidence."
-          data={data.accounts}
+          data={accounts}
           emptyText="No cloud accounts available yet."
           columns={[
             {
@@ -438,7 +543,11 @@ export default function CloudPosture() {
             {
               key: "status",
               label: "Status",
-              render: (account) => <CyberStatusBadge value={account.status} />,
+              render: (account) => (
+                <div className="flex justify-center">
+                  <CyberStatusBadge value={account.status} />
+                </div>
+              ),
             },
             {
               key: "score",
@@ -446,7 +555,7 @@ export default function CloudPosture() {
               render: (account) => (
                 <div className="text-center">
                   <div className="font-black text-white">{account.postureScore}/100</div>
-                  <div className="mt-2">
+                  <div className="mt-2 flex justify-center">
                     <CyberStatusBadge value={scoreStatus(account.postureScore)} />
                   </div>
                 </div>
@@ -456,14 +565,14 @@ export default function CloudPosture() {
               key: "regions",
               label: "Regions",
               render: (account) => (
-                <div className="font-black text-white">{account.regionCount}</div>
+                <div className="text-center font-black text-white">{account.regionCount}</div>
               ),
             },
             {
               key: "last",
               label: "Last Scanned",
               render: (account) => (
-                <div className="whitespace-nowrap text-slate-400">
+                <div className="mx-auto min-w-48 whitespace-nowrap text-center text-slate-400">
                   {dateText(account.lastScannedUtc)}
                 </div>
               ),
@@ -474,23 +583,35 @@ export default function CloudPosture() {
 
       {tab === "Findings" && (
         <div className="space-y-6">
-          <section className="card grid grid-cols-1 gap-3 md:grid-cols-[1fr_220px]">
-            <input
-              className="input"
-              placeholder="Search findings..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+          <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_220px]">
+              <div>
+                <label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                  Search Findings
+                </label>
+                <input
+                  className="input mt-2"
+                  placeholder="Search findings..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
 
-            <select
-              className="input"
-              value={severity}
-              onChange={(e) => setSeverity(e.target.value)}
-            >
-              {SEVERITIES.map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
+              <div>
+                <label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                  Severity
+                </label>
+                <select
+                  className="input mt-2"
+                  value={severity}
+                  onChange={(e) => setSeverity(e.target.value)}
+                >
+                  {SEVERITIES.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </section>
 
           {renderFindingsTable(
@@ -504,7 +625,7 @@ export default function CloudPosture() {
 
       {tab === "IAM" &&
         renderFindingsTable(
-          data.iamRisks,
+          iamRisks,
           "IAM Risks",
           "Identity and access risks that may affect cloud account security.",
           "No IAM risks in this view."
@@ -512,7 +633,7 @@ export default function CloudPosture() {
 
       {tab === "Storage" &&
         renderFindingsTable(
-          data.storageRisks,
+          storageRisks,
           "Storage Risks",
           "Storage exposure and access risks that may affect sensitive cloud data.",
           "No storage risks in this view."
@@ -520,7 +641,7 @@ export default function CloudPosture() {
 
       {tab === "Network" &&
         renderFindingsTable(
-          data.networkRisks,
+          networkRisks,
           "Network Exposure",
           "Network-facing cloud findings that may increase external exposure.",
           "No network exposure findings in this view."
@@ -565,35 +686,42 @@ export default function CloudPosture() {
               Cloud Integration Settings
             </h2>
             <p className="mx-auto mt-1 max-w-3xl text-sm leading-6 text-slate-400">
-              Configure provider credentials through environment variables before enabling production cloud posture scans.
+              Configure provider credentials through environment variables before enabling
+              production cloud posture scans.
             </p>
           </div>
 
           <CyberTable
             title="Provider Integrations"
             description="Cloud provider connection readiness and supported integration method."
-            data={data.integrations}
+            data={integrations}
             emptyText="No cloud integrations are configured yet."
             columns={[
               {
                 key: "provider",
                 label: "Provider",
                 render: (integration) => (
-                  <div className="font-semibold text-white">{integration.provider}</div>
+                  <div className="mx-auto min-w-40 text-center font-semibold text-white">
+                    {integration.provider}
+                  </div>
                 ),
               },
               {
                 key: "method",
                 label: "Method",
                 render: (integration) => (
-                  <div className="text-slate-400">{integration.method}</div>
+                  <div className="mx-auto min-w-72 text-center text-slate-400">
+                    {integration.method}
+                  </div>
                 ),
               },
               {
                 key: "status",
                 label: "Status",
                 render: (integration) => (
-                  <CyberStatusBadge value={integration.status} />
+                  <div className="flex justify-center">
+                    <CyberStatusBadge value={integration.status} />
+                  </div>
                 ),
               },
             ]}

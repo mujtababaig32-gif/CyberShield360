@@ -84,7 +84,35 @@ function downloadTextFile(filename: string, content: string) {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+
   URL.revokeObjectURL(url);
+}
+
+function DarkTooltip({ active, payload, label, suffix = "" }: any) {
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div className="rounded-2xl border border-brand-500/30 bg-slate-950/95 px-4 py-3 text-sm shadow-2xl shadow-black/40 backdrop-blur-xl">
+      <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-brand-300">
+        {label}
+      </div>
+
+      <div className="space-y-1">
+        {payload.map((item: any) => (
+          <div
+            key={`${item.dataKey}-${item.value}`}
+            className="flex items-center justify-between gap-5 text-slate-300"
+          >
+            <span className="capitalize">{item.name || item.dataKey}</span>
+            <span className="font-black text-white">
+              {item.value}
+              {suffix}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function ExecutiveScorecard() {
@@ -131,7 +159,8 @@ export default function ExecutiveScorecard() {
   const exportScorecard = () => {
     if (!data) return;
 
-    const highCritical = data.highCriticalFindings ?? data.highFindings + data.criticalFindings;
+    const highCritical =
+      data.highCriticalFindings ?? data.highFindings + data.criticalFindings;
 
     const summaryRows = [
       ["Metric", "Value"],
@@ -170,15 +199,26 @@ export default function ExecutiveScorecard() {
   }
 
   if (!data) {
-    return <div className="card text-sm text-gray-500">Loading executive scorecard...</div>;
+    return (
+      <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 text-center text-sm text-slate-400">
+        Loading executive scorecard...
+      </div>
+    );
   }
 
-  const highCritical = data.highCriticalFindings ?? data.highFindings + data.criticalFindings;
+  const highCritical =
+    data.highCriticalFindings ?? data.highFindings + data.criticalFindings;
+
   const coverage = data.fullPostureCoverage ?? 0;
+  const scoreTrend = data.scoreTrend ?? [];
+  const weakestAssets = data.weakestAssets ?? [];
+  const topRisks = data.topRisks ?? [];
+  const executiveActions = data.executiveActions ?? [];
+
   const scoreInsight =
-    data.scoreTrend.length >= 2
+    scoreTrend.length >= 2
       ? `Latest score is ${
-          data.scoreTrend[data.scoreTrend.length - 1]?.score ?? data.overallScore
+          scoreTrend[scoreTrend.length - 1]?.score ?? data.overallScore
         }/100 across the available score trend.`
       : "Run more Full Posture scans to build a stronger score trend.";
 
@@ -186,9 +226,17 @@ export default function ExecutiveScorecard() {
     <div className="space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold sm:text-2xl">Executive Security Scorecard</h1>
-          <p className="text-sm text-gray-500">
-            Board-level view of maturity, compliance readiness, asset coverage, and business risk.
+          <div className="mb-3 inline-flex rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-brand-300">
+            Command Center
+          </div>
+
+          <h1 className="text-3xl font-black tracking-tight text-white">
+            Executive Security Scorecard
+          </h1>
+
+          <p className="mt-2 max-w-4xl text-sm leading-7 text-slate-400">
+            Board-level view of maturity, compliance readiness, asset coverage, business risk,
+            and priority security actions.
           </p>
         </div>
 
@@ -211,7 +259,7 @@ export default function ExecutiveScorecard() {
       <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/10">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
           <div className="rounded-3xl border border-white/10 bg-slate-950/55 p-6">
-            <div className="text-xs font-black uppercase tracking-wide text-slate-500">
+            <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
               Overall Security Score
             </div>
 
@@ -234,7 +282,7 @@ export default function ExecutiveScorecard() {
           </div>
 
           <div>
-            <div className="mb-3 text-xs font-black uppercase tracking-wide text-slate-500">
+            <div className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-slate-500">
               Executive Summary
             </div>
 
@@ -243,18 +291,28 @@ export default function ExecutiveScorecard() {
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                <div className="text-xs font-black uppercase text-slate-500">Assets</div>
-                <div className="mt-2 text-2xl font-black text-white">{data.assetCount}</div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+                <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                  Assets
+                </div>
+                <div className="mt-2 text-2xl font-black text-white">
+                  {data.assetCount}
+                </div>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                <div className="text-xs font-black uppercase text-slate-500">Checks</div>
-                <div className="mt-2 text-2xl font-black text-white">{data.totalChecks ?? 0}</div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+                <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                  Checks
+                </div>
+                <div className="mt-2 text-2xl font-black text-white">
+                  {data.totalChecks ?? 0}
+                </div>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                <div className="text-xs font-black uppercase text-slate-500">Coverage</div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+                <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                  Coverage
+                </div>
                 <div className="mt-2 text-2xl font-black text-white">{coverage}%</div>
               </div>
             </div>
@@ -302,29 +360,35 @@ export default function ExecutiveScorecard() {
             description="Shows how the overall security score changes after scans and remediation work."
             insight={scoreInsight}
           >
-            {data.scoreTrend.length === 0 ? (
-              <div className="flex h-[250px] items-center justify-center text-sm text-slate-500">
+            {scoreTrend.length === 0 ? (
+              <div className="flex h-[250px] items-center justify-center text-center text-sm text-slate-500">
                 No score trend available yet.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={data.scoreTrend}>
+                <AreaChart data={scoreTrend}>
                   <defs>
                     <linearGradient id="scorecardTrend" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#10B5A6" stopOpacity={0.45} />
                       <stop offset="100%" stopColor="#10B5A6" stopOpacity={0} />
                     </linearGradient>
                   </defs>
+
                   <CartesianGrid strokeDasharray="3 3" stroke="#33415555" />
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94a3b8" }} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#94a3b8" }} />
-                  <Tooltip />
+                  <Tooltip
+                    content={<DarkTooltip suffix="/100" />}
+                    cursor={{ stroke: "#10B5A6", strokeOpacity: 0.4 }}
+                  />
                   <Area
                     type="monotone"
                     dataKey="score"
+                    name="Score"
                     stroke="#10B5A6"
                     fill="url(#scorecardTrend)"
                     strokeWidth={3}
+                    activeDot={{ r: 5 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -343,17 +407,17 @@ export default function ExecutiveScorecard() {
           </div>
 
           <div className="space-y-3">
-            {data.executiveActions.length === 0 ? (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-500">
+            {executiveActions.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm text-slate-500">
                 No actions available.
               </div>
             ) : (
-              data.executiveActions.map((action, index) => (
+              executiveActions.map((action, index) => (
                 <div
                   key={`${action}-${index}`}
                   className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
                 >
-                  <div className="mb-1 text-xs font-black uppercase tracking-wide text-slate-500">
+                  <div className="mb-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
                     Action #{index + 1}
                   </div>
                   <div className="text-sm font-medium leading-6 text-slate-300">
@@ -370,14 +434,14 @@ export default function ExecutiveScorecard() {
         <CyberTable
           title="Weakest Assets"
           description="Assets with the lowest score or highest failed finding count."
-          data={data.weakestAssets}
+          data={weakestAssets}
           emptyText="Run Full Posture scans to populate weakest assets."
           columns={[
             {
               key: "domain",
               label: "Domain",
               render: (asset) => (
-                <div className="min-w-64">
+                <div className="mx-auto min-w-64 text-center">
                   <div className="break-all font-semibold text-white">{asset.domain}</div>
                   <div className="mt-1 text-xs text-slate-500">
                     Last scan: {dateText(asset.lastScanUtc)}
@@ -389,9 +453,9 @@ export default function ExecutiveScorecard() {
               key: "score",
               label: "Score",
               render: (asset) => (
-                <div>
+                <div className="mx-auto min-w-28 text-center">
                   <div className="font-semibold text-white">{asset.score}/100</div>
-                  <div className="mt-2">
+                  <div className="mt-2 flex justify-center">
                     <CyberStatusBadge value={`Grade ${asset.grade}`} />
                   </div>
                 </div>
@@ -401,7 +465,9 @@ export default function ExecutiveScorecard() {
               key: "failed",
               label: "Failed",
               render: (asset) => (
-                <div className="text-slate-300">{asset.failedFindings ?? 0}</div>
+                <div className="text-center text-slate-300">
+                  {asset.failedFindings ?? 0}
+                </div>
               ),
               align: "center",
             },
@@ -409,7 +475,9 @@ export default function ExecutiveScorecard() {
               key: "priority",
               label: "Priority",
               render: (asset) => (
-                <CyberStatusBadge value={scoreStatus(asset.score)} />
+                <div className="flex justify-center">
+                  <CyberStatusBadge value={scoreStatus(asset.score)} />
+                </div>
               ),
             },
           ]}
@@ -426,12 +494,12 @@ export default function ExecutiveScorecard() {
           </div>
 
           <div className="space-y-3">
-            {data.topRisks.length === 0 ? (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-500">
+            {topRisks.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm text-slate-500">
                 No failed high-priority findings found.
               </div>
             ) : (
-              data.topRisks.map((risk, index) => (
+              topRisks.map((risk, index) => (
                 <div
                   key={`${risk.title}-${index}`}
                   className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
@@ -480,7 +548,7 @@ export default function ExecutiveScorecard() {
         />
       </section>
 
-      <div className="text-xs text-gray-400">
+      <div className="text-center text-xs text-slate-500">
         Generated: {new Date(data.generatedUtc).toLocaleString()}
         {data.latestScanUtc
           ? ` · Latest scan: ${new Date(data.latestScanUtc).toLocaleString()}`
