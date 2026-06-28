@@ -19,7 +19,10 @@ public class ScanJobRunner : IScanJobRunner
     private readonly ILogger<ScanJobRunner> _logger;
 
     public ScanJobRunner(IServiceScopeFactory scopeFactory, ILogger<ScanJobRunner> logger)
-    { _scopeFactory = scopeFactory; _logger = logger; }
+    {
+        _scopeFactory = scopeFactory;
+        _logger = logger;
+    }
 
     /// <summary>Recurring sweep: finds every enabled schedule whose NextRunUtc has passed and runs it.</summary>
     public async Task RunDueScheduledScansAsync(CancellationToken ct = default)
@@ -31,12 +34,24 @@ public class ScanJobRunner : IScanJobRunner
         // Tenant provider has no tenant here -> global filter allows all tenants (system sweep).
         var due = await db.ScheduledScans
             .Where(s => s.Enabled && (s.NextRunUtc == null || s.NextRunUtc <= now))
+            .OrderBy(s => s.NextRunUtc)
             .Select(s => s.Id)
+            .Take(50)
             .ToListAsync(ct);
 
         _logger.LogInformation("ScheduledScan sweep: {Count} due", due.Count);
+
         foreach (var id in due)
-            await RunSingleScheduledScanAsync(id, ct);
+        {
+            try
+            {
+                await RunSingleScheduledScanAsync(id, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Scheduled scan {ScheduledScanId} failed during sweep", id);
+            }
+        }
     }
 
     /// <summary>Runs one scheduled scan within its tenant context and computes the next occurrence.</summary>
@@ -51,60 +66,101 @@ public class ScanJobRunner : IScanJobRunner
 
         var schedule = await db.ScheduledScans.IgnoreQueryFilters()
             .FirstOrDefaultAsync(s => s.Id == scheduledScanId, ct);
-        if (schedule is null) return;
+
+        if (schedule is null)
+            return;
 
         tenantProvider.SetTenantId(schedule.TenantId);
 
         var asset = await db.Assets.FirstOrDefaultAsync(a => a.Id == schedule.AssetId, ct);
-        if (asset is null) { _logger.LogWarning("Asset {AssetId} missing for schedule", schedule.AssetId); return; }
+        if (asset is null)
+        {
+            _logger.LogWarning("Asset {AssetId} missing for schedule {ScheduledScanId}", schedule.AssetId, scheduledScanId);
+            schedule.LastRunUtc = DateTime.UtcNow;
+            schedule.NextRunUtc = ComputeNextRun(schedule.CronExpression, DateTime.UtcNow);
+            await db.SaveChangesAsync(ct);
+            return;
+        }
+
+        var startedAtUtc = DateTime.UtcNow;
+
+        // Claim the schedule before the scan begins so a slow scan is not picked up again by the next sweep.
+        schedule.LastRunUtc = startedAtUtc;
+        schedule.NextRunUtc = ComputeNextRun(schedule.CronExpression, startedAtUtc) ?? startedAtUtc.AddDays(1);
+        await db.SaveChangesAsync(ct);
 
         var scan = new SecurityScan
         {
-            TenantId = schedule.TenantId, AssetId = asset.Id, Type = schedule.Type,
-            Status = ScanStatus.Running, StartedUtc = DateTime.UtcNow
+            TenantId = schedule.TenantId,
+            AssetId = asset.Id,
+            Type = schedule.Type,
+            Status = ScanStatus.Running,
+            StartedUtc = startedAtUtc
         };
+
         db.Scans.Add(scan);
         await db.SaveChangesAsync(ct);
 
         try
         {
             var result = await scanner.RunScanAsync(asset.Domain, schedule.Type, ct);
-            scan.Score = result.Score; scan.Grade = result.Grade;
-            scan.Status = ScanStatus.Completed; scan.CompletedUtc = DateTime.UtcNow;
+
+            scan.Score = result.Score;
+            scan.Grade = result.Grade;
+            scan.Status = ScanStatus.Completed;
+            scan.CompletedUtc = DateTime.UtcNow;
             scan.RawResultJson = result.RawJson;
-            foreach (var f in result.Findings)
+
+            foreach (var finding in result.Findings)
+            {
                 db.ScanFindings.Add(new ScanFinding
                 {
-                    ScanId = scan.Id, TenantId = schedule.TenantId, CheckKey = f.CheckKey,
-                    Title = f.Title, Severity = f.Severity, Passed = f.Passed,
-                    Detail = f.Detail, Recommendation = f.Recommendation
+                    ScanId = scan.Id,
+                    TenantId = schedule.TenantId,
+                    CheckKey = finding.CheckKey,
+                    Title = finding.Title,
+                    Severity = finding.Severity,
+                    Passed = finding.Passed,
+                    Detail = finding.Detail,
+                    Recommendation = finding.Recommendation
                 });
-            asset.LastScannedUtc = DateTime.UtcNow;
+            }
 
-            // Auto-raise vulnerabilities for high/critical failed checks
-            foreach (var f in result.Findings.Where(x => !x.Passed && x.Severity >= Severity.High))
+            asset.LastScannedUtc = scan.CompletedUtc;
+
+            foreach (var finding in result.Findings.Where(x => !x.Passed && x.Severity >= Severity.High))
             {
                 var exists = await db.Vulnerabilities.AnyAsync(
-                    v => v.AssetId == asset.Id && v.Title == f.Title && v.Status == VulnerabilityStatus.Open, ct);
+                    vulnerability =>
+                        vulnerability.AssetId == asset.Id &&
+                        vulnerability.Title == finding.Title &&
+                        vulnerability.Status == VulnerabilityStatus.Open,
+                    ct);
+
                 if (!exists)
+                {
                     db.Vulnerabilities.Add(new Vulnerability
                     {
-                        TenantId = schedule.TenantId, AssetId = asset.Id, Title = f.Title,
-                        Description = f.Detail, Severity = f.Severity, Status = VulnerabilityStatus.Open,
-                        DueDateUtc = DateTime.UtcNow.AddDays(f.Severity == Severity.Critical ? 7 : 30)
+                        TenantId = schedule.TenantId,
+                        AssetId = asset.Id,
+                        Title = finding.Title,
+                        Description = finding.Detail,
+                        Severity = finding.Severity,
+                        Status = VulnerabilityStatus.Open,
+                        DueDateUtc = DateTime.UtcNow.AddDays(finding.Severity == Severity.Critical ? 7 : 30)
                     });
+                }
             }
 
             await NotifyAsync(db, emailSender, schedule.TenantId, asset.Domain, scan, ct);
         }
         catch (Exception ex)
         {
-            scan.Status = ScanStatus.Failed; scan.ErrorMessage = ex.Message;
+            scan.Status = ScanStatus.Failed;
+            scan.ErrorMessage = ex.Message;
             _logger.LogError(ex, "Scheduled scan failed for {Domain}", asset.Domain);
         }
 
-        schedule.LastRunUtc = DateTime.UtcNow;
-        schedule.NextRunUtc = ComputeNextRun(schedule.CronExpression, DateTime.UtcNow);
         await db.SaveChangesAsync(ct);
     }
 
@@ -113,9 +169,10 @@ public class ScanJobRunner : IScanJobRunner
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var assets = await db.Assets.IgnoreQueryFilters()
-            .Where(a => a.MonitoringEnabled).ToListAsync(ct);
+            .Where(a => a.MonitoringEnabled)
+            .ToListAsync(ct);
 
-        // Placeholder for typosquat/cert-transparency/leaked-cred providers.
+        // Placeholder for typosquat/cert-transparency/leaked-credential providers.
         _logger.LogInformation("Brand monitoring refresh across {Count} assets", assets.Count);
         await Task.CompletedTask;
     }
@@ -130,14 +187,20 @@ public class ScanJobRunner : IScanJobRunner
         await Task.CompletedTask;
     }
 
-    private static async Task NotifyAsync(ApplicationDbContext db, IEmailSender email, Guid tenantId,
-        string domain, SecurityScan scan, CancellationToken ct)
+    private static async Task NotifyAsync(
+        ApplicationDbContext db,
+        IEmailSender email,
+        Guid tenantId,
+        string domain,
+        SecurityScan scan,
+        CancellationToken ct)
     {
         var admins = await db.Users.IgnoreQueryFilters()
             .Where(u => u.TenantId == tenantId && u.IsActive && u.Email != null)
-            .Select(u => u.Email!).ToListAsync(ct);
+            .Select(u => u.Email!)
+            .ToListAsync(ct);
 
-        var subject = $"[CyberShield360 By Mujtaba] Scan complete for {domain} — Grade {scan.Grade} ({scan.Score}/100)";
+        var subject = $"[CyberShield360] Scheduled scan complete for {domain} — Grade {scan.Grade} ({scan.Score}/100)";
         var body = $"<p>A scheduled <b>{scan.Type}</b> scan for <b>{domain}</b> finished with grade " +
                    $"<b>{scan.Grade}</b> and a score of <b>{scan.Score}/100</b>.</p>";
 
@@ -145,11 +208,25 @@ public class ScanJobRunner : IScanJobRunner
         {
             var log = new NotificationLog
             {
-                TenantId = tenantId, Channel = NotificationChannel.Email,
-                Recipient = to, Subject = subject, Body = body
+                TenantId = tenantId,
+                Channel = NotificationChannel.Email,
+                Recipient = to,
+                Subject = subject,
+                Body = body
             };
-            try { await email.SendAsync(to, subject, body, ct); log.Sent = true; log.SentAtUtc = DateTime.UtcNow; }
-            catch (Exception ex) { log.Sent = false; log.Error = ex.Message; }
+
+            try
+            {
+                await email.SendAsync(to, subject, body, ct);
+                log.Sent = true;
+                log.SentAtUtc = DateTime.UtcNow;
+            }
+            catch (Exception ex)
+            {
+                log.Sent = false;
+                log.Error = ex.Message;
+            }
+
             db.Notifications.Add(log);
         }
     }
@@ -161,6 +238,9 @@ public class ScanJobRunner : IScanJobRunner
             var expr = CronExpression.Parse(cron, CronFormat.Standard);
             return expr.GetNextOccurrence(fromUtc, TimeZoneInfo.Utc);
         }
-        catch { return fromUtc.AddDays(1); }
+        catch
+        {
+            return fromUtc.AddDays(1);
+        }
     }
 }

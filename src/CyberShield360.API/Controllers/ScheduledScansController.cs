@@ -2,6 +2,8 @@ using CyberShield360.Application.Common.Interfaces;
 using CyberShield360.Domain.Entities;
 using CyberShield360.Domain.Enums;
 using CyberShield360.Infrastructure.Persistence;
+using CyberShield360.Infrastructure.Services;
+using Cronos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -67,8 +69,9 @@ public class ScheduledScansController : ApiControllerBase
         if (request.AssetId == Guid.Empty)
             return BadRequest(new { message = "Asset is required." });
 
-        if (!IsValidStandardCron(request.CronExpression))
-            return BadRequest(new { message = "Cron must be a standard 5-field expression, for example 0 2 * * *." });
+        var normalizedCron = request.CronExpression?.Trim() ?? string.Empty;
+        if (!TryComputeNextRun(normalizedCron, DateTime.UtcNow, out var nextRunUtc, out var cronError))
+            return BadRequest(new { message = cronError });
 
         var asset = await _db.Assets
             .AsNoTracking()
@@ -81,7 +84,7 @@ public class ScheduledScansController : ApiControllerBase
             s.TenantId == tid &&
             s.AssetId == request.AssetId &&
             s.Type == request.Type &&
-            s.CronExpression == request.CronExpression,
+            s.CronExpression == normalizedCron,
             ct);
 
         if (duplicate)
@@ -97,9 +100,9 @@ public class ScheduledScansController : ApiControllerBase
             TenantId = tid,
             AssetId = request.AssetId,
             Type = request.Type,
-            CronExpression = request.CronExpression.Trim(),
+            CronExpression = normalizedCron,
             Enabled = true,
-            NextRunUtc = DateTime.UtcNow
+            NextRunUtc = nextRunUtc
         };
 
         _db.ScheduledScans.Add(schedule);
@@ -108,7 +111,8 @@ public class ScheduledScansController : ApiControllerBase
         return Ok(new
         {
             id = schedule.Id,
-            message = "Scheduled scan created. It will be picked up by the scheduler shortly."
+            nextRunUtc = schedule.NextRunUtc,
+            message = "Scheduled scan created. Use Run Now for an immediate assessment, or wait for the next scheduled review."
         });
     }
 
@@ -130,8 +134,13 @@ public class ScheduledScansController : ApiControllerBase
 
         schedule.Enabled = body.Enabled;
 
-        if (body.Enabled && schedule.NextRunUtc is null)
-            schedule.NextRunUtc = DateTime.UtcNow;
+        if (body.Enabled)
+        {
+            if (!TryComputeNextRun(schedule.CronExpression, DateTime.UtcNow, out var nextRunUtc, out var cronError))
+                return BadRequest(new { message = cronError });
+
+            schedule.NextRunUtc = nextRunUtc;
+        }
 
         await _db.SaveChangesAsync(ct);
 
@@ -139,6 +148,7 @@ public class ScheduledScansController : ApiControllerBase
         {
             id = schedule.Id,
             enabled = schedule.Enabled,
+            nextRunUtc = schedule.NextRunUtc,
             message = schedule.Enabled ? "Schedule enabled." : "Schedule paused."
         });
     }
@@ -189,15 +199,45 @@ public class ScheduledScansController : ApiControllerBase
         });
     }
 
-    private static bool IsValidStandardCron(string? cronExpression)
+    private static bool TryComputeNextRun(
+        string cronExpression,
+        DateTime fromUtc,
+        out DateTime? nextRunUtc,
+        out string? error)
     {
-        if (string.IsNullOrWhiteSpace(cronExpression))
-            return false;
+        nextRunUtc = null;
+        error = null;
 
-        return cronExpression
-            .Trim()
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-            .Length == 5;
+        if (string.IsNullOrWhiteSpace(cronExpression))
+        {
+            error = "Cron expression is required.";
+            return false;
+        }
+
+        if (cronExpression.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).Length != 5)
+        {
+            error = "Cron must be a standard 5-field expression, for example 0 2 * * *.";
+            return false;
+        }
+
+        try
+        {
+            var expr = CronExpression.Parse(cronExpression, CronFormat.Standard);
+            nextRunUtc = expr.GetNextOccurrence(fromUtc, TimeZoneInfo.Utc);
+
+            if (nextRunUtc is null)
+            {
+                error = "Cron expression did not produce a future run time.";
+                return false;
+            }
+
+            return true;
+        }
+        catch
+        {
+            error = "Invalid cron expression. Use standard 5-field cron, for example 0 2 * * *.";
+            return false;
+        }
     }
 }
 

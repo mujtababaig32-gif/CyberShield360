@@ -230,58 +230,67 @@ export default function ScheduledScans() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-xl font-bold sm:text-2xl">Scheduled Scans</h1>
-          <p className="text-sm text-gray-500">
-            Schedule recurring posture checks, run scans on demand, and manage review cadence per asset.
-          </p>
-        </div>
+      <section className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/20">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="max-w-4xl">
+            <div className="mb-3 inline-flex rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-brand-300">
+              Attack Surface
+            </div>
 
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={load}
-            disabled={loading}
-            className="btn-ghost"
-          >
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
+            <h1 className="text-3xl font-black tracking-tight text-white">
+              Scheduled Scans
+            </h1>
 
-          <button
-            type="button"
-            onClick={exportCsv}
-            disabled={schedules.length === 0}
-            className="btn-ghost disabled:opacity-50"
-          >
-            Export CSV
-          </button>
+            <p className="mt-3 text-sm leading-7 text-slate-400">
+              Schedule recurring Full Posture assessments, run on-demand reviews, and keep report-ready findings updated for every monitored asset.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={load}
+              disabled={loading}
+              className="btn-ghost"
+            >
+              {loading ? "Refreshing..." : "Refresh"}
+            </button>
+
+            <button
+              type="button"
+              onClick={exportCsv}
+              disabled={schedules.length === 0}
+              className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Export CSV
+            </button>
+          </div>
         </div>
-      </header>
+      </section>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <CyberStatCard
           label="Total Schedules"
           value={stats.total}
-          hint="All recurring scan plans"
+          hint="Monitoring schedules"
           tone="brand"
         />
         <CyberStatCard
           label="Enabled"
           value={stats.enabled}
-          hint="Currently active"
+          hint="Running on cadence"
           tone="green"
         />
         <CyberStatCard
           label="Paused"
           value={stats.paused}
-          hint="Not currently running"
+          hint="Temporarily stopped"
           tone="slate"
         />
         <CyberStatCard
           label="Due Now"
           value={stats.due}
-          hint="Ready to run"
+          hint="Picked up by scheduler"
           tone="orange"
         />
       </section>
@@ -305,10 +314,10 @@ export default function ScheduledScans() {
         >
           <div className="mb-5">
             <h2 className="text-lg font-black tracking-tight text-white">
-              Create Schedule
+              Create Monitoring Schedule
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-400">
-              Full Posture is recommended when the client needs executive reports and before/after comparisons.
+              Full Posture is recommended for executive reporting, remediation tracking, and before/after posture comparisons.
             </p>
           </div>
 
@@ -390,15 +399,15 @@ export default function ScheduledScans() {
               className="btn-primary w-full justify-center disabled:opacity-50"
               disabled={creating || assets.length === 0}
             >
-              {creating ? "Creating..." : "Create Scheduled Scan"}
+              {creating ? "Creating..." : "Create Monitoring Scheduled Scan"}
             </button>
           </div>
         </form>
 
         <div className="xl:col-span-2">
           <CyberTable
-            title="Scan Schedule Register"
-            description="Run, pause, resume, or remove scheduled scans for each client asset."
+            title="Monitoring Schedule Register"
+            description="Run, pause, resume, or remove scheduled posture checks for each client asset."
             data={schedules}
             emptyText={
               loading
