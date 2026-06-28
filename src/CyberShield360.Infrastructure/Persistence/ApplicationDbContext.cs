@@ -23,6 +23,7 @@ public class ApplicationDbContext
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<MonitoredAsset> Assets => Set<MonitoredAsset>();
+    public DbSet<Vendor> Vendors => Set<Vendor>();
     public DbSet<SecurityScan> Scans => Set<SecurityScan>();
     public DbSet<ScanFinding> ScanFindings => Set<ScanFinding>();
     public DbSet<SecurityScorecard> Scorecards => Set<SecurityScorecard>();

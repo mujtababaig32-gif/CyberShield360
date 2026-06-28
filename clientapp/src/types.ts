@@ -136,3 +136,36 @@ export interface ScanRecommendation {
   failedFindings: number;
   recommendations: string[];
 }
+
+export interface VendorRiskItem {
+  id: string;
+  assetId: string;
+  latestScanId?: string;
+  vendorName: string;
+  website: string;
+  serviceType?: string;
+  contactEmail?: string;
+  notes?: string;
+  securityScore: number;
+  grade: string;
+  complianceRisk: number;
+  riskRating: string;
+  reviewStatus: string;
+  businessCriticality: string;
+  failedFindings: number;
+  highFindings: number;
+  emailSecurityIssues: number;
+  attackSurfaceIssues: number;
+  lastReviewedUtc?: string;
+  recommendedAction: string;
+}
+
+export interface VendorRiskSummary {
+  generatedUtc: string;
+  totalVendors: number;
+  criticalVendors: number;
+  highRiskVendors: number;
+  pendingReviews: number;
+  approvedVendors: number;
+  vendors: VendorRiskItem[];
+}

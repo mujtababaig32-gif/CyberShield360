@@ -205,6 +205,43 @@ export const AssetInventoryApi = {
 export const VendorRiskApi = {
   summary: () =>
     api.get("/vendorrisk/summary").then((r) => r.data),
+
+  create: (data: {
+    vendorName: string;
+    website: string;
+    businessCriticality?: string;
+    serviceType?: string;
+    contactEmail?: string;
+    notes?: string;
+  }) =>
+    api
+      .post("/vendorrisk", {
+        vendorName: data.vendorName,
+        website: data.website,
+        businessCriticality: data.businessCriticality || "Medium",
+        serviceType: data.serviceType || null,
+        contactEmail: data.contactEmail || null,
+        notes: data.notes || null,
+      })
+      .then((r) => r.data),
+
+  assess: (id: string) =>
+    api.post(`/vendorrisk/${id}/assess`).then((r) => r.data),
+
+  updateStatus: (
+    id: string,
+    data: { reviewStatus?: string; businessCriticality?: string; notes?: string }
+  ) =>
+    api
+      .put(`/vendorrisk/${id}/status`, {
+        reviewStatus: data.reviewStatus || null,
+        businessCriticality: data.businessCriticality || null,
+        notes: data.notes || null,
+      })
+      .then((r) => r.data),
+
+  delete: (id: string) =>
+    api.delete(`/vendorrisk/${id}`).then((r) => r.data),
 };
 
 export const DarkWebApi = {
