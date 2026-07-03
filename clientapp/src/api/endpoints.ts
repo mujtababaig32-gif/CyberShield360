@@ -8,6 +8,8 @@ import type {
   Risk,
   ScheduledScan,
   ScanRecommendation,
+  AiRemediationSummary,
+  AiRemediationPlan,
 } from "../types";
 
 const VULN_STATUS_TO_VALUE: Record<string, number> = {
@@ -128,6 +130,18 @@ export const AssetApi = {
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
   },
+};
+
+
+export const AiRemediationApi = {
+  summary: () =>
+    api.get<AiRemediationSummary>("/airemediation/summary").then((r) => r.data),
+
+  getForScan: (scanId: string) =>
+    api.get<AiRemediationPlan>(`/airemediation/scans/${scanId}`).then((r) => r.data),
+
+  generateForScan: (scanId: string) =>
+    api.post<AiRemediationPlan>(`/airemediation/scans/${scanId}/generate`).then((r) => r.data),
 };
 
 export const RecommendationApi = {
@@ -355,7 +369,7 @@ export const NotificationsApi = {
 
 export const GlobalSearchApi = {
   search: (q: string) =>
-    api.get(`/globalsearch?q=${encodeURIComponent(q)}`).then((r) => r.data),
+    api.get("/globalsearch", { params: { q } }).then((r) => r.data),
 };
 
 export const ProfileApi = {

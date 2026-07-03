@@ -58,7 +58,7 @@ public class ExecutiveScorecardController : ApiControllerBase
             .ToList();
 
         var score = latest.Any()
-            ? (int)Math.Round(latest.Average(s => s.Score))
+            ? PostureScoreHelper.NormalizeScore((int)Math.Round(latest.Average(s => s.Score)))
             : 0;
 
         var high = failed.Count(x => x.Finding.Severity == Severity.High);
@@ -92,7 +92,7 @@ public class ExecutiveScorecardController : ApiControllerBase
                 assetId = s.AssetId,
                 domain = s.Asset != null ? s.Asset.Domain : "Unknown",
                 score = s.Score,
-                grade = s.Grade.ToString(),
+                grade = PostureScoreHelper.GradeLabel(s),
                 failedFindings = s.Findings.Count(f => !f.Passed && f.Severity != Severity.Info),
                 highCriticalFindings = s.Findings.Count(f =>
                     !f.Passed && f.Severity is Severity.High or Severity.Critical),
@@ -131,17 +131,13 @@ public class ExecutiveScorecardController : ApiControllerBase
             score >= 50 ? "Developing" :
             "High Risk";
 
-        var riskLevel =
-            critical > 0 ? "Critical" :
-            highCritical > 5 ? "High" :
-            failed.Count > 5 ? "Medium" :
-            "Low";
+        var riskLevel = PostureScoreHelper.RiskLevel(score, highCritical, critical, failed.Count);
 
         return Ok(new
         {
             generatedUtc = DateTime.UtcNow,
             overallScore = score,
-            overallGrade = GetGrade(score),
+            overallGrade = PostureScoreHelper.GradeLabel(score),
             maturity,
             riskLevel,
             assetCount = assets.Count,
@@ -191,13 +187,6 @@ public class ExecutiveScorecardController : ApiControllerBase
 
         return actions.Take(6).ToArray();
     }
-
-    private static string GetGrade(int score) =>
-        score >= 90 ? "A" :
-        score >= 80 ? "B" :
-        score >= 70 ? "C" :
-        score >= 60 ? "D" :
-        "F";
 
     private static int SeverityRank(string severity) => severity switch
     {

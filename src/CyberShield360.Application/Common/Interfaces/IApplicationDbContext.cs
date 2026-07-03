@@ -26,6 +26,7 @@ public interface IApplicationDbContext
     DbSet<ScheduledScan> ScheduledScans { get; }
     DbSet<ApiKey> ApiKeys { get; }
     DbSet<GeneratedReport> Reports { get; }
+    DbSet<AiRemediationGuidance> AiRemediationGuidance { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

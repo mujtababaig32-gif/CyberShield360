@@ -135,7 +135,8 @@ public class GoogleAuthController : ApiControllerBase
                 FullName = name,
                 TenantId = tenant.Id,
                 IsActive = true,
-                LastLoginUtc = DateTime.UtcNow
+                LastLoginUtc = DateTime.UtcNow,
+                PasswordLastChangedUtc = null
             };
 
             var createResult = await _users.CreateAsync(user);

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { NotificationsApi } from "../api/endpoints";
 
 type NavItem = {
   to: string;
@@ -362,6 +363,180 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
+type NotificationPreview = {
+  id?: string;
+  title?: string;
+  message?: string;
+  category?: string;
+  severity?: string;
+  status?: string;
+  createdUtc?: string;
+};
+
+type NotificationSummary = {
+  totalNotifications?: number;
+  unreadNotifications?: number;
+  criticalNotifications?: number;
+  warningNotifications?: number;
+  notifications?: NotificationPreview[];
+  recommendations?: string[];
+};
+
+function notificationTone(severity?: string) {
+  const value = (severity ?? "").toLowerCase();
+  if (value.includes("critical")) return "border-red-500/30 bg-red-500/10 text-red-200";
+  if (value.includes("warning") || value.includes("high")) return "border-orange-500/30 bg-orange-500/10 text-orange-200";
+  return "border-brand-500/20 bg-brand-500/10 text-brand-200";
+}
+
+function formatNotificationTime(value?: string) {
+  if (!value) return "Just now";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString(undefined, { month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+function NotificationBell({ onViewAll }: { onViewAll: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<NotificationSummary | null>(null);
+
+  useEffect(() => {
+    if (!open || data || loading) return;
+
+    let cancelled = false;
+
+    async function loadNotifications() {
+      try {
+        setLoading(true);
+        setError(null);
+        const result = await NotificationsApi.summary();
+        if (!cancelled) setData(result);
+      } catch {
+        if (!cancelled) setError("Could not load notifications.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void loadNotifications();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, data, loading]);
+
+  const unread = data?.unreadNotifications ?? 0;
+  const critical = data?.criticalNotifications ?? 0;
+  const recent = data?.notifications?.slice(0, 5) ?? [];
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((value) => !value)}
+        className="relative rounded-2xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-800"
+        title="Notifications"
+        aria-label="Notifications"
+        aria-expanded={open}
+      >
+        🔔
+        {(unread > 0 || critical > 0) && (
+          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white ring-2 ring-slate-950">
+            {critical > 0 ? critical : unread}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-12 z-50 w-[min(92vw,25rem)] overflow-hidden rounded-3xl border border-white/10 bg-slate-950/98 shadow-2xl shadow-black/40 backdrop-blur-xl">
+          <div className="border-b border-white/10 bg-white/[0.03] p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-black text-white">Notification Center</div>
+                <div className="mt-1 text-xs text-slate-400">
+                  Security activity, delivery status, and system reminders.
+                </div>
+              </div>
+              <span className="rounded-full border border-brand-500/20 bg-brand-500/10 px-2 py-1 text-[10px] font-black uppercase text-brand-300">
+                {data?.totalNotifications ?? 0} total
+              </span>
+            </div>
+          </div>
+
+          <div className="max-h-96 overflow-y-auto p-3">
+            {loading && (
+              <div className="space-y-3">
+                {[1, 2, 3].map((item) => (
+                  <div key={item} className="animate-pulse rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                    <div className="h-3 w-32 rounded-full bg-white/10" />
+                    <div className="mt-3 h-3 w-full rounded-full bg-white/10" />
+                    <div className="mt-2 h-3 w-2/3 rounded-full bg-white/10" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {error && !loading && (
+              <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-semibold text-red-200">
+                {error}
+              </div>
+            )}
+
+            {!loading && !error && recent.length === 0 && (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center">
+                <div className="text-2xl">✅</div>
+                <div className="mt-2 text-sm font-black text-white">No notifications yet</div>
+                <div className="mt-1 text-xs leading-5 text-slate-400">
+                  New scan, risk, invitation, and delivery events will appear here once recorded.
+                </div>
+              </div>
+            )}
+
+            {!loading && !error && recent.length > 0 && (
+              <div className="space-y-3">
+                {recent.map((item, index) => (
+                  <div
+                    key={item.id ?? `${item.title}-${index}`}
+                    className={`rounded-2xl border p-4 ${notificationTone(item.severity)}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-black text-white">{item.title ?? "System notification"}</div>
+                        <div className="mt-1 max-h-10 overflow-hidden text-xs leading-5 opacity-85">{item.message ?? "No message available."}</div>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-black/20 px-2 py-1 text-[10px] font-black uppercase">
+                        {item.severity ?? "Info"}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wide opacity-70">
+                      <span>{item.category ?? "System"}</span>
+                      <span>{formatNotificationTime(item.createdUtc)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-white/10 p-3">
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onViewAll();
+              }}
+              className="w-full rounded-2xl border border-brand-500/30 bg-brand-500/10 px-4 py-3 text-sm font-black text-brand-200 transition hover:bg-brand-500/15"
+            >
+              View notification center
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
@@ -447,14 +622,7 @@ export default function Layout() {
                 <span>Search</span>
               </button>
 
-              <button
-                onClick={() => navigate("/notifications")}
-                className="rounded-2xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-800"
-                title="Notifications"
-                aria-label="Notifications"
-              >
-                🔔
-              </button>
+              <NotificationBell onViewAll={() => navigate("/notifications")} />
 
               <button
                 onClick={() => navigate("/profile")}

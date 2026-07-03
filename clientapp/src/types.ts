@@ -23,8 +23,8 @@ export interface DashboardAssetSummary {
   domain: string;
   score: number;
   grade: string;
-  failedFindings?: number;
-  highCriticalFindings?: number;
+  failedFindings?: number | null;
+  highCriticalFindings?: number | null;
   lastScanUtc?: string;
 }
 
@@ -54,8 +54,8 @@ export interface PostureDashboard {
   trainingCompletionPercent: number;
   totalChecks?: number;
   passedFindings?: number;
-  failedFindings?: number;
-  highCriticalFindings?: number;
+  failedFindings?: number | null;
+  highCriticalFindings?: number | null;
   latestScanUtc?: string;
   vulnerabilityBySeverity: SeverityBucket[];
   findingBySeverity?: SeverityBucket[];
@@ -93,13 +93,14 @@ export interface Asset {
   monitoringEnabled?: boolean;
   lastScannedUtc?: string;
   latestScanId?: string;
-  latestScore?: number;
-  latestGrade?: string;
+  latestScore?: number | null;
+  latestGrade?: string | null;
   latestFullPostureScanId?: string;
-  latestFullPostureScore?: number;
-  latestFullPostureGrade?: string;
-  failedFindings?: number;
-  highCriticalFindings?: number;
+  latestFullPostureScore?: number | null;
+  latestFullPostureGrade?: string | null;
+  failedFindings?: number | null;
+  highCriticalFindings?: number | null;
+  scoreSource?: string;
 }
 
 export interface Risk {
@@ -168,4 +169,59 @@ export interface VendorRiskSummary {
   pendingReviews: number;
   approvedVendors: number;
   vendors: VendorRiskItem[];
+}
+
+export interface AiRemediationAssetSummary {
+  assetId: string;
+  scanId: string;
+  domain: string;
+  score: number;
+  grade: string;
+  failedFindings: number;
+  highCriticalFindings: number;
+  lastScanUtc?: string;
+  guidanceGenerated: boolean;
+  guidanceProvider?: string;
+  guidanceGeneratedUtc?: string;
+  guidanceStatus: string;
+}
+
+export interface AiRemediationSummary {
+  generatedUtc: string;
+  scannedAssets: number;
+  assetsNeedingRemediation: number;
+  highCriticalFindings: number;
+  guidanceGenerated: number;
+  assets: AiRemediationAssetSummary[];
+}
+
+export interface AiRemediationAction {
+  findingTitle: string;
+  severity: string;
+  priority: string;
+  plainEnglishIssue: string;
+  businessImpact: string;
+  recommendedFix: string;
+  owner: string;
+  difficulty: string;
+  verificationStep: string;
+  estimatedEffortHours: number;
+}
+
+export interface AiRemediationPlan {
+  id?: string;
+  scanId: string;
+  assetId: string;
+  domain: string;
+  score: number;
+  grade: string;
+  failedFindings: number;
+  highCriticalFindings: number;
+  provider: string;
+  status: string;
+  executiveSummary: string;
+  businessImpact: string;
+  actions: AiRemediationAction[];
+  verificationSteps: string[];
+  generatedUtc?: string;
 }

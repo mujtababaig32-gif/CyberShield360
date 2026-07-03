@@ -12,7 +12,7 @@ type SearchResult = {
   category: string;
   route: string;
   icon?: string;
-  score?: number;
+  score?: number | null;
 };
 
 type SearchResponse = {
@@ -20,7 +20,30 @@ type SearchResponse = {
   totalResults: number;
   results: SearchResult[];
   suggestions?: string[];
+  partial?: boolean;
+  warning?: string | null;
 };
+
+const MODULE_RESULTS: SearchResult[] = [
+  { id: "dashboard", title: "Dashboard", subtitle: "Security overview and KPI scorecards", category: "Page", route: "/", icon: "📊", score: 100 },
+  { id: "executive-scorecard", title: "Executive Scorecard", subtitle: "Board-ready posture summary", category: "Page", route: "/executive-scorecard", icon: "📈", score: 100 },
+  { id: "assets", title: "Assets & Scans", subtitle: "Run full posture scans and download reports", category: "Page", route: "/assets", icon: "🌐", score: 100 },
+  { id: "scheduled-scans", title: "Scheduled Scans", subtitle: "Recurring posture assessments", category: "Page", route: "/scheduled-scans", icon: "⏰", score: 100 },
+  { id: "vulnerabilities", title: "Vulnerabilities", subtitle: "Technical findings and remediation", category: "Page", route: "/vulnerabilities", icon: "🛡️", score: 100 },
+  { id: "compliance", title: "Compliance Center", subtitle: "Compliance posture and audit readiness", category: "Page", route: "/compliance", icon: "📋", score: 100 },
+  { id: "risks", title: "Risk Register", subtitle: "Business risk tracking", category: "Page", route: "/risks", icon: "⚠️", score: 100 },
+  { id: "vendor-risk", title: "Vendor Risk", subtitle: "Third-party domain assessment", category: "Page", route: "/vendor-risk", icon: "🏢", score: 100 },
+  { id: "report-builder", title: "Report Builder", subtitle: "Executive PDF and Excel reports", category: "Page", route: "/report-builder", icon: "📑", score: 100 },
+  { id: "fix-plan", title: "Fix Plan", subtitle: "Prioritized remediation plan", category: "Page", route: "/fix-plan", icon: "🛠️", score: 100 },
+  { id: "ai-copilot", title: "AI Copilot", subtitle: "Security advisor", category: "Page", route: "/ai-copilot", icon: "🤖", score: 100 },
+  { id: "ai-remediation", title: "AI Remediation", subtitle: "Finding-based remediation guidance", category: "Page", route: "/ai-remediation", icon: "🛠️", score: 100 },
+  { id: "threat-intelligence", title: "Threat Intelligence", subtitle: "Domain and reputation intelligence", category: "Page", route: "/threat-intelligence", icon: "🎯", score: 100 },
+  { id: "soc", title: "SOC Center", subtitle: "Security operations queue", category: "Page", route: "/soc", icon: "🚨", score: 100 },
+  { id: "dark-web", title: "Dark Web", subtitle: "Breach and exposure monitoring", category: "Page", route: "/dark-web", icon: "🕶️", score: 100 },
+  { id: "audit-logs", title: "Audit Logs", subtitle: "System activity evidence", category: "Page", route: "/audit-logs", icon: "🧾", score: 100 },
+  { id: "user-management", title: "User Management", subtitle: "Users, roles and invitations", category: "Page", route: "/user-management", icon: "👥", score: 100 },
+  { id: "settings", title: "Settings", subtitle: "Branding and system settings", category: "Page", route: "/settings", icon: "⚙️", score: 100 },
+];
 
 function categoryPriority(category: string) {
   const value = category.toLowerCase();
@@ -28,10 +51,23 @@ function categoryPriority(category: string) {
   if (value.includes("risk")) return "Risk";
   if (value.includes("vulner")) return "Vulnerability";
   if (value.includes("asset")) return "Asset";
+  if (value.includes("vendor")) return "Vendor";
   if (value.includes("user")) return "User";
   if (value.includes("audit")) return "Audit";
+  if (value.includes("page")) return "Module";
 
   return category;
+}
+
+function localModuleSearch(query: string) {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+
+  return MODULE_RESULTS.filter((item) =>
+    [item.title, item.subtitle, item.category, item.route]
+      .filter(Boolean)
+      .some((value) => value.toLowerCase().includes(q))
+  );
 }
 
 export default function GlobalSearch() {
@@ -44,27 +80,46 @@ export default function GlobalSearch() {
   const suggestions = useMemo(
     () =>
       data?.suggestions ?? [
-        "critical risks",
         "assets",
-        "vulnerabilities",
+        "full posture",
+        "critical risks",
+        "vendor risk",
+        "reports",
+        "compliance",
         "audit logs",
-        "users",
         "settings",
       ],
     [data]
   );
 
   const runSearch = async (q = query) => {
-    if (!q.trim()) return;
+    const trimmed = q.trim();
+
+    if (!trimmed) {
+      setData(null);
+      setError(null);
+      return;
+    }
 
     try {
       setLoading(true);
       setError(null);
 
-      const result = await GlobalSearchApi.search(q);
+      const result = await GlobalSearchApi.search(trimmed);
       setData(result);
     } catch {
-      setError("Search failed. Try again.");
+      const fallback = localModuleSearch(trimmed);
+
+      setData({
+        query: trimmed,
+        totalResults: fallback.length,
+        results: fallback,
+        suggestions,
+        partial: true,
+        warning: "Live search is temporarily unavailable. Showing matching platform modules only.",
+      });
+
+      setError("Live search could not reach the backend. Module search is still available.");
     } finally {
       setLoading(false);
     }
@@ -74,6 +129,9 @@ export default function GlobalSearch() {
     const timer = setTimeout(() => {
       if (query.trim()) {
         void runSearch(query);
+      } else {
+        setData(null);
+        setError(null);
       }
     }, 350);
 
@@ -97,7 +155,7 @@ export default function GlobalSearch() {
       <header>
         <h1 className="text-2xl font-black tracking-tight">Global Search</h1>
         <p className="section-subtitle">
-          Search assets, risks, vulnerabilities, users, and platform modules from one place.
+          Search assets, vendors, risks, findings, users, and platform modules from one place.
         </p>
       </header>
 
@@ -106,7 +164,7 @@ export default function GlobalSearch() {
           <input
             autoFocus
             className="input text-base"
-            placeholder="Search CyberShield360..."
+            placeholder="Search assets, risks, reports, vendors..."
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={(event) => {
@@ -136,8 +194,14 @@ export default function GlobalSearch() {
       </section>
 
       {error && (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-semibold text-red-300">
+        <div className="rounded-2xl border border-orange-500/30 bg-orange-500/10 p-4 text-sm font-semibold text-orange-200">
           {error}
+        </div>
+      )}
+
+      {data?.warning && (
+        <div className="rounded-2xl border border-brand-500/30 bg-brand-500/10 p-4 text-sm font-semibold text-brand-200">
+          {data.warning}
         </div>
       )}
 
@@ -146,18 +210,22 @@ export default function GlobalSearch() {
           <CyberStatCard label="Results" value={data.totalResults} hint={`For “${data.query}”`} tone="brand" />
           <CyberStatCard label="Categories" value={categories.length} hint="Matched areas" tone="green" />
           <CyberStatCard label="Top Category" value={categories[0]?.category ?? "-"} hint="Most relevant" tone="orange" />
-          <CyberStatCard label="Suggestions" value={suggestions.length} hint="Quick searches" tone="brand" />
+          <CyberStatCard label="Mode" value={data.partial ? "Fallback" : "Live"} hint="Search status" tone="brand" />
         </section>
       )}
 
-      {loading && <div className="card text-sm text-slate-500">Searching...</div>}
+      {loading && (
+        <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 text-center text-sm text-slate-400 shadow-2xl shadow-black/10">
+          Searching workspace...
+        </div>
+      )}
 
       {!loading && query.trim() && data && (
         <CyberTable
           title="Search Results"
           description={`${data.totalResults} results for “${data.query}”.`}
           data={data.results}
-          emptyText="No matching results. Try searching for assets, risks, users, audit logs, or vulnerabilities."
+          emptyText="No matching results. Try assets, full posture, reports, risks, vendors, users, audit logs, or settings."
           columns={[
             {
               key: "result",
@@ -188,7 +256,7 @@ export default function GlobalSearch() {
             },
             {
               key: "route",
-              label: "Route",
+              label: "Action",
               render: (result) => (
                 <button
                   type="button"
@@ -205,9 +273,9 @@ export default function GlobalSearch() {
 
       {!query.trim() && (
         <div className="empty-state">
-          <div className="text-5xl">⌘</div>
+          <div className="text-5xl">⌘ / Ctrl</div>
           <div className="mt-3 text-xl font-black">Search your security workspace</div>
-          <p className="section-subtitle mt-1">Start typing to find modules and tenant records.</p>
+          <p className="section-subtitle mt-1">Start typing to find modules, assets, vendors, users, and tenant records.</p>
         </div>
       )}
     </div>

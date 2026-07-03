@@ -83,10 +83,10 @@ public class DashboardController : ApiControllerBase
         var highCriticalFindings = failedFindings.Count(f => f.Severity is Severity.High or Severity.Critical);
 
         var overallScore = latestFullScans.Any()
-            ? (int)Math.Round(latestFullScans.Average(s => s.Score))
+            ? PostureScoreHelper.NormalizeScore((int)Math.Round(latestFullScans.Average(s => s.Score)))
             : 0;
 
-        var overallGrade = GetGrade(overallScore);
+        var overallGrade = PostureScoreHelper.GradeLabel(overallScore);
         var trainingCompletionPercent = trainingTotal > 0
             ? (int)Math.Round(trainingCompleted / (double)trainingTotal * 100)
             : 0;
@@ -131,7 +131,7 @@ public class DashboardController : ApiControllerBase
                 assetId = s.AssetId,
                 domain = s.Asset != null ? s.Asset.Domain : "Unknown",
                 score = s.Score,
-                grade = s.Grade.ToString(),
+                grade = PostureScoreHelper.GradeLabel(s),
                 failedFindings = s.Findings.Count(f => !f.Passed && f.Severity != Severity.Info),
                 lastScanUtc = s.CompletedUtc ?? s.CreatedAtUtc
             })
@@ -146,7 +146,7 @@ public class DashboardController : ApiControllerBase
                 assetId = s.AssetId,
                 domain = s.Asset != null ? s.Asset.Domain : "Unknown",
                 score = s.Score,
-                grade = s.Grade.ToString(),
+                grade = PostureScoreHelper.GradeLabel(s),
                 failedFindings = s.Findings.Count(f => !f.Passed && f.Severity != Severity.Info),
                 completedUtc = s.CompletedUtc ?? s.CreatedAtUtc
             })
@@ -165,7 +165,7 @@ public class DashboardController : ApiControllerBase
             generatedUtc = DateTime.UtcNow,
             overallScore,
             overallGrade,
-            postureStatus = GetPostureStatus(overallScore),
+            postureStatus = PostureScoreHelper.PostureStatus(overallScore),
             assetCount = assets.Count,
             monitoredAssetCount = assets.Count(a => a.MonitoringEnabled),
             fullPostureAssets = latestFullScans.Count,
@@ -191,19 +191,6 @@ public class DashboardController : ApiControllerBase
             executiveActions
         });
     }
-
-    private static string GetGrade(int score) =>
-        score >= 90 ? "A" :
-        score >= 80 ? "B" :
-        score >= 70 ? "C" :
-        score >= 60 ? "D" :
-        "F";
-
-    private static string GetPostureStatus(int score) =>
-        score >= 85 ? "Strong" :
-        score >= 70 ? "Moderate" :
-        score >= 50 ? "Elevated Risk" :
-        "High Risk";
 
     private static int SeverityRank(string severity) => severity switch
     {

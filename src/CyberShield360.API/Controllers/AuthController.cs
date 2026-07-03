@@ -34,8 +34,13 @@ public class AuthController : ApiControllerBase
 
         var user = new ApplicationUser
         {
-            UserName = req.Email, Email = req.Email, EmailConfirmed = true,
-            TenantId = tenant.Id, FullName = req.FullName, IsActive = true
+            UserName = req.Email,
+            Email = req.Email,
+            EmailConfirmed = true,
+            TenantId = tenant.Id,
+            FullName = req.FullName,
+            IsActive = true,
+            PasswordLastChangedUtc = DateTime.UtcNow
         };
         var result = await _users.CreateAsync(user, req.Password);
         if (!result.Succeeded)
@@ -52,8 +57,46 @@ public class AuthController : ApiControllerBase
         if (user is null || !user.IsActive || !await _users.CheckPasswordAsync(user, req.Password))
             return Unauthorized(new { message = "Invalid credentials." });
 
-        user.LastLoginUtc = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
+        var previousLoginUtc = user.LastLoginUtc;
+
+        user.LastLoginUtc = now;
+
+        // Existing accounts created before this field existed will capture a safe baseline on next login.
+        user.PasswordLastChangedUtc ??= now;
+
         await _users.UpdateAsync(user);
+
+        _db.AuditLogs.Add(new AuditLog
+        {
+            TenantId = user.TenantId,
+            UserId = user.Id.ToString(),
+            UserEmail = user.Email,
+            Action = AuditAction.Login,
+            EntityType = "Authentication",
+            EntityId = user.Id.ToString(),
+            Description = previousLoginUtc is null
+                ? $"{user.Email} signed in. Login tracking is now active for this account."
+                : $"{user.Email} signed in successfully.",
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+            UserAgent = Request.Headers.UserAgent.ToString()
+        });
+
+        _db.Notifications.Add(new NotificationLog
+        {
+            TenantId = user.TenantId,
+            Channel = NotificationChannel.InApp,
+            Recipient = user.Email ?? req.Email,
+            Subject = previousLoginUtc is null ? "Login tracking enabled" : "Successful sign-in",
+            Body = previousLoginUtc is null
+                ? "CyberShield360 has started tracking last-login activity for this account."
+                : $"New successful sign-in detected for {user.Email}.",
+            Sent = false,
+            SentAtUtc = null
+        });
+
+        await _db.SaveChangesAsync();
+
         return Ok(await BuildResponse(user));
     }
 

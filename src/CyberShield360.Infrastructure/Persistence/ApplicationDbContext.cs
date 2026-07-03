@@ -42,9 +42,28 @@ public class ApplicationDbContext
     public DbSet<ScheduledScan> ScheduledScans => Set<ScheduledScan>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<GeneratedReport> Reports => Set<GeneratedReport>();
+    public DbSet<AiRemediationGuidance> AiRemediationGuidance => Set<AiRemediationGuidance>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
+
+        builder.Entity<AiRemediationGuidance>(entity =>
+        {
+            entity.HasOne(x => x.Asset)
+                .WithMany()
+                .HasForeignKey(x => x.AssetId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(x => x.Scan)
+                .WithMany()
+                .HasForeignKey(x => x.ScanId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasIndex(x => x.ScanId);
+            entity.HasIndex(x => x.AssetId);
+            entity.HasIndex(x => x.TenantId);
+        });
+
         base.OnModelCreating(builder);
         builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
 

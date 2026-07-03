@@ -32,6 +32,26 @@ public class ProfileController : ApiControllerBase
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == _user.UserId, ct);
 
+        var primaryRole = _user.Roles.FirstOrDefault() ?? "Member";
+        var loginMethod = string.IsNullOrWhiteSpace(currentUser?.PasswordHash)
+            ? "Passwordless / OAuth"
+            : "Email + Password";
+        var mfaEnabled = currentUser?.TwoFactorEnabled == true;
+
+        var recommendations = new List<string>();
+
+        if (!mfaEnabled)
+            recommendations.Add("MFA setup is on the production security roadmap. Until then, use a strong password and restrict admin access.");
+
+        if (currentUser?.LastLoginUtc is null)
+            recommendations.Add("Login tracking will populate after the next successful sign-in.");
+
+        if (currentUser?.PasswordLastChangedUtc is null && loginMethod == "Email + Password")
+            recommendations.Add("Password-change tracking will use the next successful password update or baseline capture.");
+
+        recommendations.Add("Review user access every 90 days and remove accounts that no longer need access.");
+        recommendations.Add("Keep tenant billing, security contacts, and notification settings updated before client launch.");
+
         return Ok(new
         {
             generatedUtc = DateTime.UtcNow,
@@ -40,9 +60,13 @@ public class ProfileController : ApiControllerBase
                 id = currentUser?.Id,
                 name = currentUser?.FullName ?? "CyberShield User",
                 email = currentUser?.Email ?? _user.Email,
-                role = "Tenant Admin",
-                mfaStatus = "Not Enabled",
-                loginMethod = "Email + Password"
+                role = FormatRole(primaryRole),
+                mfaStatus = mfaEnabled ? "Enabled" : "Coming Soon",
+                loginMethod,
+                mfaAvailable = false,
+                mfaMessage = mfaEnabled
+                    ? "Multi-factor authentication is enabled for this account."
+                    : "MFA setup is not enabled in this build. It is tracked as a production security roadmap item."
             },
             tenant = new
             {
@@ -53,17 +77,24 @@ public class ProfileController : ApiControllerBase
             },
             security = new
             {
-                passwordLastChanged = "Not tracked",
+                passwordLastChangedUtc = currentUser?.PasswordLastChangedUtc,
                 activeSessions = 1,
-                lastLogin = "Not tracked"
+                lastLoginUtc = currentUser?.LastLoginUtc,
+                accountStatus = currentUser?.IsActive == true ? "Active" : "Inactive",
+                loginTracking = currentUser?.LastLoginUtc is null ? "Pending next login" : "Active",
+                passwordTracking = currentUser?.PasswordLastChangedUtc is null
+                    ? (loginMethod == "Passwordless / OAuth" ? "Not required for OAuth" : "Baseline pending")
+                    : "Active"
             },
-            recommendations = new[]
-            {
-                "Enable MFA for administrator accounts.",
-                "Connect Microsoft or Google login for enterprise SSO.",
-                "Review user access every 90 days.",
-                "Keep tenant billing and security contacts updated."
-            }
+            recommendations = recommendations.Distinct().Take(5).ToArray()
         });
     }
+
+    private static string FormatRole(string role) => role switch
+    {
+        "TenantAdmin" => "Tenant Admin",
+        "SecurityAnalyst" => "Security Analyst",
+        "SuperAdmin" => "Super Admin",
+        _ => role
+    };
 }

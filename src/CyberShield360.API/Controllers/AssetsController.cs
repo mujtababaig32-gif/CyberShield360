@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using CyberShield360.Application.Common.Interfaces;
 using CyberShield360.Application.Features.Scans.Commands;
 using CyberShield360.Domain.Entities;
@@ -24,40 +25,67 @@ public class AssetsController : ApiControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> List()
+    public async Task<IActionResult> List(CancellationToken ct)
     {
         if (_user.TenantId is not Guid tid) return Unauthorized();
 
         var assets = await _db.Assets
             .AsNoTracking()
             .Where(a => a.TenantId == tid)
-            .Select(a => new
+            .OrderBy(a => a.Domain)
+            .ToListAsync(ct);
+
+        var assetIds = assets.Select(a => a.Id).ToList();
+
+        var completedFullPostureScans = await _db.Scans
+            .AsNoTracking()
+            .Include(s => s.Findings)
+            .Where(s =>
+                s.TenantId == tid &&
+                assetIds.Contains(s.AssetId) &&
+                s.Status == ScanStatus.Completed &&
+                s.Type == ScanType.FullPosture)
+            .OrderByDescending(s => s.CompletedUtc ?? s.StartedUtc ?? s.CreatedAtUtc)
+            .ToListAsync(ct);
+
+        var latestFullPostureByAsset = completedFullPostureScans
+            .GroupBy(s => s.AssetId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderByDescending(PostureScoreHelper.SortUtc).First());
+
+        var response = assets.Select(asset =>
+        {
+            latestFullPostureByAsset.TryGetValue(asset.Id, out var latest);
+
+            var failedFindings = latest?.Findings.Count(f => !f.Passed && f.Severity != Severity.Info);
+            var highCriticalFindings = latest?.Findings.Count(f =>
+                !f.Passed && f.Severity is Severity.High or Severity.Critical);
+
+            return new
             {
-                a.Id,
-                a.Domain,
-                a.DisplayName,
-                a.IsPrimary,
-                a.MonitoringEnabled,
-                a.LastScannedUtc,
+                asset.Id,
+                asset.Domain,
+                asset.DisplayName,
+                asset.IsPrimary,
+                asset.MonitoringEnabled,
+                LastScannedUtc = latest?.CompletedUtc ?? asset.LastScannedUtc,
 
-                LatestScanId = a.Scans
-                    .OrderByDescending(s => s.CompletedUtc ?? s.StartedUtc)
-                    .Select(s => (Guid?)s.Id)
-                    .FirstOrDefault(),
+                // Backwards-compatible fields now point only to latest completed Full Posture scan.
+                LatestScanId = (Guid?)latest?.Id,
+                LatestScore = latest is null ? (int?)null : PostureScoreHelper.NormalizeScore(latest.Score),
+                LatestGrade = latest is null ? null : PostureScoreHelper.GradeLabel(latest),
 
-                LatestScore = a.Scans
-                    .OrderByDescending(s => s.CompletedUtc ?? s.StartedUtc)
-                    .Select(s => s.Score)
-                    .FirstOrDefault(),
+                LatestFullPostureScanId = (Guid?)latest?.Id,
+                LatestFullPostureScore = latest is null ? (int?)null : PostureScoreHelper.NormalizeScore(latest.Score),
+                LatestFullPostureGrade = latest is null ? null : PostureScoreHelper.GradeLabel(latest),
+                FailedFindings = failedFindings,
+                HighCriticalFindings = highCriticalFindings,
+                ScoreSource = latest is null ? "Not scanned yet" : "Latest completed Full Posture scan"
+            };
+        });
 
-                LatestGrade = a.Scans
-                    .OrderByDescending(s => s.CompletedUtc ?? s.StartedUtc)
-                    .Select(s => s.Grade.ToString())
-                    .FirstOrDefault()
-            })
-            .ToListAsync();
-
-        return Ok(assets);
+        return Ok(response);
     }
 
     [HttpPost]
@@ -67,6 +95,15 @@ public class AssetsController : ApiControllerBase
         if (_user.TenantId is not Guid tid) return Unauthorized();
 
         var normalizedDomain = NormalizeDomain(req.Domain);
+
+        if (!IsValidDomain(normalizedDomain))
+        {
+            return BadRequest(new
+            {
+                message = "Invalid domain format. Use a real domain like example.com or app.example.com.",
+                domain = normalizedDomain
+            });
+        }
 
         var exists = await _db.Assets.AnyAsync(a =>
             a.TenantId == tid &&
@@ -234,15 +271,33 @@ public class AssetsController : ApiControllerBase
         return NoContent();
     }
 
-    private static string NormalizeDomain(string domain)
+    private static string NormalizeDomain(string? domain)
     {
-        return domain
+        return (domain ?? string.Empty)
+            .Trim()
             .Replace("https://", "", StringComparison.OrdinalIgnoreCase)
             .Replace("http://", "", StringComparison.OrdinalIgnoreCase)
             .Trim()
             .TrimEnd('/')
             .Split('/')[0]
+            .Split('?')[0]
+            .Split('#')[0]
+            .TrimEnd('.')
             .ToLowerInvariant();
+    }
+
+    private static bool IsValidDomain(string domain)
+    {
+        if (string.IsNullOrWhiteSpace(domain) || domain.Length > 253)
+            return false;
+
+        if (domain.Contains(' ') || domain.Contains('_') || domain.Contains('@'))
+            return false;
+
+        return Regex.IsMatch(
+            domain,
+            @"^(?!-)(?:[a-z0-9-]{1,63}\.)+[a-z]{2,63}$",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     }
 }
 

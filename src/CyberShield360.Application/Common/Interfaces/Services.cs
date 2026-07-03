@@ -34,7 +34,51 @@ public interface IReportGenerator
 public interface IAiRecommendationService
 {
     Task<IReadOnlyList<string>> GetRecommendationsAsync(string context, CancellationToken ct = default);
+
+    Task<AiRemediationPlanDto> GenerateRemediationPlanAsync(
+        AiRemediationContextDto context,
+        CancellationToken ct = default);
 }
+
+public record AiRemediationFindingContextDto(
+    string CheckKey,
+    string Title,
+    string Severity,
+    string Detail,
+    string Recommendation);
+
+public record AiRemediationContextDto(
+    Guid ScanId,
+    string Domain,
+    int Score,
+    string Grade,
+    IReadOnlyList<AiRemediationFindingContextDto> FailedFindings);
+
+public record AiRemediationActionDto(
+    string FindingTitle,
+    string Severity,
+    string Priority,
+    string PlainEnglishIssue,
+    string BusinessImpact,
+    string RecommendedFix,
+    string Owner,
+    string Difficulty,
+    string VerificationStep,
+    int EstimatedEffortHours);
+
+public record AiRemediationPlanDto(
+    Guid ScanId,
+    string Domain,
+    int Score,
+    string Grade,
+    int FailedFindings,
+    int HighCriticalFindings,
+    string Provider,
+    string ExecutiveSummary,
+    string BusinessImpact,
+    IReadOnlyList<AiRemediationActionDto> Actions,
+    IReadOnlyList<string> VerificationSteps,
+    DateTime GeneratedUtc);
 
 public interface ILemonSqueezyService
 {

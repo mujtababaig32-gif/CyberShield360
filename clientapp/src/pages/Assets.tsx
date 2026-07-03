@@ -40,6 +40,18 @@ function scoreTextClass(score?: number | null) {
   return "text-red-300";
 }
 
+function latestPostureScore(asset: Asset): number | null {
+  return asset.latestFullPostureScore ?? asset.latestScore ?? null;
+}
+
+function latestPostureGrade(asset: Asset): string | null {
+  return asset.latestFullPostureGrade ?? asset.latestGrade ?? null;
+}
+
+function latestPostureScanId(asset: Asset): string | null {
+  return asset.latestFullPostureScanId ?? asset.latestScanId ?? null;
+}
+
 function cleanDomain(value: string) {
   return value
     .trim()
@@ -48,7 +60,32 @@ function cleanDomain(value: string) {
     .replace(/^www\./i, "")
     .split("/")[0]
     .split("?")[0]
-    .split("#")[0];
+    .split("#")[0]
+    .replace(/\.$/, "");
+}
+
+function validateDomain(value: string) {
+  const normalized = cleanDomain(value);
+
+  if (!normalized) {
+    return { valid: false, normalized, message: "Enter a domain first." };
+  }
+
+  if (normalized.length > 253) {
+    return { valid: false, normalized, message: "Domain is too long. Please enter a valid business domain." };
+  }
+
+  if (normalized.includes(" ") || normalized.includes("_") || normalized.includes("@")) {
+    return { valid: false, normalized, message: "Enter only a website/domain like example.com. Do not enter emails, spaces, or special characters." };
+  }
+
+  const domainPattern = /^(?!-)(?:[a-z0-9-]{1,63}\.)+[a-z]{2,63}$/i;
+
+  if (!domainPattern.test(normalized)) {
+    return { valid: false, normalized, message: "Invalid domain format. Use a real domain like example.com or app.example.com." };
+  }
+
+  return { valid: true, normalized, message: null as string | null };
 }
 
 export default function Assets() {
@@ -81,22 +118,18 @@ export default function Assets() {
   }, []);
 
   const stats = useMemo(() => {
-    const scanned = assets.filter(
-      (asset) => asset.latestScore !== undefined && asset.latestScore !== null
-    );
+    const scanned = assets.filter((asset) => latestPostureScore(asset) !== null);
 
-    const highRisk = assets.filter(
-      (asset) =>
-        asset.latestScore !== undefined &&
-        asset.latestScore !== null &&
-        asset.latestScore < 60
-    );
+    const highRisk = assets.filter((asset) => {
+      const score = latestPostureScore(asset);
+      return score !== null && score < 60;
+    });
 
     const averageScore =
       scanned.length === 0
         ? "-"
         : Math.round(
-            scanned.reduce((total, asset) => total + Number(asset.latestScore ?? 0), 0) /
+            scanned.reduce((total, asset) => total + Number(latestPostureScore(asset) ?? 0), 0) /
               scanned.length
           );
 
@@ -107,18 +140,19 @@ export default function Assets() {
       scanned: scanned.length,
       highRisk: highRisk.length,
       averageScore,
-      reportReady: assets.filter((asset) => Boolean(asset.latestScanId)).length,
+      reportReady: assets.filter((asset) => Boolean(latestPostureScanId(asset))).length,
     };
   }, [assets]);
 
   const add = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const normalizedDomain = cleanDomain(domain);
+    const validation = validateDomain(domain);
+    const normalizedDomain = validation.normalized;
 
-    if (!normalizedDomain) {
+    if (!validation.valid) {
       setMsg(null);
-      setError("Enter a domain first.");
+      setError(validation.message);
       return;
     }
 
@@ -132,9 +166,10 @@ export default function Assets() {
       setDomain("");
       setMsg(`Asset added: ${normalizedDomain}`);
       await load();
-    } catch {
+    } catch (err: any) {
       setMsg(null);
-      setError("Failed to add asset. Make sure the domain is valid and not already added.");
+      const backendMessage = err?.response?.data?.message;
+      setError(backendMessage || "Failed to add asset. Make sure the domain is valid, authorized, and not already added.");
     } finally {
       setAdding(false);
     }
@@ -283,7 +318,7 @@ export default function Assets() {
         <CyberStatCard
           label="Scanned"
           value={stats.scanned}
-          hint="Have latest score"
+          hint="Completed Full Posture"
           tone="brand"
         />
         <CyberStatCard
@@ -295,7 +330,7 @@ export default function Assets() {
         <CyberStatCard
           label="Reports"
           value={stats.reportReady}
-          hint="Full Posture ready"
+          hint="Report-ready scans"
           tone="green"
         />
       </section>
@@ -317,8 +352,20 @@ export default function Assets() {
               className="input mt-3"
               placeholder="example.com"
               value={domain}
-              onChange={(e) => setDomain(e.target.value)}
+              onChange={(e) => {
+                setDomain(e.target.value);
+                if (error) setError(null);
+              }}
+              onBlur={() => {
+                const normalized = cleanDomain(domain);
+                if (normalized) setDomain(normalized);
+              }}
             />
+
+            <div className="mt-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs leading-5 text-slate-500">
+              Accepted format: <span className="font-bold text-slate-300">example.com</span>.
+              The app will remove https://, www, paths, and query strings automatically.
+            </div>
           </div>
 
           <button
@@ -368,7 +415,7 @@ export default function Assets() {
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           {assets.map((asset) => {
             const isBusy = busyAssetId === asset.id;
-            const latestScore = asset.latestScore ?? null;
+            const latestScore = latestPostureScore(asset);
             const fullPostureScan = SCAN_TYPES.find((scanType) => scanType.primary);
             const targetedScans = SCAN_TYPES.filter((scanType) => !scanType.primary);
 
@@ -412,7 +459,7 @@ export default function Assets() {
                           Grade
                         </div>
                         <div className="mt-1 text-lg font-black text-white">
-                          {asset.latestGrade ?? "-"}
+                          {latestPostureGrade(asset) ?? "-"}
                         </div>
                       </div>
                     </div>
@@ -490,7 +537,7 @@ export default function Assets() {
                   </div>
                 </div>
 
-                {asset.latestScanId ? (
+                {latestPostureScanId(asset) ? (
                   <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="text-center sm:text-left">
                       <div className="text-sm font-black text-white">Report Ready</div>

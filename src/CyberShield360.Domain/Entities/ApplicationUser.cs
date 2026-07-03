@@ -10,6 +10,7 @@ public class ApplicationUser : IdentityUser<Guid>, ITenantScoped
     public string? JobTitle { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime? LastLoginUtc { get; set; }
+    public DateTime? PasswordLastChangedUtc { get; set; }
     public string? AvatarUrl { get; set; }
 
     public Tenant? Tenant { get; set; }

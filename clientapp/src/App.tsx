@@ -26,6 +26,7 @@ import IncidentPlaybook from "./pages/IncidentPlaybook";
 import Login from "./pages/Login";
 import MicrosoftAuth from "./pages/MicrosoftAuth";
 import NotificationsCenter from "./pages/NotificationsCenter";
+import NotFound from "./pages/NotFound";
 import PhishingSimulation from "./pages/PhishingSimulation";
 import PolicyAudit from "./pages/PolicyAudit";
 import Profile from "./pages/Profile";
@@ -116,12 +117,33 @@ export default function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />
 
+
+
+        {/* Section landing routes / deep-link aliases */}
+        <Route path="/command-center" element={<Dashboard />} />
+        <Route path="/client-success" element={<ServiceOverview />} />
+        <Route path="/deal-desk" element={<ClientQuotation />} />
+        <Route path="/attack-surface" element={<Assets />} />
+        <Route path="/risk-trust" element={<Risks />} />
+        <Route path="/human-defense" element={<SecurityAwareness />} />
+        <Route path="/threat-ops" element={<SocCenter />} />
+        <Route path="/control-room" element={<SaasAdmin />} />
+
         {/* Auth Callback Pages */}
         <Route path="/microsoft-auth" element={<MicrosoftAuth />} />
         <Route path="/google-auth" element={<GoogleAuth />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route
+        path="*"
+        element={
+          <Protected>
+            <Layout />
+          </Protected>
+        }
+      >
+        <Route path="*" element={<NotFound />} />
+      </Route>
     </Routes>
   );
 }

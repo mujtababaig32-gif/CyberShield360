@@ -1,34 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
-import { AssetApi, RecommendationApi } from "../api/endpoints";
+import { AiRemediationApi, AssetApi } from "../api/endpoints";
 import CyberStatCard from "../components/CyberStatCard";
 import CyberStatusBadge from "../components/CyberStatusBadge";
 import CyberTable from "../components/CyberTable";
-import type { Asset, ScanRecommendation } from "../types";
+import type {
+  AiRemediationAction,
+  AiRemediationAssetSummary,
+  AiRemediationPlan,
+  AiRemediationSummary,
+} from "../types";
 
-function gradeStatus(grade?: string) {
-  if (grade === "A" || grade === "B") return "Strong";
-  if (grade === "C") return "Needs Review";
-  if (grade === "D" || grade === "F") return "High Risk";
-  return "Not Graded";
+function dateText(value?: string | null) {
+  return value ? new Date(value).toLocaleString() : "Not generated";
 }
 
-function actionLevel(index: number) {
-  if (index === 0) return "Critical Priority";
-  if (index <= 2) return "High Priority";
-  if (index <= 5) return "Medium Priority";
-  return "Backlog";
+function riskTone(count: number): "green" | "orange" | "red" {
+  if (count <= 0) return "green";
+  if (count <= 3) return "orange";
+  return "red";
 }
 
-function assetScanId(asset: Asset) {
-  return asset.latestFullPostureScanId || asset.latestScanId || "";
-}
-
-function assetScore(asset: Asset) {
-  return asset.latestFullPostureScore ?? asset.latestScore ?? "-";
-}
-
-function assetGrade(asset: Asset) {
-  return asset.latestFullPostureGrade ?? asset.latestGrade ?? "-";
+function scoreTone(score: number): "green" | "orange" | "red" {
+  if (score >= 80) return "green";
+  if (score >= 60) return "orange";
+  return "red";
 }
 
 function csvSafe(value: unknown) {
@@ -51,63 +46,48 @@ function downloadCsv(filename: string, rows: unknown[][]) {
 }
 
 export default function AiRemediation() {
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [selectedAssetId, setSelectedAssetId] = useState("");
+  const [summary, setSummary] = useState<AiRemediationSummary | null>(null);
   const [selectedScanId, setSelectedScanId] = useState("");
-  const [assetQuery, setAssetQuery] = useState("");
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [data, setData] = useState<ScanRecommendation | null>(null);
+  const [plan, setPlan] = useState<AiRemediationPlan | null>(null);
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const scannedAssets = useMemo(() => assets.filter((asset) => assetScanId(asset)), [assets]);
-
-  const selectedAsset = useMemo(
-    () => scannedAssets.find((asset) => asset.id === selectedAssetId) ?? null,
-    [scannedAssets, selectedAssetId]
-  );
+  const assets = summary?.assets ?? [];
 
   const filteredAssets = useMemo(() => {
-    const q = assetQuery.trim().toLowerCase();
-    const source = q
-      ? scannedAssets.filter((asset) =>
-          [
-            asset.domain,
-            asset.latestFullPostureGrade,
-            asset.latestGrade,
-            asset.latestFullPostureScore,
-            asset.latestScore,
-          ]
-            .join(" ")
-            .toLowerCase()
-            .includes(q)
-        )
-      : scannedAssets;
+    const q = search.trim().toLowerCase();
+    if (!q) return assets;
 
-    return source.slice(0, 12);
-  }, [assetQuery, scannedAssets]);
+    return assets.filter((asset) =>
+      `${asset.domain} ${asset.grade} ${asset.guidanceStatus} ${asset.guidanceProvider ?? ""}`
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [assets, search]);
 
-  const loadRecommendations = async (assetId: string, scanId: string) => {
+  const selectedAsset = useMemo(
+    () => assets.find((asset) => asset.scanId === selectedScanId) ?? null,
+    [assets, selectedScanId]
+  );
+
+  const loadPlan = async (scanId: string) => {
     if (!scanId) {
-      setData(null);
+      setPlan(null);
       return;
     }
 
     try {
       setWorking(true);
       setError(null);
-      setMsg("Loading remediation guidance...");
-      setSelectedAssetId(assetId);
       setSelectedScanId(scanId);
-
-      const result = await RecommendationApi.getByScan(scanId);
-      setData(result);
-      setMsg(null);
+      const result = await AiRemediationApi.getForScan(scanId);
+      setPlan(result);
     } catch {
-      setData(null);
-      setError("Failed to load remediation guidance for this scan.");
+      setPlan(null);
+      setError("Failed to load AI remediation guidance for this scan.");
     } finally {
       setWorking(false);
     }
@@ -117,21 +97,20 @@ export default function AiRemediation() {
     try {
       setLoading(true);
       setError(null);
+      setMessage(null);
 
-      const result = await AssetApi.list();
-      const available = result.filter((asset) => assetScanId(asset));
-      setAssets(result);
+      const result = await AiRemediationApi.summary();
+      setSummary(result);
 
-      if (available.length > 0) {
-        const first = available[0];
-        await loadRecommendations(first.id, assetScanId(first));
+      const firstScanId = selectedScanId || result.assets[0]?.scanId || "";
+      if (firstScanId) {
+        await loadPlan(firstScanId);
       } else {
-        setData(null);
-        setSelectedAssetId("");
         setSelectedScanId("");
+        setPlan(null);
       }
     } catch {
-      setError("Failed to load scanned assets.");
+      setError("Failed to load AI Remediation. Run a Full Posture scan first, then refresh this page.");
     } finally {
       setLoading(false);
     }
@@ -139,19 +118,35 @@ export default function AiRemediation() {
 
   useEffect(() => {
     void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onSelectAsset = async (asset: Asset) => {
-    const scanId = assetScanId(asset);
-    if (!scanId) return;
+  const generate = async () => {
+    if (!selectedScanId) {
+      setError("Select a scanned asset first.");
+      return;
+    }
 
-    setPickerOpen(false);
-    setAssetQuery("");
-    await loadRecommendations(asset.id, scanId);
+    try {
+      setWorking(true);
+      setError(null);
+      setMessage("Generating remediation guidance from real scan findings...");
+
+      const result = await AiRemediationApi.generateForScan(selectedScanId);
+      setPlan(result);
+      setMessage(`Guidance generated using ${result.provider}.`);
+
+      const refreshed = await AiRemediationApi.summary();
+      setSummary(refreshed);
+    } catch {
+      setError("Failed to generate remediation guidance. Check backend logs and OpenAI configuration.");
+    } finally {
+      setWorking(false);
+    }
   };
 
   const download = async (format: "pdf" | "xlsx") => {
-    if (!selectedAssetId) {
+    if (!selectedAsset?.assetId) {
       setError("Select an asset first.");
       return;
     }
@@ -159,11 +154,9 @@ export default function AiRemediation() {
     try {
       setWorking(true);
       setError(null);
-      setMsg(`Downloading latest full posture ${format.toUpperCase()} report...`);
-
-      await AssetApi.downloadReport(selectedAssetId, format);
-
-      setMsg(`${format.toUpperCase()} report downloaded.`);
+      setMessage(`Downloading latest full posture ${format.toUpperCase()} report...`);
+      await AssetApi.downloadReport(selectedAsset.assetId, format);
+      setMessage(`${format.toUpperCase()} report downloaded.`);
     } catch {
       setError(`Failed to download ${format.toUpperCase()} report. Run a Full Posture scan first.`);
     } finally {
@@ -171,259 +164,307 @@ export default function AiRemediation() {
     }
   };
 
-  const exportActions = () => {
-    if (!data) return;
+  const exportPlan = () => {
+    if (!plan || plan.actions.length === 0) return;
 
-    downloadCsv("cybershield360-remediation-plan.csv", [
-      ["Domain", "Score", "Grade", "Failed Findings", "Priority", "Recommendation"],
-      ...data.recommendations.map((recommendation, index) => [
-        data.domain,
-        data.score,
-        data.grade,
-        data.failedFindings,
-        actionLevel(index),
-        recommendation,
+    downloadCsv("cybershield360-ai-remediation-plan.csv", [
+      [
+        "Domain",
+        "Score",
+        "Grade",
+        "Provider",
+        "Finding",
+        "Severity",
+        "Priority",
+        "Issue",
+        "Business Impact",
+        "Recommended Fix",
+        "Owner",
+        "Difficulty",
+        "Verification",
+        "Estimated Hours",
+      ],
+      ...plan.actions.map((action) => [
+        plan.domain,
+        plan.score,
+        plan.grade,
+        plan.provider,
+        action.findingTitle,
+        action.severity,
+        action.priority,
+        action.plainEnglishIssue,
+        action.businessImpact,
+        action.recommendedFix,
+        action.owner,
+        action.difficulty,
+        action.verificationStep,
+        action.estimatedEffortHours,
       ]),
     ]);
   };
 
+  const actionRows = plan?.actions ?? [];
+  const generated = plan?.status === "Generated" && actionRows.length > 0;
+
+  if (loading && !summary) {
+    return (
+      <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 text-center text-sm text-slate-400 shadow-2xl shadow-black/10">
+        Loading AI Remediation...
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <div className="text-sm font-semibold uppercase tracking-[0.3em] text-brand-500">
-            Guided Remediation
-          </div>
-          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">
-            Remediation Center
-          </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-            Turn scan findings into prioritized fixes, report exports, and client-ready remediation guidance.
-          </p>
-        </div>
+      <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/20">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="max-w-4xl">
+            <div className="mb-3 inline-flex rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-brand-300">
+              Control Room
+            </div>
 
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={load}
-            disabled={loading || working}
-            className="btn-ghost"
-          >
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
-          <button
-            type="button"
-            onClick={exportActions}
-            disabled={!data || data.recommendations.length === 0}
-            className="btn-primary disabled:opacity-50"
-          >
-            Export Plan
-          </button>
-        </div>
-      </header>
+            <h1 className="text-3xl font-black tracking-tight text-white">
+              AI Remediation
+            </h1>
 
-      {msg && (
-        <div className="rounded-2xl border border-brand-500/30 bg-brand-500/10 p-4 text-sm font-medium text-brand-300">
-          {msg}
-        </div>
-      )}
-
-      {error && (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-medium text-red-300">
-          {error}
-        </div>
-      )}
-
-      <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
-          <div className="relative">
-            <label className="text-sm font-bold text-slate-200">Select scanned asset</label>
-
-            <button
-              type="button"
-              onClick={() => setPickerOpen((value) => !value)}
-              disabled={loading || scannedAssets.length === 0}
-              className="mt-2 flex w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-left shadow-sm transition hover:border-brand-500/40 focus:outline-none focus:ring-4 focus:ring-brand-500/15 disabled:opacity-60"
-            >
-              <div className="min-w-0">
-                <div className="break-all font-bold text-white">
-                  {selectedAsset ? selectedAsset.domain : "Choose an asset"}
-                </div>
-                <div className="mt-1 text-xs text-slate-500">
-                  {selectedAsset
-                    ? `Score ${assetScore(selectedAsset)} / Grade ${assetGrade(selectedAsset)} / Scan ${selectedScanId.slice(0, 8)}`
-                    : "Only assets with scans are shown"}
-                </div>
-              </div>
-              <span className="shrink-0 text-xl text-slate-400">⌄</span>
-            </button>
-
-            {pickerOpen && (
-              <div className="absolute z-40 mt-2 w-full overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/30">
-                <div className="border-b border-white/10 p-3">
-                  <input
-                    className="input"
-                    autoFocus
-                    placeholder="Search scanned assets..."
-                    value={assetQuery}
-                    onChange={(event) => setAssetQuery(event.target.value)}
-                  />
-                </div>
-
-                <div className="max-h-80 overflow-y-auto p-2">
-                  {filteredAssets.length === 0 ? (
-                    <div className="p-4 text-sm text-slate-500">
-                      No matching scanned assets found.
-                    </div>
-                  ) : (
-                    filteredAssets.map((asset) => {
-                      const active = asset.id === selectedAssetId;
-                      const scanId = assetScanId(asset);
-
-                      return (
-                        <button
-                          key={asset.id}
-                          type="button"
-                          onClick={() => onSelectAsset(asset)}
-                          className={`mb-1 flex w-full items-center justify-between gap-3 rounded-xl px-3 py-3 text-left transition ${
-                            active
-                              ? "bg-brand-500/15 ring-1 ring-brand-500/40"
-                              : "hover:bg-white/[0.04]"
-                          }`}
-                        >
-                          <div className="min-w-0">
-                            <div className="break-all font-bold text-white">{asset.domain}</div>
-                            <div className="mt-1 text-xs text-slate-500">
-                              Score {assetScore(asset)} / Grade {assetGrade(asset)} / Scan {scanId.slice(0, 8)}
-                            </div>
-                          </div>
-                          <CyberStatusBadge value={`Grade ${assetGrade(asset)}`} />
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            )}
-
-            <p className="mt-2 text-xs text-slate-500">
-              Selected scan ID: {selectedScanId || "No scan selected"}
+            <p className="mt-3 text-sm leading-7 text-slate-400">
+              Generate client-ready remediation guidance from real CyberShield360 scan findings.
+              The AI advisor explains the issue, business impact, owner, fix difficulty, and verification steps.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => download("pdf")}
-              disabled={!selectedAssetId || working}
-              className="btn-primary disabled:opacity-50"
-            >
-              Download PDF
+            <button type="button" onClick={load} disabled={loading || working} className="btn-ghost">
+              {loading ? "Refreshing..." : "Refresh"}
             </button>
-            <button
-              type="button"
-              onClick={() => download("xlsx")}
-              disabled={!selectedAssetId || working}
-              className="btn-ghost disabled:opacity-50"
-            >
-              Download Excel
+            <button type="button" onClick={exportPlan} disabled={!generated} className="btn-ghost disabled:opacity-50">
+              Export Plan
+            </button>
+            <button type="button" onClick={generate} disabled={!selectedScanId || working} className="btn-primary disabled:opacity-50">
+              {working ? "Working..." : generated ? "Regenerate Guidance" : "Generate Guidance"}
             </button>
           </div>
         </div>
       </section>
 
-      {loading ? (
-        <div className="card text-sm text-slate-500">Loading remediation center...</div>
-      ) : scannedAssets.length === 0 ? (
-        <div className="empty-state">
-          <div className="text-lg font-bold">No scanned assets found</div>
-          <p className="mt-2 max-w-md text-sm text-slate-500">
-            Run a Full Posture scan from Assets & Scans first, then return here for remediation planning.
-          </p>
+      {message && (
+        <div className="rounded-2xl border border-brand-500/30 bg-brand-500/10 p-4 text-sm font-semibold text-brand-300">
+          {message}
         </div>
-      ) : data ? (
-        <>
-          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <CyberStatCard label="Domain" value={data.domain} hint="Selected asset" tone="brand" />
-            <CyberStatCard label="Score" value={`${data.score}/100`} hint="Latest full posture" tone={data.score >= 80 ? "green" : data.score >= 60 ? "orange" : "red"} />
-            <CyberStatCard label="Grade" value={data.grade} hint={gradeStatus(data.grade)} tone={data.grade === "A" || data.grade === "B" ? "green" : data.grade === "C" ? "orange" : "red"} />
-            <CyberStatCard label="Failed Findings" value={data.failedFindings} hint="Need remediation" tone={data.failedFindings > 0 ? "red" : "green"} />
-          </section>
+      )}
 
-          <CyberTable
-            title="Prioritized Remediation Plan"
-            description="Client-friendly remediation actions generated from the selected scan evidence."
-            data={data.recommendations.map((recommendation, index) => ({ recommendation, index }))}
-            emptyText="No remediation actions available for this scan."
-            columns={[
-              {
-                key: "priority",
-                label: "Priority",
-                render: (row) => <CyberStatusBadge value={actionLevel(row.index)} />,
-              },
-              {
-                key: "action",
-                label: "Recommended Fix",
-                render: (row) => (
-                  <div className="mx-auto min-w-96 text-center text-sm leading-6 text-slate-400">
-                    {row.recommendation}
-                  </div>
-                ),
-              },
-              {
-                key: "owner",
-                label: "Owner",
-                render: () => <div className="text-slate-300">Security / IT Owner</div>,
-              },
-              {
-                key: "verification",
-                label: "Verification",
-                render: () => <CyberStatusBadge value="Rescan Required" />,
-              },
-            ]}
-          />
+      {error && (
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-semibold text-red-300">
+          {error}
+        </div>
+      )}
 
-          {selectedAsset && (
-            <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
-              <div className="mb-5 text-center">
-                <h2 className="text-lg font-black tracking-tight text-white">
-                  Selected Asset Context
-                </h2>
-                <p className="mt-1 text-sm leading-6 text-slate-400">
-                  Useful context for remediation planning and client reporting.
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <CyberStatCard label="Scanned Assets" value={summary?.scannedAssets ?? 0} hint="Latest full posture scans" tone="brand" />
+        <CyberStatCard label="Need Remediation" value={summary?.assetsNeedingRemediation ?? 0} hint="Assets with failed findings" tone={riskTone(summary?.assetsNeedingRemediation ?? 0)} />
+        <CyberStatCard label="High/Critical" value={summary?.highCriticalFindings ?? 0} hint="Priority findings" tone={riskTone(summary?.highCriticalFindings ?? 0)} />
+        <CyberStatCard label="Guidance Saved" value={summary?.guidanceGenerated ?? 0} hint="Generated remediation plans" tone="green" />
+      </section>
+
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+          <div className="mb-4">
+            <h2 className="text-lg font-black text-white">Scanned Assets</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-400">
+              Select an asset with a completed Full Posture scan.
+            </p>
+            <input
+              className="input mt-4"
+              placeholder="Search assets..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
+
+          <div className="max-h-[560px] space-y-2 overflow-y-auto pr-1">
+            {filteredAssets.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center text-sm text-slate-500">
+                No scanned assets found. Run a Full Posture scan first.
+              </div>
+            ) : (
+              filteredAssets.map((asset: AiRemediationAssetSummary) => {
+                const active = asset.scanId === selectedScanId;
+
+                return (
+                  <button
+                    key={asset.scanId}
+                    type="button"
+                    onClick={() => loadPlan(asset.scanId)}
+                    className={`w-full rounded-2xl border p-4 text-left transition ${
+                      active
+                        ? "border-brand-500/50 bg-brand-500/10 shadow-lg shadow-brand-950/20"
+                        : "border-white/10 bg-white/[0.03] hover:border-brand-500/30"
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="break-all font-black text-white">{asset.domain}</div>
+                        <div className="mt-1 text-xs text-slate-500">
+                          Last scan: {dateText(asset.lastScanUtc)}
+                        </div>
+                      </div>
+                      <CyberStatusBadge value={asset.guidanceGenerated ? "Guidance Saved" : "Not Generated"} />
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
+                      <div className="rounded-xl border border-white/10 bg-slate-950/40 px-2 py-2">
+                        <div className="text-slate-500">Score</div>
+                        <div className="mt-1 font-black text-white">{asset.score}</div>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-slate-950/40 px-2 py-2">
+                        <div className="text-slate-500">Grade</div>
+                        <div className="mt-1 font-black text-white">{asset.grade}</div>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-slate-950/40 px-2 py-2">
+                        <div className="text-slate-500">Failed</div>
+                        <div className="mt-1 font-black text-white">{asset.failedFindings}</div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+          {!plan ? (
+            <div className="flex min-h-80 items-center justify-center text-center text-sm text-slate-500">
+              Select a scanned asset to view or generate remediation guidance.
+            </div>
+          ) : (
+            <div className="space-y-5">
+              <div className="text-center">
+                <div className="text-xs font-black uppercase tracking-[0.16em] text-brand-300">
+                  {plan.provider}
+                </div>
+                <h2 className="mt-2 break-all text-2xl font-black text-white">{plan.domain}</h2>
+                <p className="mx-auto mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+                  {plan.executiveSummary}
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
-                  <div className="text-xs font-black uppercase tracking-wide text-slate-500">
-                    Latest Score
-                  </div>
-                  <div className="mt-2 text-2xl font-black text-white">
-                    {assetScore(selectedAsset)}
-                  </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+                <CyberStatCard label="Score" value={`${plan.score}/100`} hint="Selected scan" tone={scoreTone(plan.score)} />
+                <CyberStatCard label="Grade" value={plan.grade} hint="Posture grade" tone={plan.grade === "A" || plan.grade === "B" ? "green" : plan.grade === "C" ? "orange" : "red"} />
+                <CyberStatCard label="Failed" value={plan.failedFindings} hint="Failed controls" tone={riskTone(plan.failedFindings)} />
+                <CyberStatCard label="High/Critical" value={plan.highCriticalFindings} hint="Priority issues" tone={riskTone(plan.highCriticalFindings)} />
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+                <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                  Business Impact
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
-                  <div className="text-xs font-black uppercase tracking-wide text-slate-500">
-                    Grade
-                  </div>
-                  <div className="mt-2 flex justify-center">
-                    <CyberStatusBadge value={`Grade ${assetGrade(selectedAsset)}`} />
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
-                  <div className="text-xs font-black uppercase tracking-wide text-slate-500">
-                    High/Critical Findings
-                  </div>
-                  <div className="mt-2 text-2xl font-black text-white">
-                    {selectedAsset.highCriticalFindings ?? "-"}
-                  </div>
+                <p className="mt-2 text-sm leading-7 text-slate-300">{plan.businessImpact}</p>
+                <div className="mt-3 text-xs text-slate-500">
+                  Generated: {dateText(plan.generatedUtc)}
                 </div>
               </div>
-            </section>
+
+              <div className="flex flex-wrap justify-center gap-2">
+                <button type="button" onClick={() => download("pdf")} disabled={!selectedAsset || working} className="btn-primary disabled:opacity-50">
+                  Download PDF
+                </button>
+                <button type="button" onClick={() => download("xlsx")} disabled={!selectedAsset || working} className="btn-ghost disabled:opacity-50">
+                  Download Excel
+                </button>
+              </div>
+            </div>
           )}
-        </>
-      ) : null}
+        </section>
+      </section>
+
+      {plan && (
+        <CyberTable
+          title="AI Remediation Actions"
+          description="Saved remediation guidance generated from real failed scan findings."
+          data={actionRows}
+          emptyText="No saved actions yet. Click Generate Guidance to create a remediation plan."
+          columns={[
+            {
+              key: "priority",
+              label: "Priority",
+              render: (action: AiRemediationAction) => <CyberStatusBadge value={action.priority} />,
+            },
+            {
+              key: "finding",
+              label: "Finding",
+              render: (action: AiRemediationAction) => (
+                <div className="mx-auto min-w-72 text-center">
+                  <div className="font-semibold leading-6 text-white">{action.findingTitle}</div>
+                  <div className="mt-1 text-xs text-slate-500">{action.plainEnglishIssue}</div>
+                </div>
+              ),
+            },
+            {
+              key: "impact",
+              label: "Business Impact",
+              render: (action: AiRemediationAction) => (
+                <div className="mx-auto min-w-80 text-center text-sm leading-6 text-slate-400">
+                  {action.businessImpact}
+                </div>
+              ),
+            },
+            {
+              key: "fix",
+              label: "Recommended Fix",
+              render: (action: AiRemediationAction) => (
+                <div className="mx-auto min-w-96 text-center text-sm leading-6 text-slate-400">
+                  {action.recommendedFix}
+                </div>
+              ),
+            },
+            {
+              key: "owner",
+              label: "Owner",
+              render: (action: AiRemediationAction) => (
+                <div className="mx-auto min-w-44 text-center text-slate-300">{action.owner}</div>
+              ),
+            },
+            {
+              key: "difficulty",
+              label: "Difficulty",
+              render: (action: AiRemediationAction) => <CyberStatusBadge value={action.difficulty} />,
+            },
+            {
+              key: "verify",
+              label: "Verification",
+              render: (action: AiRemediationAction) => (
+                <div className="mx-auto min-w-80 text-center text-sm leading-6 text-slate-400">
+                  {action.verificationStep}
+                </div>
+              ),
+            },
+          ]}
+        />
+      )}
+
+      {plan && plan.verificationSteps.length > 0 && (
+        <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+          <div className="mb-5 text-center">
+            <h2 className="text-lg font-black tracking-tight text-white">Verification Checklist</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-400">
+              Use these steps after remediation to prove that the issue has been resolved.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {plan.verificationSteps.map((step, index) => (
+              <div key={`${step}-${index}`} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center text-sm leading-6 text-slate-300">
+                <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-brand-300">
+                  Step #{index + 1}
+                </div>
+                {step}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

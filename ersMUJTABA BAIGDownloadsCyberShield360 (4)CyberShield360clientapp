@@ -1,0 +1,619 @@
+warning: in the working copy of 'clientapp/src/components/Layout.tsx', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/clientapp/src/components/Layout.tsx b/clientapp/src/components/Layout.tsx[m
+[1mindex b9306bb..d4b361b 100644[m
+[1m--- a/clientapp/src/components/Layout.tsx[m
+[1m+++ b/clientapp/src/components/Layout.tsx[m
+[36m@@ -9,89 +9,93 @@[m [mtype NavItem = {[m
+   hint: string;[m
+ };[m
+ [m
+[31m-type NavGroup = {[m
+[32m+[m[32mtype NavSection = {[m
+   title: string;[m
+[31m-  badge: string;[m
+[32m+[m[32m  icon: string;[m
+[32m+[m[32m  description: string;[m
+[32m+[m[32m  defaultOpen?: boolean;[m
+   items: NavItem[];[m
+ };[m
+ [m
+[31m-const NAV_GROUPS: NavGroup[] = [[m
+[32m+[m[32mconst NAV_SECTIONS: NavSection[] = [[m
+   {[m
+     title: "Command Center",[m
+[31m-    badge: "Overview",[m
+[32m+[m[32m    icon: "CC",[m
+[32m+[m[32m    description: "Executive visibility",[m
+[32m+[m[32m    defaultOpen: true,[m
+     items: [[m
+[31m-      { to: "/", label: "Dashboard", icon: "📊", hint: "Command center" },[m
+[31m-      { to: "/executive-scorecard", label: "Executive Scorecard", icon: "📈", hint: "Board view" },[m
+[31m-      { to: "/ai-copilot", label: "AI Copilot", icon: "🤖", hint: "Security assistant" },[m
+[31m-      { to: "/search", label: "Global Search", icon: "🔍", hint: "Find anything" },[m
+[32m+[m[32m      { to: "/", label: "Dashboard", icon: "DB", hint: "Command center" },[m
+[32m+[m[32m      { to: "/executive-scorecard", label: "Executive Scorecard", icon: "ES", hint: "Board view" },[m
+[32m+[m[32m      { to: "/ai-copilot", label: "AI Copilot", icon: "AI", hint: "Assistant" },[m
+[32m+[m[32m      { to: "/search", label: "Global Search", icon: "GS", hint: "Find anything" },[m
+     ],[m
+   },[m
+   {[m
+     title: "Client Success Hub",[m
+[31m-    badge: "Customers",[m
+[31m-    items: [[m
+[31m-      { to: "/saas-admin", label: "SaaS Admin", icon: "🏗️", hint: "Tenants" },[m
+[31m-      { to: "/user-management", label: "User Management", icon: "👥", hint: "Users" },[m
+[31m-      { to: "/notifications", label: "Notifications", icon: "🔔", hint: "Updates" },[m
+[31m-      { to: "/profile", label: "My Profile", icon: "👤", hint: "Account" },[m
+[31m-    ],[m
+[31m-  },[m
+[31m-  {[m
+[31m-    title: "Deal Desk",[m
+[31m-    badge: "Business",[m
+[32m+[m[32m    icon: "CS",[m
+[32m+[m[32m    description: "One-time delivery",[m
+     items: [[m
+[31m-      { to: "/billing", label: "Billing", icon: "💳", hint: "Plans" },[m
+[31m-      { to: "/vendor-risk", label: "Vendor Risk", icon: "🏢", hint: "Third party" },[m
+[32m+[m[32m      { to: "/tenant-registration", label: "Client Onboarding", icon: "CO", hint: "Intake" },[m
+[32m+[m[32m      { to: "/billing", label: "Billing", icon: "BL", hint: "Plans" },[m
+     ],[m
+   },[m
+   {[m
+     title: "Attack Surface",[m
+[31m-    badge: "Exposure",[m
+[32m+[m[32m    icon: "AS",[m
+[32m+[m[32m    description: "Assets and exposure",[m
+     items: [[m
+[31m-      { to: "/assets", label: "Assets & Scans", icon: "🌐", hint: "Attack surface" },[m
+[31m-      { to: "/asset-inventory", label: "Asset Inventory", icon: "🗂️", hint: "Known assets" },[m
+[31m-      { to: "/scheduled-scans", label: "Scheduled Scans", icon: "⏰", hint: "Automation" },[m
+[31m-      { to: "/vulnerabilities", label: "Vulnerabilities", icon: "🛡️", hint: "Findings" },[m
+[31m-      { to: "/cloud-posture", label: "Cloud Posture", icon: "☁️", hint: "Cloud risk" },[m
+[31m-      { to: "/attack-path", label: "Attack Path Analysis", icon: "🕸️", hint: "Risk paths" },[m
+[32m+[m[32m      { to: "/assets", label: "Assets & Scans", icon: "AS", hint: "ASM" },[m
+[32m+[m[32m      { to: "/asset-inventory", label: "Asset Inventory", icon: "AI", hint: "Inventory" },[m
+[32m+[m[32m      { to: "/scheduled-scans", label: "Scheduled Scans", icon: "SS", hint: "Automation" },[m
+[32m+[m[32m      { to: "/vulnerabilities", label: "Vulnerabilities", icon: "VM", hint: "Findings" },[m
+[32m+[m[32m      { to: "/cloud-posture", label: "Cloud Posture", icon: "CP", hint: "Cloud" },[m
+[32m+[m[32m      { to: "/attack-path", label: "Attack Path", icon: "AP", hint: "Paths" },[m
+     ],[m
+   },[m
+   {[m
+     title: "Risk & Trust",[m
+[31m-    badge: "GRC",[m
+[32m+[m[32m    icon: "RT",[m
+[32m+[m[32m    description: "GRC and assurance",[m
+     items: [[m
+[31m-      { to: "/risks", label: "Risk Register", icon: "⚠️", hint: "Risk tracking" },[m
+[31m-      { to: "/compliance", label: "Compliance Center", icon: "📋", hint: "GRC" },[m
+[31m-      { to: "/policy-audit", label: "Policy & Audit", icon: "📑", hint: "Evidence" },[m
+[31m-      { to: "/framework-mapping", label: "Framework Mapping", icon: "🧩", hint: "Controls" },[m
+[31m-      { to: "/security-awareness", label: "Security Awareness", icon: "🎓", hint: "Training" },[m
+[31m-      { to: "/phishing-simulation", label: "Phishing Simulation", icon: "🎣", hint: "Testing" },[m
+[32m+[m[32m      { to: "/risks", label: "Risk Register", icon: "RR", hint: "Risk" },[m
+[32m+[m[32m      { to: "/compliance", label: "Compliance Center", icon: "GC", hint: "GRC" },[m
+[32m+[m[32m      { to: "/policy-audit", label: "Policy & Audit", icon: "PA", hint: "Audit" },[m
+[32m+[m[32m      { to: "/framework-mapping", label: "Framework Mapping", icon: "FM", hint: "Controls" },[m
+[32m+[m[32m      { to: "/vendor-risk", label: "Vendor Risk", icon: "VR", hint: "Third party" },[m
+     ],[m
+   },[m
+   {[m
+     title: "Threat Ops",[m
+[31m-    badge: "SOC",[m
+[32m+[m[32m    icon: "TO",[m
+[32m+[m[32m    description: "Monitoring and response",[m
+     items: [[m
+[31m-      { to: "/soc", label: "SOC Center", icon: "🚨", hint: "Live alerts" },[m
+[31m-      { to: "/threat-intelligence", label: "Threat Intelligence", icon: "🎯", hint: "Intel feed" },[m
+[31m-      { to: "/dark-web", label: "Dark Web Monitoring", icon: "🕶️", hint: "Exposure watch" },[m
+[31m-      { to: "/incident-playbooks", label: "Incident Playbooks", icon: "🧯", hint: "Response plans" },[m
+[31m-      { to: "/ai-remediation", label: "AI Remediation", icon: "🛠️", hint: "Smart fixes" },[m
+[32m+[m[32m      { to: "/soc", label: "SOC Center", icon: "SC", hint: "Alerts" },[m
+[32m+[m[32m      { to: "/threat-intelligence", label: "Threat Intelligence", icon: "TI", hint: "Intel" },[m
+[32m+[m[32m      { to: "/dark-web", label: "Dark Web", icon: "DW", hint: "Exposure" },[m
+[32m+[m[32m      { to: "/incident-playbooks", label: "Incident Playbooks", icon: "IP", hint: "Response" },[m
+[32m+[m[32m      { to: "/ai-remediation", label: "AI Remediation", icon: "AR", hint: "Fixes" },[m
+[32m+[m[32m      { to: "/security-awareness", label: "Security Awareness", icon: "SA", hint: "Training" },[m
+[32m+[m[32m      { to: "/phishing-simulation", label: "Phishing Simulation", icon: "PS", hint: "Testing" },[m
+     ],[m
+   },[m
+   {[m
+     title: "Control Room",[m
+[31m-    badge: "Admin",[m
+[32m+[m[32m    icon: "CR",[m
+[32m+[m[32m    description: "Access and settings",[m
+     items: [[m
+[31m-      { to: "/rbac", label: "RBAC Engine", icon: "🔐", hint: "Access" },[m
+[31m-      { to: "/audit-logs", label: "Audit Logs", icon: "🧾", hint: "Evidence" },[m
+[31m-      { to: "/settings", label: "Settings", icon: "⚙️", hint: "System" },[m
+[32m+[m[32m      { to: "/saas-admin", label: "SaaS Admin", icon: "SA", hint: "Tenants" },[m
+[32m+[m[32m      { to: "/user-management", label: "User Management", icon: "UM", hint: "Users" },[m
+[32m+[m[32m      { to: "/rbac", label: "RBAC Engine", icon: "RB", hint: "Access" },[m
+[32m+[m[32m      { to: "/audit-logs", label: "Audit Logs", icon: "AL", hint: "Evidence" },[m
+[32m+[m[32m      { to: "/notifications", label: "Notifications", icon: "NO", hint: "Updates" },[m
+[32m+[m[32m      { to: "/profile", label: "My Profile", icon: "MP", hint: "Account" },[m
+[32m+[m[32m      { to: "/settings", label: "Settings", icon: "ST", hint: "System" },[m
+     ],[m
+   },[m
+ ];[m
+ [m
+ function getAllItems() {[m
+[31m-  return NAV_GROUPS.flatMap((group) => group.items);[m
+[32m+[m[32m  return NAV_SECTIONS.flatMap((section) => section.items);[m
+ }[m
+ [m
+ function isRouteActive(pathname: string, itemPath: string) {[m
+[36m@@ -99,9 +103,9 @@[m [mfunction isRouteActive(pathname: string, itemPath: string) {[m
+   return pathname === itemPath || pathname.startsWith(`${itemPath}/`);[m
+ }[m
+ [m
+[31m-function getActiveGroup(pathname: string) {[m
+[31m-  return NAV_GROUPS.find((group) =>[m
+[31m-    group.items.some((item) => isRouteActive(pathname, item.to))[m
+[32m+[m[32mfunction getActiveSection(pathname: string) {[m
+[32m+[m[32m  return NAV_SECTIONS.find((section) =>[m
+[32m+[m[32m    section.items.some((item) => isRouteActive(pathname, item.to))[m
+   );[m
+ }[m
+ [m
+[36m@@ -121,7 +125,6 @@[m [mfunction getPageHint(pathname: string) {[m
+ function forceDarkMode() {[m
+   document.documentElement.classList.add("dark");[m
+   document.body.classList.add("dark");[m
+[31m-[m
+   localStorage.setItem("cs360-theme", "dark");[m
+   localStorage.removeItem("cs360_theme");[m
+ }[m
+[36m@@ -130,48 +133,48 @@[m [mfunction SidebarContent({ onNavigate }: { onNavigate?: () => void }) {[m
+   const { user, logout } = useAuth();[m
+   const navigate = useNavigate();[m
+   const location = useLocation();[m
+[31m-[m
+[31m-  const activeGroup = useMemo([m
+[31m-    () => getActiveGroup(location.pathname),[m
+[32m+[m[32m  const activeSection = useMemo([m
+[32m+[m[32m    () => getActiveSection(location.pathname),[m
+     [location.pathname][m
+   );[m
+ [m
+[31m-  const [openGroups, setOpenGroups] = useState<string[]>(() => [[m
+[31m-    activeGroup?.title ?? "Command Center",[m
+[31m-  ]);[m
+[32m+[m[32m  const [openSections, setOpenSections] = useState<string[]>(() => {[m
+[32m+[m[32m    const active = getActiveSection(location.pathname)?.title;[m
+[32m+[m[32m    const defaults = NAV_SECTIONS.filter((section) => section.defaultOpen).map([m
+[32m+[m[32m      (section) => section.title[m
+[32m+[m[32m    );[m
+[32m+[m[32m    return Array.from(new Set(active ? [active, ...defaults] : defaults));[m
+[32m+[m[32m  });[m
+ [m
+   useEffect(() => {[m
+[31m-    if (!activeGroup?.title) return;[m
+[31m-[m
+[31m-    setOpenGroups((current) =>[m
+[31m-      current.includes(activeGroup.title)[m
+[32m+[m[32m    if (!activeSection?.title) return;[m
+[32m+[m[32m    setOpenSections((current) =>[m
+[32m+[m[32m      current.includes(activeSection.title)[m
+         ? current[m
+[31m-        : [...current, activeGroup.title][m
+[32m+[m[32m        : Array.from(new Set([activeSection.title, ...current]))[m
+     );[m
+[31m-  }, [activeGroup?.title]);[m
+[32m+[m[32m  }, [activeSection?.title]);[m
+ [m
+[31m-  function toggleGroup(title: string) {[m
+[31m-    setOpenGroups((current) =>[m
+[31m-      current.includes(title)[m
+[31m-        ? current.filter((item) => item !== title)[m
+[31m-        : [...current, title][m
+[31m-    );[m
+[32m+[m[32m  function toggleSection(title: string) {[m
+[32m+[m[32m    setOpenSections((current) => {[m
+[32m+[m[32m      if (title === activeSection?.title) return [title];[m
+[32m+[m[32m      return current.includes(title) ? [] : [title];[m
+[32m+[m[32m    });[m
+   }[m
+ [m
+   return ([m
+     <>[m
+[31m-      <div className="relative overflow-hidden border-b border-white/10 p-4">[m
+[31m-        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/15 via-transparent to-cyan-500/10" />[m
+[31m-        <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-teal-500/10 blur-3xl" />[m
+[32m+[m[32m      <div className="relative overflow-hidden border-b border-slate-800 p-4">[m
+[32m+[m[32m        <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-transparent to-accent-500/10" />[m
+ [m
+         <div className="relative flex items-center gap-3">[m
+[31m-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-lg shadow-teal-500/20">[m
+[32m+[m[32m          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-lg shadow-brand-500/20">[m
+             <img src="/logo.svg" alt="CyberShield360 logo" className="h-8 w-8" />[m
+           </div>[m
+ [m
+           <div className="min-w-0">[m
+             <div className="text-base font-black leading-tight tracking-tight text-white">[m
+[31m-              CyberShield<span className="text-teal-400">360</span>[m
+[32m+[m[32m              CyberShield<span className="text-brand-400">360</span>[m
+             </div>[m
+             <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">[m
+               By Mujtaba[m
+[36m@@ -179,18 +182,16 @@[m [mfunction SidebarContent({ onNavigate }: { onNavigate?: () => void }) {[m
+           </div>[m
+         </div>[m
+ [m
+[31m-        <div className="relative mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white shadow-inner backdrop-blur-xl">[m
+[32m+[m[32m        <div className="relative mt-5 rounded-2xl border border-white/10 bg-black/20 p-3 text-white shadow-inner">[m
+           <div className="flex items-center justify-between gap-2">[m
+             <div className="min-w-0">[m
+               <div className="text-[10px] uppercase tracking-wide text-slate-400">[m
+                 Workspace[m
+               </div>[m
+[31m-              <div className="truncate text-sm font-bold">[m
+[31m-                CyberShield360 Tenant[m
+[31m-              </div>[m
+[32m+[m[32m              <div className="truncate text-sm font-bold">CyberShield360 Tenant</div>[m
+             </div>[m
+ [m
+[31m-            <span className="rounded-full bg-teal-500/15 px-2 py-1 text-[10px] font-bold text-teal-300 ring-1 ring-teal-500/30">[m
+[32m+[m[32m            <span className="shrink-0 rounded-full bg-brand-500/15 px-2 py-1 text-[10px] font-bold text-brand-300 ring-1 ring-brand-500/30">[m
+               ACTIVE[m
+             </span>[m
+           </div>[m
+[36m@@ -207,103 +208,103 @@[m [mfunction SidebarContent({ onNavigate }: { onNavigate?: () => void }) {[m
+         </div>[m
+ [m
+         <div className="space-y-2">[m
+[31m-          {NAV_GROUPS.map((group) => {[m
+[31m-            const isOpen = openGroups.includes(group.title);[m
+[31m-            const isActiveGroup = activeGroup?.title === group.title;[m
+[32m+[m[32m          {NAV_SECTIONS.map((section) => {[m
+[32m+[m[32m            const isOpen = openSections.includes(section.title);[m
+[32m+[m[32m            const isActiveSection = activeSection?.title === section.title;[m
+ [m
+             return ([m
+               <div[m
+[31m-                key={group.title}[m
+[32m+[m[32m                key={section.title}[m
+                 className={`rounded-3xl border transition duration-200 ${[m
+[31m-                  isActiveGroup[m
+[31m-                    ? "border-teal-500/30 bg-teal-500/[0.04]"[m
+[31m-                    : "border-transparent bg-transparent"[m
+[32m+[m[32m                  isActiveSection[m
+[32m+[m[32m                    ? "border-brand-500/30 bg-brand-500/[0.06] shadow-lg shadow-brand-500/5"[m
+[32m+[m[32m                    : "border-white/5 bg-slate-900/35"[m
+                 }`}[m
+               >[m
+                 <button[m
+                   type="button"[m
+[31m-                  onClick={() => toggleGroup(group.title)}[m
+[32m+[m[32m                  onClick={() => toggleSection(section.title)}[m
+                   aria-expanded={isOpen}[m
+[31m-                  className={`flex w-full items-center justify-between gap-3 rounded-3xl px-3 py-3 text-left transition duration-200 ${[m
+[31m-                    isActiveGroup[m
+[31m-                      ? "text-white"[m
+[31m-                      : "text-slate-300 hover:bg-slate-900 hover:text-white"[m
+[31m-                  }`}[m
+[32m+[m[32m                  className="flex w-full items-center gap-3 rounded-3xl px-3 py-3 text-left transition hover:bg-white/[0.04]"[m
+                 >[m
+[31m-                  <span className="min-w-0">[m
+[31m-                    <span className="block truncate text-[12px] font-black uppercase tracking-[0.14em]">[m
+[31m-                      {group.title}[m
+[32m+[m[32m                  <span[m
+[32m+[m[32m                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl text-sm font-black ${[m
+[32m+[m[32m                      isActiveSection[m
+[32m+[m[32m                        ? "bg-brand-500 text-white shadow-lg shadow-brand-500/25"[m
+[32m+[m[32m                        : "bg-slate-800 text-slate-300"[m
+[32m+[m[32m                    }`}[m
+[32m+[m[32m                  >[m
+[32m+[m[32m                    {section.icon}[m
+[32m+[m[32m                  </span>[m
+[32m+[m
+[32m+[m[32m                  <span className="min-w-0 flex-1">[m
+[32m+[m[32m                    <span className="block truncate text-sm font-black text-slate-100">[m
+[32m+[m[32m                      {section.title}[m
+                     </span>[m
+[31m-                    <span className="mt-0.5 block text-[10px] font-bold uppercase tracking-wide text-slate-500">[m
+[31m-                      {group.badge}[m
+[32m+[m[32m                    <span className="block truncate text-[10px] font-medium text-slate-500">[m
+[32m+[m[32m                      {section.description}[m
+                     </span>[m
+                   </span>[m
+ [m
+                   <span[m
+[31m-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border text-xs transition duration-200 ${[m
+[31m-                      isActiveGroup[m
+[31m-                        ? "border-teal-500/30 bg-teal-500/10 text-teal-300"[m
+[31m-                        : "border-slate-800 bg-slate-900 text-slate-400"[m
+[31m-                    } ${isOpen ? "rotate-180" : ""}`}[m
+[32m+[m[32m                    className={`shrink-0 text-slate-400 transition-transform duration-200 ${[m
+[32m+[m[32m                      isOpen ? "rotate-180" : ""[m
+[32m+[m[32m                    }`}[m
+                   >[m
+[31m-                    ⌄[m
+[32m+[m[32m                    v[m
+                   </span>[m
+                 </button>[m
+ [m
+[31m-                <div[m
+[31m-                  className={`grid transition-all duration-300 ${[m
+[31m-                    isOpen[m
+[31m-                      ? "grid-rows-[1fr] opacity-100"[m
+[31m-                      : "grid-rows-[0fr] opacity-0"[m
+[31m-                  }`}[m
+[31m-                >[m
+[31m-                  <div className="overflow-hidden">[m
+[31m-                    <div className="space-y-1 px-2 pb-3">[m
+[31m-                      {group.items.map((n) => ([m
+[31m-                        <NavLink[m
+[31m-                          key={n.to}[m
+[31m-                          to={n.to}[m
+[31m-                          end={n.to === "/"}[m
+[31m-                          onClick={onNavigate}[m
+[31m-                          className={({ isActive }) =>[m
+[31m-                            `group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition duration-200 hover:translate-x-0.5 ${[m
+[31m-                              isActive[m
+[31m-                                ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/20"[m
+[31m-                                : "text-slate-300 hover:bg-slate-800/80 hover:text-white"[m
+[31m-                            }`[m
+[31m-                          }[m
+[31m-                        >[m
+[31m-                          {({ isActive }) => ([m
+[31m-                            <>[m
+[31m-                              <span[m
+[31m-                                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm transition ${[m
+[31m-                                  isActive[m
+[31m-                                    ? "bg-white/20"[m
+[31m-                                    : "bg-slate-900 group-hover:bg-slate-700"[m
+[31m-                                }`}[m
+[31m-                              >[m
+[31m-                                {n.icon}[m
+[31m-                              </span>[m
+[31m-[m
+[31m-                              <span className="min-w-0 flex-1">[m
+[31m-                                <span className="block truncate font-semibold">[m
+[31m-                                  {n.label}[m
+[31m-                                </span>[m
+[32m+[m[32m                {isOpen && ([m
+[32m+[m[32m                  <div className="px-2 pb-3">[m
+[32m+[m[32m                    <div className="ml-[1.65rem] border-l border-white/10 pl-3">[m
+[32m+[m[32m                      <div className="flex flex-col gap-1">[m
+[32m+[m[32m                        {section.items.map((n) => ([m
+[32m+[m[32m                          <NavLink[m
+[32m+[m[32m                            key={n.to}[m
+[32m+[m[32m                            to={n.to}[m
+[32m+[m[32m                            end={n.to === "/"}[m
+[32m+[m[32m                            onClick={onNavigate}[m
+[32m+[m[32m                            className={({ isActive }) =>[m
+[32m+[m[32m                              `group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition duration-200 ${[m
+[32m+[m[32m                                isActive[m
+[32m+[m[32m                                  ? "bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-lg shadow-brand-600/20"[m
+[32m+[m[32m                                  : "text-slate-300 hover:bg-slate-800/90 hover:text-white"[m
+[32m+[m[32m                              }`[m
+[32m+[m[32m                            }[m
+[32m+[m[32m                          >[m
+[32m+[m[32m                            {({ isActive }) => ([m
+[32m+[m[32m                              <>[m
+                                 <span[m
+[31m-                                  className={`block truncate text-[10px] ${[m
+[31m-                                    isActive ? "text-white/75" : "text-slate-400"[m
+[32m+[m[32m                                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[10px] font-black ${[m
+[32m+[m[32m                                    isActive[m
+[32m+[m[32m                                      ? "bg-white/20"[m
+[32m+[m[32m                                      : "bg-slate-800 text-slate-400 group-hover:bg-slate-700"[m
+                                   }`}[m
+                                 >[m
+[31m-                                  {n.hint}[m
+[32m+[m[32m                                  {n.icon}[m
+[32m+[m[32m                                </span>[m
+[32m+[m
+[32m+[m[32m                                <span className="min-w-0 flex-1">[m
+[32m+[m[32m                                  <span className="block truncate font-semibold">[m
+[32m+[m[32m                                    {n.label}[m
+[32m+[m[32m                                  </span>[m
+[32m+[m[32m                                  <span[m
+[32m+[m[32m                                    className={`block truncate text-[10px] ${[m
+[32m+[m[32m                                      isActive ? "text-white/75" : "text-slate-400"[m
+[32m+[m[32m                                    }`}[m
+[32m+[m[32m                                  >[m
+[32m+[m[32m                                    {n.hint}[m
+[32m+[m[32m                                  </span>[m
+                                 </span>[m
+[31m-                              </span>[m
+[31m-                            </>[m
+[31m-                          )}[m
+[31m-                        </NavLink>[m
+[31m-                      ))}[m
+[32m+[m[32m                              </>[m
+[32m+[m[32m                            )}[m
+[32m+[m[32m                          </NavLink>[m
+[32m+[m[32m                        ))}[m
+[32m+[m[32m                      </div>[m
+                     </div>[m
+                   </div>[m
+[31m-                </div>[m
+[32m+[m[32m                )}[m
+               </div>[m
+             );[m
+           })}[m
+[36m@@ -311,7 +312,7 @@[m [mfunction SidebarContent({ onNavigate }: { onNavigate?: () => void }) {[m
+       </nav>[m
+ [m
+       <div className="border-t border-slate-800 p-4">[m
+[31m-        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3 shadow-inner">[m
+[32m+[m[32m        <div className="rounded-2xl bg-slate-800/70 p-3">[m
+           <div className="text-[10px] uppercase tracking-wide text-slate-400">[m
+             Signed in[m
+           </div>[m
+[36m@@ -325,7 +326,7 @@[m [mfunction SidebarContent({ onNavigate }: { onNavigate?: () => void }) {[m
+               logout();[m
+               navigate("/login");[m
+             }}[m
+[31m-            className="mt-3 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm font-semibold text-teal-300 transition hover:border-teal-500/40 hover:bg-slate-900"[m
+[32m+[m[32m            className="mt-3 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-semibold text-brand-400 transition hover:bg-slate-800"[m
+           >[m
+             Sign out[m
+           </button>[m
+[36m@@ -350,9 +351,8 @@[m [mexport default function Layout() {[m
+   return ([m
+     <div className="relative min-h-screen overflow-x-hidden bg-slate-950 text-slate-100">[m
+       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 opacity-80">[m
+[31m-        <div className="absolute left-[18rem] top-20 h-72 w-72 rounded-full bg-teal-500/10 blur-3xl" />[m
+[31m-        <div className="absolute right-0 top-1/3 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />[m
+[31m-        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-slate-700/10 blur-3xl" />[m
+[32m+[m[32m        <div className="absolute left-[18rem] top-20 h-72 w-72 rounded-full bg-brand-500/10 blur-3xl" />[m
+[32m+[m[32m        <div className="absolute right-0 top-1/3 h-80 w-80 rounded-full bg-accent-500/10 blur-3xl" />[m
+       </div>[m
+ [m
+       <aside className="fixed inset-y-0 left-0 z-40 hidden w-80 flex-col border-r border-slate-800 bg-slate-950/90 shadow-2xl shadow-black/20 backdrop-blur-xl lg:flex">[m
+[36m@@ -363,7 +363,7 @@[m [mexport default function Layout() {[m
+         <div className="fixed inset-0 z-50 lg:hidden">[m
+           <button[m
+             aria-label="Close navigation"[m
+[31m-            className="absolute inset-0 bg-slate-950/75 backdrop-blur-sm"[m
+[32m+[m[32m            className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"[m
+             onClick={() => setMobileOpen(false)}[m
+           />[m
+ [m
+[36m@@ -371,7 +371,7 @@[m [mexport default function Layout() {[m
+             <div className="flex justify-end px-4 pt-4">[m
+               <button[m
+                 onClick={() => setMobileOpen(false)}[m
+[31m-                className="rounded-xl border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"[m
+[32m+[m[32m                className="rounded-xl border border-slate-700 px-3 py-2 text-sm font-semibold hover:bg-slate-800"[m
+               >[m
+                 Close[m
+               </button>[m
+[36m@@ -388,14 +388,14 @@[m [mexport default function Layout() {[m
+             <div className="flex min-w-0 items-center gap-3">[m
+               <button[m
+                 onClick={() => setMobileOpen(true)}[m
+[31m-                className="rounded-2xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-800 lg:hidden"[m
+[32m+[m[32m                className="rounded-2xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-semibold shadow-sm hover:bg-slate-800 lg:hidden"[m
+               >[m
+[31m-                ☰[m
+[32m+[m[32m                Menu[m
+               </button>[m
+ [m
+               <div className="min-w-0">[m
+[31m-                <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-teal-400">[m
+[31m-                  <span className="h-1.5 w-1.5 rounded-full bg-teal-400 shadow-sm shadow-teal-400/50" />[m
+[32m+[m[32m                <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-brand-400">[m
+[32m+[m[32m                  <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />[m
+                   CyberShield360[m
+                 </div>[m
+ [m
+[36m@@ -412,27 +412,25 @@[m [mexport default function Layout() {[m
+             <div className="flex shrink-0 items-center gap-2">[m
+               <button[m
+                 onClick={() => navigate("/search")}[m
+[31m-                className="hidden items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm font-semibold shadow-sm transition hover:border-teal-500/40 hover:bg-slate-800 sm:flex"[m
+[32m+[m[32m                className="hidden items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-800 sm:flex"[m
+               >[m
+[31m-                <span>🔍</span>[m
+[31m-                <span>Search</span>[m
+[32m+[m[32m                Search[m
+               </button>[m
+ [m
+               <button[m
+                 onClick={() => navigate("/notifications")}[m
+[31m-                className="rounded-2xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm font-semibold shadow-sm transition hover:border-teal-500/40 hover:bg-slate-800"[m
+[32m+[m[32m                className="rounded-2xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-800"[m
+                 title="Notifications"[m
+                 aria-label="Notifications"[m
+               >[m
+[31m-                🔔[m
+[32m+[m[32m                Alerts[m
+               </button>[m
+ [m
+               <button[m
+                 onClick={() => navigate("/profile")}[m
+[31m-                className="flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm font-semibold shadow-sm transition hover:border-teal-500/40 hover:bg-slate-800"[m
+[32m+[m[32m                className="flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-800"[m
+               >[m
+[31m-                <span>👤</span>[m
+[31m-                <span className="hidden sm:inline">Profile</span>[m
+[32m+[m[32m                Profile[m
+               </button>[m
+             </div>[m
+           </div>[m
+[36m@@ -444,4 +442,4 @@[m [mexport default function Layout() {[m
+       </main>[m
+     </div>[m
+   );[m
+[31m-}[m
+\ No newline at end of file[m
+[32m+[m[32m}[m
+[1mdiff --git a/clientapp/src/pages/Login.tsx b/clientapp/src/pages/Login.tsx[m
+[1mindex 65b4eaa..ce97c11 100644[m
+[1m--- a/clientapp/src/pages/Login.tsx[m
+[1m+++ b/clientapp/src/pages/Login.tsx[m
+[36m@@ -5,7 +5,7 @@[m [mimport { AuthApi } from "../api/endpoints";[m
+ import { useAuth } from "../auth/AuthContext";[m
+ [m
+ const HIGHLIGHTS = [[m
+[31m-  { label: "Security visibility", value: "360°" },[m
+[32m+[m[32m  { label: "Security visibility", value: "360Â°" },[m
+   { label: "Guided remediation", value: "AI" },[m
+   { label: "Operational control", value: "SOC" },[m
+ ];[m
+[36m@@ -175,15 +175,15 @@[m [mexport default function Login() {[m
+                 <div className="ring-3d ring-3d-three" />[m
+ [m
+                 <div className="shield-diamond">[m
+[31m-                  <div className="shield-diamond-inner">🛡️</div>[m
+[32m+[m[32m                  <div className="shield-diamond-inner">ðŸ›¡ï¸</div>[m
+                 </div>[m
+               </div>[m
+             </div>[m
+           </main>[m
+ [m
+           <footer className="login-footer">[m
+[31m-            <span>© 2026 CyberShield360. Built for modern security teams.</span>[m
+[31m-            <span>Secure • Tenant-aware • Audit-ready</span>[m
+[32m+[m[32m            <span>Â© 2026 CyberShield360. Built for modern security teams.</span>[m
+[32m+[m[32m            <span>Secure â€¢ Tenant-aware â€¢ Audit-ready</span>[m
+           </footer>[m
+         </section>[m
+ [m
+[36m@@ -222,19 +222,6 @@[m [mexport default function Login() {[m
+                     Create company account[m
+                   </button>[m
+                 </>[m
+[31m-              ) : ([m
+[31m-                <>[m
+[31m-                  <div className="google-login-reliable">[m
+[31m-                    <GoogleLogin[m
+[31m-                      onSuccess={handleGoogleSuccess}[m
+[31m-                      onError={() => {[m
+[31m-                        setError("Google login failed. Please try again.");[m
+[31m-                      }}[m
+[31m-                     ghost w-full border-white/10 bg-white/5 text-white hover:bg-white/10"[m
+[31m-                  >[m
+[31m-                    Create company account[m
+[31m-                  </button>[m
+[31m-                </>[m
+               ) : ([m
+                 <>[m
+                   <div className="google-login-reliable">[m
+[36m@@ -265,7 +252,7 @@[m [mexport default function Login() {[m
+                     disabled[m
+                     className="w-full cursor-not-allowed rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-500"[m
+                   >[m
+[31m-                    Continue with Microsoft — Coming Soon[m
+[32m+[m[32m                    Continue with Microsoft â€” Coming Soon[m
+                   </button>[m
+ [m
+                   <div className="login-divider">[m
+[36m@@ -311,10 +298,10 @@[m [mexport default function Login() {[m
+           </form>[m
+ [m
+           <div className="login-mobile-footer">[m
+[31m-            © 2026 CyberShield360. Built for modern security teams.[m
+[32m+[m[32m            Â© 2026 CyberShield360. Built for modern security teams.[m
+           </div>[m
+         </section>[m
+       </div>[m
+     </div>[m
+   );[m
+[31m-}[m
+\ No newline at end of file[m
+[32m+[m[32m}[m

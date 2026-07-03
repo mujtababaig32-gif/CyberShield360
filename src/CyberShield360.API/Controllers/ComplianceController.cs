@@ -128,7 +128,7 @@ public class ComplianceController : ApiControllerBase
             {
                 domain = s.Asset?.Domain ?? "Unknown Asset",
                 score = s.Score,
-                grade = s.Grade.ToString(),
+                grade = PostureScoreHelper.GradeLabel(s),
                 completedUtc = s.CompletedUtc ?? s.CreatedAtUtc,
                 totalChecks = s.Findings.Count(f => f.Severity != Severity.Info),
                 failedChecks = s.Findings.Count(f => f.Severity != Severity.Info && !f.Passed)
@@ -145,6 +145,10 @@ public class ComplianceController : ApiControllerBase
         if (!recommendations.Any() && assets.Any())
             recommendations.Add("Maintain recurring full posture scans and keep evidence updated for audit readiness.");
 
+        var postureScore = latestScans.Any()
+            ? PostureScoreHelper.NormalizeScore((int)Math.Round(latestScans.Average(s => s.Score)))
+            : 0;
+
         return Ok(new
         {
             generatedUtc = DateTime.UtcNow,
@@ -156,6 +160,9 @@ public class ComplianceController : ApiControllerBase
             criticalFailed = failed.Count(x => x.Finding.Severity == Severity.Critical),
             highFailed = failed.Count(x => x.Finding.Severity == Severity.High),
             overallScore,
+            postureScore,
+            postureGrade = PostureScoreHelper.GradeLabel(postureScore),
+            scoreSource = "Compliance readiness is based on passed controls; posture score is based on latest completed Full Posture scans.",
             frameworks,
             domains = domainCompliance,
             categories,
