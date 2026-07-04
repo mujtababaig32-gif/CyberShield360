@@ -500,7 +500,17 @@ function ProfileMenu({ onViewProfile }: { onViewProfile: () => void }) {
       </button>
 
       {open && (
-        <div className="fixed left-3 right-3 top-[5.25rem] z-[80] max-h-[calc(100dvh-6.25rem)] w-auto overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/60 ring-1 ring-white/5 sm:absolute sm:left-auto sm:right-0 sm:top-12 sm:w-[22rem]">
+        <>
+          <button
+            type="button"
+            aria-label="Close profile menu"
+            className="fixed inset-0 z-[79] cursor-default bg-black/65 backdrop-blur-[2px] sm:bg-black/35"
+            onClick={() => setOpen(false)}
+          />
+          <div
+            className="fixed left-3 right-3 top-[5.25rem] z-[80] max-h-[calc(100dvh-6.25rem)] w-auto overflow-hidden rounded-3xl border border-slate-700 shadow-[0_30px_100px_rgba(0,0,0,0.92)] ring-1 ring-white/10 sm:absolute sm:left-auto sm:right-0 sm:top-12 sm:w-[22rem]"
+            style={{ backgroundColor: "#02040A" }}
+          >
           <div className="border-b border-white/10 bg-gradient-to-br from-brand-500/10 via-white/[0.02] to-accent-500/10 p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-500/15 text-lg font-black text-brand-300 ring-1 ring-brand-500/25">
@@ -579,7 +589,8 @@ function ProfileMenu({ onViewProfile }: { onViewProfile: () => void }) {
               View full profile
             </button>
           </div>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
@@ -662,7 +673,17 @@ function NotificationBell({ onViewAll }: { onViewAll: () => void }) {
       </button>
 
       {open && (
-        <div className="fixed left-3 right-3 top-[5.25rem] z-[80] max-h-[calc(100dvh-6.25rem)] w-auto overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/60 ring-1 ring-white/5 sm:absolute sm:left-auto sm:right-0 sm:top-12 sm:w-[25rem]">
+        <>
+          <button
+            type="button"
+            aria-label="Close notification center"
+            className="fixed inset-0 z-[79] cursor-default bg-black/65 backdrop-blur-[2px] sm:bg-black/35"
+            onClick={() => setOpen(false)}
+          />
+          <div
+            className="fixed left-3 right-3 top-[5.25rem] z-[80] max-h-[calc(100dvh-6.25rem)] w-auto overflow-hidden rounded-3xl border border-slate-700 shadow-[0_30px_100px_rgba(0,0,0,0.92)] ring-1 ring-white/10 sm:absolute sm:left-auto sm:right-0 sm:top-12 sm:w-[25rem]"
+            style={{ backgroundColor: "#02040A" }}
+          >
           <div className="border-b border-white/10 bg-white/[0.03] p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -744,7 +765,8 @@ function NotificationBell({ onViewAll }: { onViewAll: () => void }) {
               View notification center
             </button>
           </div>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
