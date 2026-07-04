@@ -500,7 +500,7 @@ function ProfileMenu({ onViewProfile }: { onViewProfile: () => void }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-50 w-[min(92vw,22rem)] overflow-hidden rounded-3xl border border-white/10 bg-slate-950/98 shadow-2xl shadow-black/40 backdrop-blur-xl">
+        <div className="fixed left-3 right-3 top-[5.25rem] z-[80] max-h-[calc(100dvh-6.25rem)] w-auto overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/60 ring-1 ring-white/5 sm:absolute sm:left-auto sm:right-0 sm:top-12 sm:w-[22rem]">
           <div className="border-b border-white/10 bg-gradient-to-br from-brand-500/10 via-white/[0.02] to-accent-500/10 p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-500/15 text-lg font-black text-brand-300 ring-1 ring-brand-500/25">
@@ -510,14 +510,14 @@ function ProfileMenu({ onViewProfile }: { onViewProfile: () => void }) {
               <div className="min-w-0 flex-1">
                 <div className="truncate text-base font-black text-white">{name}</div>
                 <div className="truncate text-xs text-slate-400">{email}</div>
-                <div className="mt-2 inline-flex rounded-full border border-brand-500/20 bg-brand-500/10 px-2 py-1 text-[10px] font-black uppercase text-brand-300">
-                  {role || "User"}
+                <div className="mt-2 inline-flex max-w-full rounded-full border border-brand-500/20 bg-brand-500/10 px-2 py-1 text-[9px] font-black uppercase text-brand-300">
+                  <span className="truncate">{role || "User"}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="space-y-3 p-4">
+          <div className="max-h-[calc(100dvh-11.5rem)] space-y-3 overflow-y-auto p-4 sm:max-h-none">
             {loading && (
               <div className="space-y-3">
                 {[1, 2].map((item) => (
@@ -662,7 +662,7 @@ function NotificationBell({ onViewAll }: { onViewAll: () => void }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-50 w-[min(92vw,25rem)] overflow-hidden rounded-3xl border border-white/10 bg-slate-950/98 shadow-2xl shadow-black/40 backdrop-blur-xl">
+        <div className="fixed left-3 right-3 top-[5.25rem] z-[80] max-h-[calc(100dvh-6.25rem)] w-auto overflow-hidden rounded-3xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/60 ring-1 ring-white/5 sm:absolute sm:left-auto sm:right-0 sm:top-12 sm:w-[25rem]">
           <div className="border-b border-white/10 bg-white/[0.03] p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -677,7 +677,7 @@ function NotificationBell({ onViewAll }: { onViewAll: () => void }) {
             </div>
           </div>
 
-          <div className="max-h-96 overflow-y-auto p-3">
+          <div className="max-h-[calc(100dvh-12rem)] overflow-y-auto p-3 sm:max-h-96">
             {loading && (
               <div className="space-y-3">
                 {[1, 2, 3].map((item) => (
@@ -822,7 +822,7 @@ export default function Layout() {
       )}
 
       <main className="min-h-screen lg:pl-80">
-        <header className="sticky top-0 z-30 border-b border-slate-800/80 bg-slate-950/85 px-3 py-3 shadow-sm shadow-black/10 backdrop-blur-xl sm:px-6">
+        <header className="sticky top-0 z-[60] border-b border-slate-800/80 bg-slate-950/85 px-3 py-3 shadow-sm shadow-black/10 backdrop-blur-xl sm:px-6">
           <div className="flex items-center justify-between gap-2 sm:gap-4">
             <div className="flex min-w-0 items-center gap-3">
               <button
