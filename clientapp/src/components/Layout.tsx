@@ -476,7 +476,7 @@ function ProfileMenu({ onViewProfile }: { onViewProfile: () => void }) {
     return () => {
       cancelled = true;
     };
-  }, [open, data, loading]);
+  }, [open, data]);
 
   const fallbackEmail = user?.email ?? "Signed-in user";
   const roles = Array.isArray(user?.roles) ? user.roles.join(", ") : "";
@@ -649,7 +649,7 @@ function NotificationBell({ onViewAll }: { onViewAll: () => void }) {
     return () => {
       cancelled = true;
     };
-  }, [open, data, loading]);
+  }, [open, data]);
 
   const unread = data?.unreadNotifications ?? 0;
   const critical = data?.criticalNotifications ?? 0;
