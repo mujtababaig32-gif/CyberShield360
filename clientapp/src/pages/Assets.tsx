@@ -239,18 +239,42 @@ export default function Assets() {
   };
 
   const scanAll = async () => {
+    if (assets.length === 0) return;
+
     try {
       setScanAllLoading(true);
-      setMsg("Scanning all assets...");
       setError(null);
 
-      await AssetApi.scanAll();
+      let succeeded = 0;
+      let failed = 0;
 
-      setMsg("All asset scans started/completed.");
+      // Run each Full Posture scan as its own API request. This avoids one failed
+      // asset aborting the entire batch and avoids a single long-running scan-all request.
+      for (let index = 0; index < assets.length; index += 1) {
+        const asset = assets[index];
+        setMsg(`Scanning ${index + 1}/${assets.length}: ${asset.domain}...`);
+
+        try {
+          await AssetApi.runScan(asset.id, 6);
+          succeeded += 1;
+        } catch {
+          failed += 1;
+        }
+      }
+
       await load();
-    } catch {
+
+      if (failed === 0) {
+        setMsg(`Scan All complete. ${succeeded} asset${succeeded === 1 ? "" : "s"} scanned successfully.`);
+      } else {
+        setMsg(null);
+        setError(
+          `Scan All completed with partial results: ${succeeded} succeeded, ${failed} failed. Individual failures can be retried from the asset row.`
+        );
+      }
+    } catch (err: any) {
       setMsg(null);
-      setError("Scan all failed. Check backend logs.");
+      setError(err?.response?.data?.message ?? "Scan All could not complete. Please retry.");
     } finally {
       setScanAllLoading(false);
     }
