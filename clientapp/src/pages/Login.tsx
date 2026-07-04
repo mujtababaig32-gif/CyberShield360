@@ -358,6 +358,12 @@ export default function Login() {
                 </>
               )}
             </div>
+
+            <div className="login-card-assurance" aria-label="Security assurances">
+              <span>Encrypted session</span>
+              <span>Tenant-aware access</span>
+              <span>Audit-ready</span>
+            </div>
           </form>
 
           <div className="login-mobile-footer">

@@ -2501,3 +2501,334 @@ table {
     justify-content: flex-start !important;
   }
 }
+
+/* =========================================================
+   CyberShield360 Desktop Login Polish
+   Professional laptop/desktop composition only.
+   Mobile and tablet behavior remains unchanged.
+========================================================= */
+
+.login-card-assurance {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.8rem;
+  margin-top: 1.15rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  color: #7f8da6;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.login-card-assurance span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.login-card-assurance span::before {
+  content: "";
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 999px;
+  background: #2dd4bf;
+  box-shadow: 0 0 12px rgba(45, 212, 191, 0.55);
+}
+
+@media screen and (min-width: 1051px) {
+  .login-shell {
+    min-height: 100vh;
+    height: 100vh;
+  }
+
+  .login-page {
+    width: min(100% - 4.5rem, 1480px) !important;
+    max-width: 1480px !important;
+    height: 100vh !important;
+    grid-template-columns: minmax(0, 1.08fr) minmax(430px, 0.92fr) !important;
+    column-gap: clamp(3.5rem, 6vw, 7.5rem) !important;
+    overflow: visible !important;
+  }
+
+  .login-hero {
+    height: 100vh !important;
+    padding: 2rem 0 1.55rem !important;
+  }
+
+  .login-header,
+  .login-hero-main,
+  .login-footer {
+    width: 100% !important;
+    max-width: 760px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .login-header {
+    min-height: 3.25rem;
+  }
+
+  .login-brand {
+    gap: 0.85rem;
+  }
+
+  .login-logo-box {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.95rem;
+  }
+
+  .login-logo {
+    width: 2.15rem;
+    height: 2.15rem;
+  }
+
+  .login-brand-name {
+    font-size: 1.5rem;
+  }
+
+  .login-status-pill {
+    padding: 0.58rem 0.95rem;
+    background: rgba(7, 20, 31, 0.72);
+    border-color: rgba(45, 212, 191, 0.32);
+    backdrop-filter: blur(14px);
+  }
+
+  .login-hero-main {
+    flex: 1 1 auto !important;
+    align-items: center !important;
+    padding: 1.2rem 0 0.85rem !important;
+  }
+
+  .login-copy {
+    width: 100% !important;
+    max-width: 760px !important;
+    padding-left: 0 !important;
+  }
+
+  .login-eyebrow {
+    margin: 0 0 1.15rem 0 !important;
+    padding: 0.58rem 0.95rem !important;
+    background: rgba(12, 25, 40, 0.62) !important;
+    border-color: rgba(94, 234, 212, 0.2) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+  }
+
+  .login-copy h1 {
+    max-width: 735px !important;
+    margin-top: 0 !important;
+    font-size: clamp(3.45rem, 4.35vw, 4.8rem) !important;
+    line-height: 0.99 !important;
+    letter-spacing: -0.062em !important;
+    text-wrap: balance;
+  }
+
+  .login-copy p {
+    max-width: 700px !important;
+    margin-top: 1.15rem !important;
+    font-size: 1rem !important;
+    line-height: 1.72 !important;
+    color: #bac7d9 !important;
+  }
+
+  .login-highlight-grid {
+    width: 100% !important;
+    max-width: 700px !important;
+    margin-top: 1.25rem !important;
+    gap: 0.8rem !important;
+  }
+
+  .login-highlight-card {
+    min-height: 84px;
+    padding: 0.95rem 1rem !important;
+    border-radius: 1rem !important;
+    background: linear-gradient(180deg, rgba(18, 29, 48, 0.82), rgba(10, 17, 31, 0.74)) !important;
+    border-color: rgba(148, 163, 184, 0.16) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 14px 35px rgba(0, 0, 0, 0.18) !important;
+  }
+
+  .login-highlight-card div {
+    font-size: 1.5rem !important;
+  }
+
+  .login-highlight-card span {
+    margin-top: 0.42rem !important;
+  }
+
+  .auth-3d-scene {
+    width: 100% !important;
+    max-width: 700px !important;
+    height: clamp(210px, 23vh, 260px) !important;
+    margin-top: 1.25rem !important;
+    border-radius: 1.65rem !important;
+    box-shadow:
+      0 28px 80px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .login-footer {
+    padding-top: 0.8rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  .login-form-side {
+    position: relative;
+    height: 100vh !important;
+    min-height: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 2rem 0 !important;
+    overflow: visible !important;
+  }
+
+  .login-form-side::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: min(34rem, 92%);
+    height: min(34rem, 72vh);
+    transform: translate(-50%, -50%);
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(91, 72, 190, 0.16), rgba(20, 184, 166, 0.055) 42%, transparent 70%);
+    filter: blur(18px);
+    pointer-events: none;
+  }
+
+  .login-card {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 29rem) !important;
+    max-width: 29rem !important;
+    margin: 0 auto !important;
+    padding: 2rem 2rem 1.5rem !important;
+    border-radius: 1.75rem !important;
+    border: 1px solid rgba(148, 163, 184, 0.18) !important;
+    background: linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(10, 15, 31, 0.94)) !important;
+    box-shadow:
+      0 42px 110px rgba(0, 0, 0, 0.44),
+      0 0 0 1px rgba(94, 234, 212, 0.025),
+      inset 0 1px 0 rgba(255, 255, 255, 0.055) !important;
+    backdrop-filter: blur(22px) !important;
+    overflow: hidden;
+  }
+
+  .login-card::before {
+    content: "";
+    position: absolute;
+    left: 8%;
+    right: 8%;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(45, 212, 191, 0.7), transparent);
+  }
+
+  .login-card-logo {
+    width: 4.5rem !important;
+    height: 4.5rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .login-card-logo img {
+    width: 3.2rem !important;
+    height: 3.2rem !important;
+  }
+
+  .login-card h2 {
+    margin-top: 1.05rem !important;
+    font-size: 2.08rem !important;
+  }
+
+  .login-card p {
+    margin-top: 0.7rem !important;
+    font-size: 0.86rem !important;
+  }
+
+  .login-actions {
+    margin-top: 1.3rem !important;
+    gap: 0.78rem !important;
+  }
+
+  .login-actions .btn-primary,
+  .login-actions .btn-ghost,
+  .login-microsoft-button,
+  .login-actions .input {
+    min-height: 3.15rem !important;
+  }
+
+  .login-actions .btn-primary,
+  .login-actions .btn-ghost {
+    border-radius: 0.95rem !important;
+  }
+
+  .login-card-assurance {
+    margin-top: 1.15rem;
+  }
+}
+
+@media screen and (min-width: 1051px) and (max-height: 820px) {
+  .login-page {
+    width: min(100% - 3.5rem, 1420px) !important;
+    column-gap: clamp(2.75rem, 5vw, 6rem) !important;
+  }
+
+  .login-hero {
+    padding-top: 1.25rem !important;
+    padding-bottom: 1rem !important;
+  }
+
+  .login-copy h1 {
+    font-size: clamp(3rem, 4vw, 4.05rem) !important;
+  }
+
+  .login-copy p {
+    margin-top: 0.8rem !important;
+    line-height: 1.55 !important;
+  }
+
+  .login-highlight-grid {
+    margin-top: 0.85rem !important;
+  }
+
+  .auth-3d-scene {
+    height: 190px !important;
+    margin-top: 0.85rem !important;
+  }
+
+  .login-card {
+    padding-top: 1.55rem !important;
+    padding-bottom: 1.2rem !important;
+  }
+
+  .login-card-logo {
+    width: 3.85rem !important;
+    height: 3.85rem !important;
+  }
+
+  .login-card-logo img {
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+  }
+
+  .login-card h2 {
+    margin-top: 0.8rem !important;
+    font-size: 1.8rem !important;
+  }
+
+  .login-actions {
+    margin-top: 1rem !important;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .login-card-assurance {
+    gap: 0.4rem 0.65rem;
+    margin-top: 0.85rem;
+    padding-top: 0.8rem;
+    font-size: 0.61rem;
+  }
+}
