@@ -550,6 +550,28 @@ export default function Layout() {
     forceDarkMode();
   }, []);
 
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setMobileOpen(false);
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [mobileOpen]);
+
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-slate-950 text-slate-100">
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 opacity-80">
@@ -563,20 +585,21 @@ export default function Layout() {
       </aside>
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Main navigation">
           <button
             aria-label="Close navigation"
             className="absolute inset-0 bg-slate-950/75 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
           />
 
-          <aside className="relative z-10 flex h-full w-80 max-w-[88vw] flex-col border-r border-slate-800 bg-slate-950 shadow-2xl">
+          <aside className="relative z-10 flex h-[100dvh] w-[min(88vw,20rem)] flex-col overflow-hidden border-r border-slate-800 bg-slate-950 shadow-2xl">
             <div className="flex justify-end px-4 pt-4">
               <button
                 onClick={() => setMobileOpen(false)}
                 className="rounded-xl border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
               >
-                Close
+                <span aria-hidden>✕</span>
+                <span className="sr-only">Close navigation</span>
               </button>
             </div>
 
@@ -586,8 +609,8 @@ export default function Layout() {
       )}
 
       <main className="min-h-screen lg:pl-80">
-        <header className="sticky top-0 z-30 border-b border-slate-800/80 bg-slate-950/85 px-4 py-3 shadow-sm shadow-black/10 backdrop-blur-xl sm:px-6">
-          <div className="flex items-center justify-between gap-4">
+        <header className="sticky top-0 z-30 border-b border-slate-800/80 bg-slate-950/85 px-3 py-3 shadow-sm shadow-black/10 backdrop-blur-xl sm:px-6">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
             <div className="flex min-w-0 items-center gap-3">
               <button
                 onClick={() => setMobileOpen(true)}
@@ -603,7 +626,7 @@ export default function Layout() {
                   {section?.title ?? "CyberShield360"}
                 </div>
 
-                <div className="truncate text-lg font-black tracking-tight sm:text-xl">
+                <div className="max-w-[42vw] truncate text-base font-black tracking-tight min-[420px]:max-w-[52vw] sm:max-w-none sm:text-xl">
                   {title}
                 </div>
 
@@ -616,19 +639,22 @@ export default function Layout() {
             <div className="flex shrink-0 items-center gap-2">
               <button
                 onClick={() => navigate("/search")}
-                className="hidden items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-800 sm:flex"
+                className="flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-800"
+                aria-label="Open global search"
+                title="Global Search"
               >
-                <span>🔍</span>
-                <span>Search</span>
+                <span aria-hidden>🔍</span>
+                <span className="hidden sm:inline">Search</span>
               </button>
 
               <NotificationBell onViewAll={() => navigate("/notifications")} />
 
               <button
                 onClick={() => navigate("/profile")}
-                className="flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-800"
+                className="hidden items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-800 min-[420px]:flex"
+                aria-label="Open profile"
               >
-                <span>👤</span>
+                <span aria-hidden>👤</span>
                 <span className="hidden sm:inline">Profile</span>
               </button>
             </div>

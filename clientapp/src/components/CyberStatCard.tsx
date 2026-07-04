@@ -20,16 +20,16 @@ export default function CyberStatCard({
   tone = "brand",
 }: CyberStatCardProps) {
   return (
-    <div className={`rounded-3xl border p-5 shadow-xl shadow-black/10 ${toneClass[tone]}`}>
-      <div className="text-xs font-black uppercase tracking-wide opacity-80">
+    <div className={`min-w-0 rounded-2xl border p-4 shadow-xl shadow-black/10 sm:rounded-3xl sm:p-5 ${toneClass[tone]}`}>
+      <div className="break-words text-[11px] font-black uppercase leading-5 tracking-wide opacity-80 sm:text-xs">
         {label}
       </div>
 
-      <div className="mt-3 text-3xl font-black tracking-tight text-white">
+      <div className="mt-2 break-words text-2xl font-black tracking-tight text-white sm:mt-3 sm:text-3xl">
         {value}
       </div>
 
-      {hint && <div className="mt-2 text-sm leading-6 opacity-80">{hint}</div>}
+      {hint && <div className="mt-2 text-xs leading-5 opacity-80 sm:text-sm sm:leading-6">{hint}</div>}
     </div>
   );
 }

@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AssetApi } from "../api/endpoints";
+import CommercialJourney from "../components/CommercialJourney";
 import CyberStatCard from "../components/CyberStatCard";
 import CyberStatusBadge from "../components/CyberStatusBadge";
 import type { Asset } from "../types";
+import { loadCommercialWorkflow, saveCommercialWorkflow } from "../lib/commercialWorkflow";
 
 const SCAN_TYPES = [
   { v: 6, label: "Full Posture", hint: "Complete assessment", primary: true },
@@ -89,6 +92,7 @@ function validateDomain(value: string) {
 }
 
 export default function Assets() {
+  const [searchParams] = useSearchParams();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [domain, setDomain] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
@@ -116,6 +120,18 @@ export default function Assets() {
   useEffect(() => {
     void load();
   }, []);
+
+  useEffect(() => {
+    const queryDomain = searchParams.get("domain");
+    const workflowDomain = loadCommercialWorkflow().authorizationConfirmed
+      ? loadCommercialWorkflow().website
+      : "";
+    const candidate = queryDomain || workflowDomain;
+
+    if (candidate) {
+      setDomain(cleanDomain(candidate));
+    }
+  }, [searchParams]);
 
   const stats = useMemo(() => {
     const scanned = assets.filter((asset) => latestPostureScore(asset) !== null);
@@ -164,7 +180,8 @@ export default function Assets() {
       await AssetApi.create(normalizedDomain);
 
       setDomain("");
-      setMsg(`Asset added: ${normalizedDomain}`);
+      saveCommercialWorkflow({ assetAdded: true, website: normalizedDomain });
+      setMsg(`Asset added: ${normalizedDomain}. You can now run the Full Posture assessment.`);
       await load();
     } catch (err: any) {
       setMsg(null);
@@ -257,6 +274,8 @@ export default function Assets() {
 
   return (
     <div className="space-y-6">
+      <CommercialJourney current="assess" />
+
       <section className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/20">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-4xl">
@@ -335,6 +354,10 @@ export default function Assets() {
         />
       </section>
 
+      <section className="rounded-3xl border border-orange-500/20 bg-orange-500/5 p-4 text-center text-sm leading-6 text-orange-100">
+        Add and scan only domains you own or are explicitly authorized to assess. The onboarding workflow can prefill an approved domain here, but authorization records should still be supported by your client agreement.
+      </section>
+
       <form
         onSubmit={add}
         className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10"
@@ -405,8 +428,7 @@ export default function Assets() {
           <h2 className="text-xl font-black text-white">No Assets Added Yet</h2>
 
           <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-slate-400">
-            Add your first domain above. After that, you can run security scans,
-            discover subdomains, review exposure, and generate professional client reports.
+            Complete onboarding and authorization, then add the approved domain above. Run a Full Posture assessment first; after it completes, use Report Builder for the client-facing PDF and Excel handover.
           </p>
         </div>
       )}

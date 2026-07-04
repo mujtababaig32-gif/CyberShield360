@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AssetApi } from "../api/endpoints";
 import type { Asset } from "../types";
+import CommercialJourney from "../components/CommercialJourney";
 import CyberStatCard from "../components/CyberStatCard";
 import CyberStatusBadge from "../components/CyberStatusBadge";
 import CyberTable from "../components/CyberTable";
@@ -189,6 +190,7 @@ export default function ReportBuilder() {
 
   return (
     <div className="space-y-6">
+      <CommercialJourney current="report" />
       <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/20">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-4xl">
@@ -383,6 +385,37 @@ export default function ReportBuilder() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-brand-500/20 bg-brand-500/10 p-6 shadow-2xl shadow-black/10">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <div className="text-xs font-black uppercase tracking-[0.18em] text-brand-300">
+              Client Outcome Map
+            </div>
+            <h2 className="mt-2 text-xl font-black text-white">From scan evidence to business action</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+              A board member or non-technical client should be able to understand the report in one flow:
+              what was checked, what failed, why it matters, what to fix first, and how improvement will be verified.
+            </p>
+          </div>
+          <CyberStatusBadge value="Client Ready" />
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-4">
+          {[
+            ["01", "Evidence", "Latest completed Full Posture scan"],
+            ["02", "Impact", "Business risk written in plain language"],
+            ["03", "Action", "Priority, owner, difficulty, and recommended fix"],
+            ["04", "Proof", "PDF for leadership and Excel for implementation"],
+          ].map(([step, title, detail]) => (
+            <div key={step} className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+              <div className="text-xs font-black text-brand-300">{step}</div>
+              <div className="mt-2 font-black text-white">{title}</div>
+              <div className="mt-2 text-xs leading-5 text-slate-400">{detail}</div>
+            </div>
+          ))}
         </div>
       </section>
 

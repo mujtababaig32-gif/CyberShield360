@@ -315,9 +315,9 @@ export default function Dashboard() {
         <div className="absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-cyan-500/10 blur-3xl" />
 
         <div className="relative flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center">
+          <div className="flex min-w-0 flex-col items-center gap-5 text-center sm:flex-row sm:items-center sm:text-left">
             <div
-              className="flex h-28 w-28 shrink-0 items-center justify-center rounded-3xl text-5xl font-black text-white shadow-2xl shadow-black/30"
+              className="flex h-24 w-24 shrink-0 items-center justify-center rounded-3xl text-4xl font-black text-white shadow-2xl shadow-black/30 sm:h-28 sm:w-28 sm:text-5xl"
               style={{ background: GRADE_COLOR[data.overallGrade] ?? "#6b7280" }}
               aria-label={`Overall grade ${data.overallGrade}`}
             >
@@ -329,7 +329,7 @@ export default function Dashboard() {
                 Overall Security Score
               </div>
 
-              <div className={`mt-2 text-5xl font-black ${riskClass(data.overallScore)}`}>
+              <div className={`mt-2 text-4xl font-black sm:text-5xl ${riskClass(data.overallScore)}`}>
                 {data.overallScore}/100
               </div>
 
@@ -586,37 +586,65 @@ export default function Dashboard() {
           <h2 className="text-xl font-black text-white">Weakest Assets</h2>
 
           {data.weakestAssets?.length ? (
-            <div className="mt-5 overflow-x-auto">
-              <table className="w-full min-w-[680px] text-sm">
-                <thead>
-                  <tr className="border-b border-white/10 text-center text-xs font-black uppercase tracking-[0.14em] text-slate-500">
-                    <th className="px-3 py-3 text-center">Domain</th>
-                    <th className="px-3 py-3 text-center">Score</th>
-                    <th className="px-3 py-3 text-center">Failed</th>
-                    <th className="px-3 py-3 text-center">Last Scan</th>
-                  </tr>
-                </thead>
+            <>
+              <div className="mt-5 space-y-3 md:hidden">
+                {data.weakestAssets.map((asset) => (
+                  <article
+                    key={asset.domain}
+                    className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+                  >
+                    <div className="break-all text-sm font-black text-white">{asset.domain}</div>
+                    <div className="mt-3 grid grid-cols-2 gap-3 text-center">
+                      <div className="rounded-xl border border-white/10 bg-slate-950/45 p-3">
+                        <div className="text-[10px] font-black uppercase tracking-wide text-slate-500">Score</div>
+                        <div className={`mt-1 text-lg font-black ${riskClass(asset.score)}`}>
+                          {asset.score}/100
+                        </div>
+                      </div>
+                      <div className="rounded-xl border border-white/10 bg-slate-950/45 p-3">
+                        <div className="text-[10px] font-black uppercase tracking-wide text-slate-500">Failed</div>
+                        <div className="mt-1 text-lg font-black text-white">{asset.failedFindings ?? 0}</div>
+                      </div>
+                    </div>
+                    <div className="mt-3 text-xs leading-5 text-slate-500">
+                      Last scan: {asset.lastScanUtc ? new Date(asset.lastScanUtc).toLocaleString() : "-"}
+                    </div>
+                  </article>
+                ))}
+              </div>
 
-                <tbody>
-                  {data.weakestAssets.map((asset) => (
-                    <tr key={asset.domain} className="border-b border-white/10 text-center">
-                      <td className="break-all px-3 py-4 text-center font-semibold text-white">
-                        {asset.domain}
-                      </td>
-                      <td className={`px-3 py-4 text-center font-black ${riskClass(asset.score)}`}>
-                        {asset.score}/100
-                      </td>
-                      <td className="px-3 py-4 text-center text-slate-300">
-                        {asset.failedFindings ?? 0}
-                      </td>
-                      <td className="px-3 py-4 text-center text-slate-500">
-                        {asset.lastScanUtc ? new Date(asset.lastScanUtc).toLocaleString() : "-"}
-                      </td>
+              <div className="mt-5 hidden overflow-x-auto md:block">
+                <table className="w-full min-w-[680px] text-sm">
+                  <thead>
+                    <tr className="border-b border-white/10 text-center text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                      <th className="px-3 py-3 text-center">Domain</th>
+                      <th className="px-3 py-3 text-center">Score</th>
+                      <th className="px-3 py-3 text-center">Failed</th>
+                      <th className="px-3 py-3 text-center">Last Scan</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+
+                  <tbody>
+                    {data.weakestAssets.map((asset) => (
+                      <tr key={asset.domain} className="border-b border-white/10 text-center">
+                        <td className="break-all px-3 py-4 text-center font-semibold text-white">
+                          {asset.domain}
+                        </td>
+                        <td className={`px-3 py-4 text-center font-black ${riskClass(asset.score)}`}>
+                          {asset.score}/100
+                        </td>
+                        <td className="px-3 py-4 text-center text-slate-300">
+                          {asset.failedFindings ?? 0}
+                        </td>
+                        <td className="px-3 py-4 text-center text-slate-500">
+                          {asset.lastScanUtc ? new Date(asset.lastScanUtc).toLocaleString() : "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           ) : (
             <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center text-sm text-slate-500">
               Run Full Posture scans to populate weakest assets.

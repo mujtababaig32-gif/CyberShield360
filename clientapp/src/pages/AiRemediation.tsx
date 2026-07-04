@@ -311,7 +311,7 @@ export default function AiRemediation() {
                       <CyberStatusBadge value={asset.guidanceGenerated ? "Guidance Saved" : "Not Generated"} />
                     </div>
 
-                    <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="mt-4 grid grid-cols-1 gap-2 text-center text-xs sm:grid-cols-3">
                       <div className="rounded-xl border border-white/10 bg-slate-950/40 px-2 py-2">
                         <div className="text-slate-500">Score</div>
                         <div className="mt-1 font-black text-white">{asset.score}</div>

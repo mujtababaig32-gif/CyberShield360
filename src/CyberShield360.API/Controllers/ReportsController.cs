@@ -42,8 +42,9 @@ public class ReportsController : ApiControllerBase
             .Where(s =>
                 s.TenantId == tid &&
                 s.AssetId == assetId &&
-                s.Type == ScanType.FullPosture)
-            .OrderByDescending(s => s.CreatedAtUtc)
+                s.Type == ScanType.FullPosture &&
+                s.Status == ScanStatus.Completed)
+            .OrderByDescending(s => s.CompletedUtc ?? s.CreatedAtUtc)
             .FirstOrDefaultAsync(ct);
 
         if (scan is null)
@@ -115,6 +116,7 @@ public class ReportsController : ApiControllerBase
             .FirstOrDefaultAsync(t => t.Id == tid, ct);
 
         var findings = scan.Findings
+            .Where(f => f.Severity != Severity.Info)
             .OrderBy(f => f.Passed)
             .ThenByDescending(f => f.Severity)
             .ThenBy(f => f.Title)
@@ -132,12 +134,15 @@ public class ReportsController : ApiControllerBase
         {
             BrandName = "CyberShield360 By Mujtaba",
             PrimaryColorHex = "#10B5A6",
+            Title = "Website Trust & Security Assessment Report",
             FooterText = "Confidential Security Report - CyberShield360",
             TenantName = tenant?.Name ?? "CyberShield360 Tenant",
             AssetDomain = scan.Asset?.Domain ?? "Unknown Asset",
             ScanId = scan.Id.ToString(),
             ScanType = scan.Type.ToString(),
             GeneratedAtUtc = DateTime.UtcNow,
+            DataSource = "Latest completed Full Posture scan from CyberShield360 SecurityScannerService",
+            AccuracyNote = "This report uses external posture evidence visible from the public internet. It is not a penetration test and should be used as a practical security improvement plan.",
             OverallScore = scan.Score,
             Grade = scan.Grade.ToString(),
             Findings = findings

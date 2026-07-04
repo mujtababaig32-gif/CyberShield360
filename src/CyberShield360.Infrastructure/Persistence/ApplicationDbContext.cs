@@ -46,9 +46,16 @@ public class ApplicationDbContext
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
+        base.OnModelCreating(builder);
+        builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
 
+        // AI Remediation stores generated guidance against a scan and an asset.
+        // SQL Server blocks multiple cascade paths here because Scans already relate to Assets,
+        // so both foreign keys must use NoAction instead of cascade delete.
         builder.Entity<AiRemediationGuidance>(entity =>
         {
+            entity.ToTable("AiRemediationGuidance");
+
             entity.HasOne(x => x.Asset)
                 .WithMany()
                 .HasForeignKey(x => x.AssetId)
@@ -63,9 +70,6 @@ public class ApplicationDbContext
             entity.HasIndex(x => x.AssetId);
             entity.HasIndex(x => x.TenantId);
         });
-
-        base.OnModelCreating(builder);
-        builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
 
         // Global query filters: tenant isolation + soft delete
         foreach (var entityType in builder.Model.GetEntityTypes())

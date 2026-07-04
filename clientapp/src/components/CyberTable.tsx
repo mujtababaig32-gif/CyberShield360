@@ -34,20 +34,53 @@ export default function CyberTable<T>({
   action,
 }: CyberTableProps<T>) {
   return (
-    <section className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70 shadow-2xl shadow-black/10">
-      <div className="flex flex-col gap-3 border-b border-white/10 p-5 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h2 className="text-lg font-black tracking-tight text-white">{title}</h2>
+    <section className="min-w-0 overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70 shadow-2xl shadow-black/10">
+      <div className="flex flex-col gap-3 border-b border-white/10 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <h2 className="break-words text-lg font-black tracking-tight text-white">{title}</h2>
 
           {description && (
             <p className="mt-1 text-sm leading-6 text-slate-400">{description}</p>
           )}
         </div>
 
-        {action && <div className="shrink-0">{action}</div>}
+        {action && <div className="w-full shrink-0 sm:w-auto">{action}</div>}
       </div>
 
-      <div className="overflow-x-auto">
+      {/* Mobile: convert wide tables into readable record cards. */}
+      <div className="space-y-3 p-3 md:hidden">
+        {data.length === 0 ? (
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-8 text-center text-sm text-slate-500">
+            {emptyText}
+          </div>
+        ) : (
+          data.map((row, rowIndex) => (
+            <article
+              key={rowIndex}
+              className="min-w-0 rounded-2xl border border-white/10 bg-slate-950/45 p-4 shadow-lg shadow-black/10"
+            >
+              <div className="divide-y divide-white/10">
+                {columns.map((column) => (
+                  <div
+                    key={column.key}
+                    className="grid min-w-0 grid-cols-[7.25rem_minmax(0,1fr)] gap-3 py-3 first:pt-0 last:pb-0"
+                  >
+                    <div className="text-[10px] font-black uppercase leading-5 tracking-[0.12em] text-slate-500">
+                      {column.label}
+                    </div>
+                    <div className="min-w-0 break-words text-left text-sm text-slate-300">
+                      {column.render(row)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ))
+        )}
+      </div>
+
+      {/* Tablet/Desktop: retain the dense tabular view. */}
+      <div className="hidden overflow-x-auto md:block">
         <table className="min-w-full text-sm">
           <thead className="bg-slate-950/70 text-xs uppercase tracking-wide text-slate-500">
             <tr>

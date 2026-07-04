@@ -154,6 +154,14 @@ public class AiRemediationController : ApiControllerBase
         var context = BuildContext(scan);
         var plan = await _ai.GenerateRemediationPlanAsync(context, ct);
 
+        // Keep one active guidance record per scan. This avoids duplicate AI plans after repeated generation.
+        var previousGuidance = await _db.AiRemediationGuidance
+            .Where(g => g.TenantId == tid && g.ScanId == scan.Id)
+            .ToListAsync(ct);
+
+        if (previousGuidance.Count > 0)
+            _db.AiRemediationGuidance.RemoveRange(previousGuidance);
+
         var guidance = new AiRemediationGuidance
         {
             TenantId = tid,

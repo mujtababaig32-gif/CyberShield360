@@ -257,7 +257,7 @@ export default function FixPlan() {
             </div>
 
             <div className="mt-3 text-center text-xs leading-5 text-slate-500">
-              PDF uses the browser print dialog. Choose Save as PDF.
+Use PDF for client approval and Excel for implementation handover.
             </div>
           </div>
         </div>
@@ -352,6 +352,36 @@ export default function FixPlan() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-3xl border border-brand-500/20 bg-brand-500/10 p-6 shadow-2xl shadow-black/10">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="max-w-3xl">
+            <div className="text-xs font-black uppercase tracking-[0.18em] text-brand-300">
+              Before / After Improvement Plan
+            </div>
+            <h2 className="mt-2 text-xl font-black text-white">Prove the value after fixes</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              The fix plan should not end at recommendations. After approved fixes are completed, run another
+              Full Posture scan and compare the previous score with the new score to show measurable improvement.
+            </p>
+          </div>
+
+          <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 xl:max-w-xl">
+            <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-center">
+              <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Step 1</div>
+              <div className="mt-2 text-sm font-black text-white">Approve Fixes</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-center">
+              <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Step 2</div>
+              <div className="mt-2 text-sm font-black text-white">Rescan Asset</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-center">
+              <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Step 3</div>
+              <div className="mt-2 text-sm font-black text-white">Show Improvement</div>
+            </div>
           </div>
         </div>
       </section>

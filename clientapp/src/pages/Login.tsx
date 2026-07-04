@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { AuthApi } from "../api/endpoints";
@@ -12,16 +12,31 @@ const HIGHLIGHTS = [
 
 const API_BASE = (import.meta.env.VITE_API_BASE ?? "/api/v1").replace(/\/+$/, "");
 
+function getGoogleButtonWidth() {
+  if (typeof window === "undefined") return 360;
+
+  // Keep the official Google button inside the login card on narrow phones.
+  return Math.max(220, Math.min(360, window.innerWidth - 72));
+}
+
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const [showForm, setShowForm] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleButtonWidth, setGoogleButtonWidth] = useState(getGoogleButtonWidth);
+
+  useEffect(() => {
+    const syncGoogleButtonWidth = () => setGoogleButtonWidth(getGoogleButtonWidth());
+    window.addEventListener("resize", syncGoogleButtonWidth);
+    return () => window.removeEventListener("resize", syncGoogleButtonWidth);
+  }, []);
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -29,7 +44,7 @@ export default function Login() {
     setError(null);
 
     try {
-      const auth = await AuthApi.login(email, password);
+      const auth = await AuthApi.login(email.trim(), password);
       login(auth);
       navigate("/");
     } catch {
@@ -110,7 +125,7 @@ export default function Login() {
                 <img src="/logo.svg" alt="CyberShield360" className="login-logo" />
               </div>
 
-              <div>
+              <div className="login-brand-copy">
                 <div className="login-brand-name">
                   CyberShield<span>360</span>
                 </div>
@@ -144,7 +159,7 @@ export default function Login() {
                 ))}
               </div>
 
-              <div className="auth-3d-scene">
+              <div className="auth-3d-scene" aria-hidden="true">
                 <div className="auth-grid" />
 
                 <div className="floating-chip chip-top-left">Full Posture Scan</div>
@@ -188,6 +203,11 @@ export default function Login() {
         </section>
 
         <section className="login-form-side">
+          <div className="login-mobile-intro" aria-hidden="true">
+            <span>Security workspace</span>
+            <strong>See risk clearly. Fix what matters.</strong>
+          </div>
+
           <form onSubmit={submit} className="login-card">
             <div className="login-card-head">
               <div className="login-card-logo">
@@ -208,7 +228,10 @@ export default function Login() {
                 <>
                   <button
                     type="button"
-                    onClick={() => setShowForm(true)}
+                    onClick={() => {
+                      setError(null);
+                      setShowForm(true);
+                    }}
                     className="btn-primary w-full"
                   >
                     Get Started
@@ -224,6 +247,20 @@ export default function Login() {
                 </>
               ) : (
                 <>
+                  <div className="login-form-toolbar">
+                    <button
+                      type="button"
+                      className="login-back-button"
+                      onClick={() => {
+                        setError(null);
+                        setShowForm(false);
+                      }}
+                    >
+                      <span aria-hidden="true">←</span>
+                      Back
+                    </button>
+                  </div>
+
                   <div className="google-login-official">
                     <GoogleLogin
                       onSuccess={handleGoogleSuccess}
@@ -237,12 +274,12 @@ export default function Login() {
                       text="signin_with"
                       shape="rectangular"
                       logo_alignment="left"
-                      width="360"
+                      width={String(googleButtonWidth)}
                     />
                   </div>
 
                   {googleLoading && (
-                    <div className="text-center text-xs text-slate-400">
+                    <div className="login-provider-status" aria-live="polite">
                       Signing in with Google...
                     </div>
                   )}
@@ -250,9 +287,9 @@ export default function Login() {
                   <button
                     type="button"
                     disabled
-                    className="w-full cursor-not-allowed rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-500"
+                    className="login-microsoft-button"
                   >
-                    Continue with Microsoft - Coming Soon
+                    Continue with Microsoft <span>Coming Soon</span>
                   </button>
 
                   <div className="login-divider">
@@ -261,27 +298,53 @@ export default function Login() {
                     <div />
                   </div>
 
-                  {error && <div className="login-error">{error}</div>}
+                  {error && (
+                    <div className="login-error" role="alert" aria-live="assertive">
+                      {error}
+                    </div>
+                  )}
 
-                  <input
-                    className="input border-white/10 bg-slate-950/70 text-white"
-                    type="email"
-                    placeholder="Email address"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
+                  <div className="login-field">
+                    <label htmlFor="login-email">Email address</label>
+                    <input
+                      id="login-email"
+                      className="input border-white/10 bg-slate-950/70 text-white"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      placeholder="name@company.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
 
-                  <input
-                    className="input border-white/10 bg-slate-950/70 text-white"
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
+                  <div className="login-field">
+                    <label htmlFor="login-password">Password</label>
+                    <div className="login-password-wrap">
+                      <input
+                        id="login-password"
+                        className="input border-white/10 bg-slate-950/70 text-white"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="current-password"
+                        placeholder="Enter your password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="login-password-toggle"
+                        onClick={() => setShowPassword((current) => !current)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        aria-pressed={showPassword}
+                      >
+                        {showPassword ? "Hide" : "Show"}
+                      </button>
+                    </div>
+                  </div>
 
-                  <button className="btn-primary w-full" disabled={loading}>
+                  <button className="btn-primary w-full" disabled={loading || googleLoading}>
                     {loading ? "Signing in..." : "Sign in"}
                   </button>
 

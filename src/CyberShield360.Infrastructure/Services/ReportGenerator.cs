@@ -164,6 +164,19 @@ public class ReportGenerator : IReportGenerator
                         });
                     });
 
+                    col.Item().Background("#EFF6FF").Border(1).BorderColor("#BFDBFE").Padding(11).Column(c =>
+                    {
+                        c.Item().Text("Client Risk Summary")
+                            .FontSize(13)
+                            .Bold()
+                            .FontColor(Colors.Blue.Darken3);
+
+                        c.Item().PaddingTop(5).Text(GetClientRiskSummary(m.AssetDomain, m.OverallScore, failed.Count, highRisk))
+                            .FontSize(9)
+                            .LineHeight(1.35f)
+                            .FontColor(Colors.Grey.Darken4);
+                    });
+
                     col.Item().Row(row =>
                     {
                         MetricCard(row.RelativeItem(), "Overall Score", $"{m.OverallScore}/100", color);
@@ -177,6 +190,11 @@ public class ReportGenerator : IReportGenerator
                         .FontSize(14)
                         .Bold()
                         .FontColor(color);
+
+                    col.Item().Text("Prioritized by business risk, likely client impact, and remediation urgency.")
+                        .FontSize(8)
+                        .Italic()
+                        .FontColor(Colors.Grey.Darken1);
 
                     var topActions = failed
                         .Where(x => !string.IsNullOrWhiteSpace(x.Recommendation))
@@ -457,15 +475,26 @@ public class ReportGenerator : IReportGenerator
         ws.Cell("A14").Style.Fill.BackgroundColor = XLColor.FromHtml("#F8FAFC");
         ws.Cell("A14").Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
 
-        ws.Cell("A18").Value = "Client Next Step";
+        ws.Cell("A18").Value = "Client Risk Summary";
         ws.Cell("A18").Style.Font.Bold = true;
         ws.Cell("A18").Style.Font.FontColor = XLColor.FromHtml(color);
 
-        ws.Range("A19:F20").Merge();
-        ws.Cell("A19").Value = "Apply approved fixes, rescan the asset, compare before/after score, and deliver the final improved report with client handover guidance.";
+        ws.Range("A19:F21").Merge();
+        ws.Cell("A19").Value = GetClientRiskSummary(m.AssetDomain, m.OverallScore, failed, highRisk);
         ws.Cell("A19").Style.Alignment.WrapText = true;
-        ws.Cell("A19").Style.Fill.BackgroundColor = XLColor.FromHtml("#ECFDF5");
+        ws.Cell("A19").Style.Alignment.Vertical = XLAlignmentVerticalValues.Top;
+        ws.Cell("A19").Style.Fill.BackgroundColor = XLColor.FromHtml("#EFF6FF");
         ws.Cell("A19").Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+        ws.Cell("A23").Value = "Client Next Step";
+        ws.Cell("A23").Style.Font.Bold = true;
+        ws.Cell("A23").Style.Font.FontColor = XLColor.FromHtml(color);
+
+        ws.Range("A24:F25").Merge();
+        ws.Cell("A24").Value = "Apply approved fixes, rescan the asset, compare before/after score, and deliver the final improved report with client handover guidance.";
+        ws.Cell("A24").Style.Alignment.WrapText = true;
+        ws.Cell("A24").Style.Fill.BackgroundColor = XLColor.FromHtml("#ECFDF5");
+        ws.Cell("A24").Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
 
         FinalizeSheet(ws);
     }
@@ -733,6 +762,22 @@ public class ReportGenerator : IReportGenerator
             cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#E0F2FE");
             cell.Style.Font.FontColor = XLColor.FromHtml("#075985");
         }
+    }
+
+    private static string GetClientRiskSummary(string? assetDomain, int score, int failedCount, int highRiskCount)
+    {
+        var asset = string.IsNullOrWhiteSpace(assetDomain) ? "the assessed asset" : assetDomain;
+
+        if (failedCount == 0)
+            return $"{asset} currently has no failed non-informational posture checks in this report. Maintain this position with scheduled scans, change control, and a quarterly security review.";
+
+        if (highRiskCount > 0)
+            return $"{asset} has {failedCount} failed posture checks, including {highRiskCount} high/critical item(s). Prioritize these issues first because they are most likely to affect customer trust, email/domain reputation, or public-facing exposure.";
+
+        if (score >= 80)
+            return $"{asset} is in a generally healthy posture, but {failedCount} improvement item(s) remain. Address these gaps to strengthen trust readiness and maintain a professional security baseline.";
+
+        return $"{asset} needs a structured remediation cycle. Start with the highest-priority findings, assign a clear owner, complete fixes, then rescan to prove before/after improvement.";
     }
 
     private static string GetExecutiveSummary(int score, int failedCount, int highRiskCount)
