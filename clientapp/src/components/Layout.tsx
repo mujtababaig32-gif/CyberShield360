@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import { NotificationsApi } from "../api/endpoints";
+import { NotificationsApi, ProfileApi } from "../api/endpoints";
 
 type NavItem = {
   to: string;
@@ -178,16 +178,16 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <>
-      <div className="relative overflow-hidden border-b border-white/10 p-4">
+      <div className="relative overflow-hidden border-b border-white/10 p-3">
         <div className="absolute inset-0 bg-gradient-to-br from-brand-500/10 via-transparent to-accent-500/10" />
 
         <div className="relative flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-lg shadow-brand-500/20">
-            <img src="/logo.svg" alt="CyberShield360 logo" className="h-8 w-8" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-lg shadow-brand-500/20">
+            <img src="/logo.svg" alt="CyberShield360 logo" className="h-7 w-7" />
           </div>
 
           <div className="min-w-0">
-            <div className="text-base font-black leading-tight tracking-tight text-white">
+            <div className="text-sm font-black leading-tight tracking-tight text-white">
               CyberShield<span className="text-brand-500">360</span>
             </div>
             <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
@@ -196,27 +196,29 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </div>
         </div>
 
-        <div className="relative mt-5 rounded-2xl border border-white/10 bg-black/25 p-3 text-white shadow-inner">
+        <div className="relative mt-3 rounded-xl border border-white/10 bg-black/25 px-2.5 py-2 text-white shadow-inner">
           <div className="flex items-center justify-between gap-2">
-            <div>
-              <div className="text-[10px] uppercase tracking-wide text-slate-400">
+            <div className="min-w-0">
+              <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-500">
                 Service Model
               </div>
-              <div className="text-sm font-bold">Assessment + Remediation</div>
+              <div className="truncate text-xs font-bold text-slate-100">
+                Assessment + Remediation
+              </div>
             </div>
 
-            <span className="rounded-full bg-brand-500/15 px-2 py-1 text-[10px] font-bold text-brand-300 ring-1 ring-brand-500/30">
+            <span className="shrink-0 rounded-full bg-brand-500/15 px-1.5 py-0.5 text-[8px] font-black text-brand-300 ring-1 ring-brand-500/30">
               ACTIVE
             </span>
           </div>
 
-          <div className="mt-2 truncate text-xs text-slate-400">
+          <div className="mt-1 truncate text-[10px] text-slate-500">
             {user?.email}
           </div>
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4 text-sm">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-3 text-sm">
         <div className="mb-3 px-3">
           <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
             CyberShield Workflow
@@ -338,22 +340,27 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </nav>
 
-      <div className="border-t border-slate-800 p-4">
-        <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-3 shadow-inner">
-          <div className="text-[10px] uppercase tracking-wide text-slate-400">
-            Signed in
+      <div className="mt-auto shrink-0 border-t border-slate-800 bg-slate-950/95 p-2.5">
+        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-900/70 p-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-500/15 text-xs font-black text-brand-300 ring-1 ring-brand-500/20">
+            {(user?.email?.[0] ?? "U").toUpperCase()}
           </div>
 
-          <div className="truncate text-xs font-semibold text-slate-200">
-            {user?.email}
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[10px] font-semibold text-slate-300">
+              {user?.email}
+            </div>
           </div>
 
           <button
+            type="button"
             onClick={() => {
               logout();
               navigate("/login");
             }}
-            className="mt-3 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm font-semibold text-brand-400 transition hover:bg-slate-800 hover:text-brand-300"
+            className="shrink-0 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-[11px] font-bold text-brand-400 transition hover:bg-slate-800 hover:text-brand-300"
+            aria-label="Sign out"
+            title="Sign out"
           >
             Sign out
           </button>
@@ -394,6 +401,188 @@ function formatNotificationTime(value?: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString(undefined, { month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+type ProfileQuickSummary = {
+  user?: {
+    name?: string;
+    email?: string;
+    role?: string;
+    mfaStatus?: string;
+    loginMethod?: string;
+  };
+  tenant?: {
+    name?: string;
+    plan?: string;
+    status?: string;
+  };
+  security?: {
+    lastLogin?: string;
+    passwordLastChanged?: string;
+  };
+};
+
+function ProfileMenu({ onViewProfile }: { onViewProfile: () => void }) {
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<ProfileQuickSummary | null>(null);
+  const [error, setError] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node | null;
+      if (target && containerRef.current && !containerRef.current.contains(target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || data || loading) return;
+
+    let cancelled = false;
+
+    async function loadProfile() {
+      try {
+        setLoading(true);
+        setError(false);
+        const result = await ProfileApi.summary();
+        if (!cancelled) setData(result);
+      } catch {
+        if (!cancelled) setError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void loadProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, data, loading]);
+
+  const fallbackEmail = user?.email ?? "Signed-in user";
+  const roles = Array.isArray(user?.roles) ? user.roles.join(", ") : "";
+  const name = data?.user?.name ?? fallbackEmail.split("@")[0] ?? "User";
+  const email = data?.user?.email ?? fallbackEmail;
+  const role = data?.user?.role ?? roles ?? "User";
+  const initial = (name?.[0] ?? email?.[0] ?? "U").toUpperCase();
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-800"
+        aria-label="Open profile menu"
+        title="Profile"
+        aria-expanded={open}
+      >
+        <span aria-hidden>👤</span>
+        <span className="hidden sm:inline">Profile</span>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-12 z-50 w-[min(92vw,22rem)] overflow-hidden rounded-3xl border border-white/10 bg-slate-950/98 shadow-2xl shadow-black/40 backdrop-blur-xl">
+          <div className="border-b border-white/10 bg-gradient-to-br from-brand-500/10 via-white/[0.02] to-accent-500/10 p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-500/15 text-lg font-black text-brand-300 ring-1 ring-brand-500/25">
+                {initial}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-base font-black text-white">{name}</div>
+                <div className="truncate text-xs text-slate-400">{email}</div>
+                <div className="mt-2 inline-flex rounded-full border border-brand-500/20 bg-brand-500/10 px-2 py-1 text-[10px] font-black uppercase text-brand-300">
+                  {role || "User"}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 p-4">
+            {loading && (
+              <div className="space-y-3">
+                {[1, 2].map((item) => (
+                  <div key={item} className="animate-pulse rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                    <div className="h-3 w-24 rounded-full bg-white/10" />
+                    <div className="mt-2 h-4 w-40 rounded-full bg-white/10" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!loading && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                    <div className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Workspace</div>
+                    <div className="mt-1 truncate text-xs font-bold text-slate-200">
+                      {data?.tenant?.name ?? "CyberShield360"}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                    <div className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Plan</div>
+                    <div className="mt-1 truncate text-xs font-bold text-slate-200">
+                      {data?.tenant?.plan ?? "Workspace"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                  <div className="flex items-center justify-between gap-3 text-xs">
+                    <span className="text-slate-500">MFA</span>
+                    <span className="font-bold text-slate-200">{data?.user?.mfaStatus ?? "Status unavailable"}</span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-3 text-xs">
+                    <span className="text-slate-500">Login method</span>
+                    <span className="font-bold text-slate-200">{data?.user?.loginMethod ?? "Account session"}</span>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="rounded-2xl border border-orange-500/20 bg-orange-500/10 p-3 text-xs leading-5 text-orange-200">
+                    Live profile details could not be loaded. Basic signed-in account information is shown above.
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className="border-t border-white/10 p-3">
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onViewProfile();
+              }}
+              className="w-full rounded-2xl border border-brand-500/30 bg-brand-500/10 px-4 py-3 text-sm font-black text-brand-200 transition hover:bg-brand-500/15"
+            >
+              View full profile
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function NotificationBell({ onViewAll }: { onViewAll: () => void }) {
@@ -673,14 +862,7 @@ export default function Layout() {
 
               <NotificationBell onViewAll={() => navigate("/notifications")} />
 
-              <button
-                onClick={() => navigate("/profile")}
-                className="hidden items-center gap-2 rounded-2xl border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-800 min-[420px]:flex"
-                aria-label="Open profile"
-              >
-                <span aria-hidden>👤</span>
-                <span className="hidden sm:inline">Profile</span>
-              </button>
+              <ProfileMenu onViewProfile={() => navigate("/profile")} />
             </div>
           </div>
         </header>
