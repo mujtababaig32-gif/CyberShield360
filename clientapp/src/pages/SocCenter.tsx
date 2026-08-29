@@ -59,6 +59,79 @@ function dateText(value?: string | null) {
 const severityOptions = ["All", "Critical", "High", "Medium", "Low"];
 const statusOptions = ["All", "Open", "In Progress", "Monitoring", "Resolved"];
 
+function severityPriority(severity?: string) {
+  if (severity === "Critical") return "Immediate";
+  if (severity === "High") return "Priority";
+  if (severity === "Medium") return "Planned";
+  return "Monitor";
+}
+
+function categoryFromSource(source?: string) {
+  const key = String(source ?? "").toLowerCase();
+
+  if (key.includes("spf") || key.includes("dkim") || key.includes("dmarc")) return "Email Security";
+  if (key.includes("ssl") || key.includes("tls") || key.includes("https")) return "SSL / TLS";
+  if (key.includes("header") || key.includes("hsts") || key.includes("csp")) return "Security Headers";
+  if (key.includes("dns") || key.includes("mx") || key.includes("caa")) return "DNS";
+  if (key.includes("port") || key.includes("exposure") || key.includes("asm")) return "Attack Surface";
+
+  return "Posture Finding";
+}
+
+function normalizeSocSummary(raw: any): SocSummary {
+  const rawAlerts = Array.isArray(raw?.alerts) ? raw.alerts : [];
+
+  const alerts: SocAlert[] = rawAlerts.map((item: any, index: number) => {
+    const severity = String(item?.severity ?? "Low");
+    const createdUtc = item?.createdUtc ?? new Date().toISOString();
+
+    return {
+      id: String(item?.id ?? `${item?.source ?? "signal"}-${index}`),
+      title: String(item?.title ?? "Security posture finding"),
+      severity,
+      source: String(item?.source ?? "unknown"),
+      status: String(item?.status ?? "Open"),
+      priority: String(item?.priority ?? severityPriority(severity)),
+      category: String(item?.category ?? categoryFromSource(item?.source)),
+      mitreTactic: String(item?.mitreTactic ?? "Discovery"),
+      affectedAssetCount: Number(item?.affectedAssetCount ?? 0),
+      affectedAssets: Array.isArray(item?.affectedAssets) ? item.affectedAssets : [],
+      occurrenceCount: Number(item?.occurrenceCount ?? 1),
+      firstSeenUtc: item?.firstSeenUtc ?? createdUtc,
+      lastSeenUtc: item?.lastSeenUtc ?? createdUtc,
+      createdUtc,
+      sourceScanIds: Array.isArray(item?.sourceScanIds) ? item.sourceScanIds : [],
+      recommendation: item?.recommendation ?? "Review and investigate this finding.",
+      businessImpact: item?.businessImpact,
+    };
+  });
+
+  const categoryCounts = new Map<string, number>();
+  for (const alert of alerts) {
+    categoryCounts.set(alert.category, (categoryCounts.get(alert.category) ?? 0) + 1);
+  }
+
+  return {
+    generatedUtc: raw?.generatedUtc ?? new Date().toISOString(),
+    monitoredAssets: Number(raw?.monitoredAssets ?? 0),
+    totalSignals: Number(raw?.totalSignals ?? raw?.openIncidents ?? alerts.length),
+    groupedAlerts: Number(raw?.groupedAlerts ?? alerts.length),
+    deduplicatedSignals: Number(raw?.deduplicatedSignals ?? 0),
+    criticalAlerts: Number(raw?.criticalAlerts ?? 0),
+    highAlerts: Number(raw?.highAlerts ?? 0),
+    mediumAlerts: Number(raw?.mediumAlerts ?? 0),
+    lowAlerts: Number(raw?.lowAlerts ?? 0),
+    openIncidents: Number(raw?.openIncidents ?? alerts.length),
+    resolvedIncidents: Number(raw?.resolvedIncidents ?? 0),
+    mttrHours: Number(raw?.mttrHours ?? 0),
+    statusSummary: Array.isArray(raw?.statusSummary) ? raw.statusSummary : [],
+    categorySummary: Array.isArray(raw?.categorySummary)
+      ? raw.categorySummary
+      : Array.from(categoryCounts.entries()).map(([category, count]) => ({ category, count })),
+    alerts,
+  };
+}
+
 export default function SocCenter() {
   const [data, setData] = useState<SocSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +144,7 @@ export default function SocCenter() {
       setLoading(true);
       setError(null);
       const result = await SocApi.summary();
-      setData(result);
+      setData(normalizeSocSummary(result));
     } catch {
       setError("Failed to load SOC center. Please refresh or check backend connectivity.");
     } finally {

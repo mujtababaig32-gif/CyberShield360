@@ -44,3 +44,16 @@ frontend/
 AzureCLI.msi
 build-error.txt
 *.tsbuildinfo
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# Playwright QA
+playwright/.auth/
+cybershield360-qa-report/
+test-results/
+blob-report/

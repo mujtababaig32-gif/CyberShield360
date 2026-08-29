@@ -432,7 +432,12 @@ export default function Assets() {
       )}
 
       {error && (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center text-sm font-semibold text-red-300">
+        <div
+          role="alert"
+          aria-live="assertive"
+          data-testid="asset-error"
+          className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center text-sm font-semibold text-red-300"
+        >
           {error}
         </div>
       )}
