@@ -47,8 +47,16 @@ export default function Login() {
       const auth = await AuthApi.login(email.trim(), password);
       login(auth);
       navigate("/");
-    } catch {
-      setError("Invalid email or password.");
+    } catch (err: any) {
+      const status = err?.response?.status;
+
+      if (status === 401 || status === 400) {
+        setError("Invalid email or password.");
+      } else if (status) {
+        setError("Login failed due to a server error. Please try again shortly.");
+      } else {
+        setError("Could not reach the server. Check your connection and try again.");
+      }
     } finally {
       setLoading(false);
     }

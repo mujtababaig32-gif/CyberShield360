@@ -398,11 +398,13 @@ export default function PhishingSimulation() {
             <input
               className="input"
               placeholder="Search recipient, email, department..."
+              aria-label="Search recipients"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
             <select
               className="input"
+              aria-label="Filter by risk"
               value={riskFilter}
               onChange={(event) => setRiskFilter(event.target.value)}
             >

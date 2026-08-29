@@ -25,6 +25,11 @@ function alignClass(align: CyberTableColumn<unknown>["align"]) {
   return "text-center";
 }
 
+function rowKey(row: unknown, index: number): string | number {
+  const id = (row as { id?: string | number } | null)?.id;
+  return id !== undefined && id !== null ? id : index;
+}
+
 export default function CyberTable<T>({
   title,
   description,
@@ -56,7 +61,7 @@ export default function CyberTable<T>({
         ) : (
           data.map((row, rowIndex) => (
             <article
-              key={rowIndex}
+              key={rowKey(row, rowIndex)}
               className="min-w-0 rounded-2xl border border-white/10 bg-slate-950/45 p-4 shadow-lg shadow-black/10"
             >
               <div className="divide-y divide-white/10">
@@ -109,7 +114,7 @@ export default function CyberTable<T>({
               </tr>
             ) : (
               data.map((row, index) => (
-                <tr key={index} className="transition hover:bg-white/[0.03]">
+                <tr key={rowKey(row, index)} className="transition hover:bg-white/[0.03]">
                   {columns.map((column) => (
                     <td
                       key={column.key}

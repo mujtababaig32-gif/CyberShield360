@@ -450,12 +450,14 @@ export default function AttackPath() {
             <input
               className="input"
               placeholder="Search source, target, recommendation..."
+              aria-label="Search attack paths"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
 
             <select
               className="input"
+              aria-label="Filter by risk"
               value={riskFilter}
               onChange={(e) => setRiskFilter(e.target.value)}
             >

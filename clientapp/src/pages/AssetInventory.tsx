@@ -271,12 +271,14 @@ export default function AssetInventory() {
         <input
           className="input"
           placeholder="Search domain, owner, technology, risk..."
+          aria-label="Search assets"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
 
         <select
           className="input"
+          aria-label="Filter by risk"
           value={riskFilter}
           onChange={(e) => setRiskFilter(e.target.value)}
         >
@@ -287,6 +289,7 @@ export default function AssetInventory() {
 
         <select
           className="input"
+          aria-label="Filter by environment"
           value={environmentFilter}
           onChange={(e) => setEnvironmentFilter(e.target.value)}
         >

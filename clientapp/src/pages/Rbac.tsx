@@ -306,6 +306,7 @@ export default function Rbac() {
             <input
               className="input"
               placeholder="Search users, roles, access level..."
+              aria-label="Search users"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />

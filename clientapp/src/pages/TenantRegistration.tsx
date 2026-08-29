@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { TenantRegistrationApi } from "../api/endpoints";
 
 type Plan = {
@@ -34,6 +35,7 @@ type PreviewResult = {
 };
 
 export default function TenantRegistration() {
+  const navigate = useNavigate();
   const [data, setData] = useState<RegistrationSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,7 +53,7 @@ export default function TenantRegistration() {
       .catch(() => setError("Failed to load tenant registration."));
   }, []);
 
-  const submitPreview = async () => {
+  const submitPreview = async (planOverride?: string) => {
     try {
       setMessage("Creating registration preview...");
 
@@ -59,7 +61,7 @@ export default function TenantRegistration() {
         companyName,
         adminName,
         adminEmail,
-        plan,
+        plan: planOverride ?? plan,
       });
 
       setPreview(result);
@@ -204,7 +206,7 @@ export default function TenantRegistration() {
                 className="btn-primary mt-5 w-full"
                 onClick={() => {
                   setPlan(p.name);
-                  submitPreview();
+                  submitPreview(p.name);
                 }}
               >
                 Select {p.name}
@@ -256,7 +258,7 @@ export default function TenantRegistration() {
                 No preview created yet.
               </p>
 
-              <button className="btn-primary" onClick={submitPreview}>
+              <button className="btn-primary" onClick={() => submitPreview()}>
                 Create Preview
               </button>
             </div>
@@ -279,7 +281,7 @@ export default function TenantRegistration() {
               into CyberShield360.
             </p>
 
-            <button className="btn-primary">
+            <button className="btn-primary" onClick={() => navigate("/login")}>
               Go to Dashboard
             </button>
           </div>

@@ -27,6 +27,7 @@ export default function AiCopilot() {
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [summaryLoading, setSummaryLoading] = useState(true);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
@@ -37,8 +38,11 @@ export default function AiCopilot() {
   const load = async () => {
     try {
       setSummaryLoading(true);
+      setSummaryError(null);
       const result = await AiCopilotApi.summary();
       setData(result);
+    } catch {
+      setSummaryError("Failed to load AI Copilot. Please refresh or check backend connectivity.");
     } finally {
       setSummaryLoading(false);
     }
@@ -71,6 +75,25 @@ export default function AiCopilot() {
       setLoading(false);
     }
   };
+
+  if (summaryError && !data) {
+    return (
+      <div
+        role="alert"
+        aria-live="assertive"
+        className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center text-sm font-semibold text-red-300"
+      >
+        {summaryError}{" "}
+        <button
+          type="button"
+          onClick={() => void load()}
+          className="ml-2 underline decoration-dotted underline-offset-4"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   if (!data) {
     return <div className="text-gray-500">Loading AI Copilot...</div>;

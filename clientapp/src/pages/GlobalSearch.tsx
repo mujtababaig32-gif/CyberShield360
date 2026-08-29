@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { GlobalSearchApi } from "../api/endpoints";
 import CyberStatCard from "../components/CyberStatCard";
@@ -76,6 +76,7 @@ export default function GlobalSearch() {
   const [data, setData] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const latestQueryRef = useRef("");
 
   const suggestions = useMemo(
     () =>
@@ -94,6 +95,7 @@ export default function GlobalSearch() {
 
   const runSearch = async (q = query) => {
     const trimmed = q.trim();
+    latestQueryRef.current = trimmed;
 
     if (!trimmed) {
       setData(null);
@@ -106,8 +108,11 @@ export default function GlobalSearch() {
       setError(null);
 
       const result = await GlobalSearchApi.search(trimmed);
+      if (latestQueryRef.current !== trimmed) return;
       setData(result);
     } catch {
+      if (latestQueryRef.current !== trimmed) return;
+
       const fallback = localModuleSearch(trimmed);
 
       setData({
@@ -121,7 +126,7 @@ export default function GlobalSearch() {
 
       setError("Live search could not reach the backend. Module search is still available.");
     } finally {
-      setLoading(false);
+      if (latestQueryRef.current === trimmed) setLoading(false);
     }
   };
 

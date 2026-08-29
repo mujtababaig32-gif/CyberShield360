@@ -245,11 +245,13 @@ export default function AuditLogs() {
             <input
               className="input"
               placeholder="Search events, actor, target, IP..."
+              aria-label="Search audit logs"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
             <select
               className="input"
+              aria-label="Filter by status"
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
             >
@@ -259,6 +261,7 @@ export default function AuditLogs() {
             </select>
             <select
               className="input"
+              aria-label="Filter by category"
               value={categoryFilter}
               onChange={(event) => setCategoryFilter(event.target.value)}
             >

@@ -266,16 +266,17 @@ export default function NotificationsCenter() {
             <input
               className="input"
               placeholder="Search notifications..."
+              aria-label="Search notifications"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
-            <select className="input" value={category} onChange={(event) => setCategory(event.target.value)}>
+            <select className="input" aria-label="Filter by category" value={category} onChange={(event) => setCategory(event.target.value)}>
               <option>All</option>
               {data.categories.map((item) => (
                 <option key={item.name}>{item.name}</option>
               ))}
             </select>
-            <select className="input" value={severity} onChange={(event) => setSeverity(event.target.value)}>
+            <select className="input" aria-label="Filter by severity" value={severity} onChange={(event) => setSeverity(event.target.value)}>
               <option>All</option>
               <option>Critical</option>
               <option>Warning</option>

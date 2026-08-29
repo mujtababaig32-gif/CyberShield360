@@ -228,18 +228,18 @@ export default function ClientPackages() {
           <h2 className="text-xl font-black text-white">Proposal Details</h2>
           <div className="mt-5 space-y-4">
             <div>
-              <label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Client Name</label>
-              <input className="input mt-2" value={clientName} onChange={(e) => setClientName(e.target.value)} />
+              <label htmlFor="packages-client-name" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Client Name</label>
+              <input id="packages-client-name" className="input mt-2" value={clientName} onChange={(e) => setClientName(e.target.value)} />
             </div>
             <div>
-              <label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Selected Package</label>
-              <select className="input mt-2" value={selectedPackage} onChange={(e) => setSelectedPackage(e.target.value as PackageName)}>
+              <label htmlFor="packages-selected-package" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Selected Package</label>
+              <select id="packages-selected-package" className="input mt-2" value={selectedPackage} onChange={(e) => setSelectedPackage(e.target.value as PackageName)}>
                 {PACKAGE_NAMES.map((name) => <option key={name} value={name}>{name}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Assets / Websites</label>
-              <input className="input mt-2" value={assetCount} onChange={(e) => setAssetCount(e.target.value)} inputMode="numeric" />
+              <label htmlFor="packages-asset-count" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Assets / Websites</label>
+              <input id="packages-asset-count" className="input mt-2" value={assetCount} onChange={(e) => setAssetCount(e.target.value)} inputMode="numeric" />
             </div>
           </div>
         </div>
@@ -254,9 +254,9 @@ export default function ClientPackages() {
           </div>
 
           <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
-            <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Starter</label><input className="input mt-2" value={starterFee} onChange={(e) => setStarterFee(e.target.value)} inputMode="numeric" /></div>
-            <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Best Value</label><input className="input mt-2" value={bestValueFee} onChange={(e) => setBestValueFee(e.target.value)} inputMode="numeric" /></div>
-            <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Advanced</label><input className="input mt-2" value={advancedFee} onChange={(e) => setAdvancedFee(e.target.value)} inputMode="numeric" /></div>
+            <div><label htmlFor="packages-starter-fee" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Starter</label><input id="packages-starter-fee" className="input mt-2" value={starterFee} onChange={(e) => setStarterFee(e.target.value)} inputMode="numeric" /></div>
+            <div><label htmlFor="packages-best-value-fee" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Best Value</label><input id="packages-best-value-fee" className="input mt-2" value={bestValueFee} onChange={(e) => setBestValueFee(e.target.value)} inputMode="numeric" /></div>
+            <div><label htmlFor="packages-advanced-fee" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Advanced</label><input id="packages-advanced-fee" className="input mt-2" value={advancedFee} onChange={(e) => setAdvancedFee(e.target.value)} inputMode="numeric" /></div>
           </div>
 
           <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">

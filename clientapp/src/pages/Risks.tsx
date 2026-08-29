@@ -214,10 +214,16 @@ export default function Risks() {
       setMessage("Updating risk status...");
       setError(null);
 
+      // Re-fetch the current record right before writing so a stale
+      // mitigationPlan/residualScore from an earlier load() doesn't
+      // silently overwrite a more recent edit made elsewhere.
+      const latest = await RiskApi.list({ pageSize: 500 });
+      const current = latest.items.find((item) => item.id === risk.id) ?? risk;
+
       await RiskApi.update(risk.id, {
         status: newStatus,
-        mitigationPlan: risk.mitigationPlan,
-        residualScore: risk.residualScore ?? null,
+        mitigationPlan: current.mitigationPlan,
+        residualScore: current.residualScore ?? null,
       });
 
       setMessage("Risk status updated.");
@@ -383,6 +389,7 @@ export default function Risks() {
             <input
               className="input"
               placeholder="Risk title"
+              aria-label="Risk title"
               value={form.title}
               onChange={(event) => setForm({ ...form, title: event.target.value })}
             />
@@ -390,6 +397,7 @@ export default function Risks() {
             <textarea
               className="input min-h-24"
               placeholder="Description"
+              aria-label="Risk description"
               value={form.description}
               onChange={(event) => setForm({ ...form, description: event.target.value })}
             />
@@ -398,12 +406,14 @@ export default function Risks() {
               <input
                 className="input"
                 placeholder="Category"
+                aria-label="Risk category"
                 value={form.category}
                 onChange={(event) => setForm({ ...form, category: event.target.value })}
               />
               <input
                 className="input"
                 placeholder="Owner"
+                aria-label="Risk owner"
                 value={form.owner}
                 onChange={(event) => setForm({ ...form, owner: event.target.value })}
               />
@@ -412,6 +422,7 @@ export default function Risks() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <select
                 className="input"
+                aria-label="Likelihood"
                 value={form.likelihood}
                 onChange={(event) =>
                   setForm({ ...form, likelihood: Number(event.target.value) })
@@ -426,6 +437,7 @@ export default function Risks() {
 
               <select
                 className="input"
+                aria-label="Impact"
                 value={form.impact}
                 onChange={(event) => setForm({ ...form, impact: Number(event.target.value) })}
               >
@@ -440,6 +452,7 @@ export default function Risks() {
             <textarea
               className="input min-h-24"
               placeholder="Mitigation plan"
+              aria-label="Mitigation plan"
               value={form.mitigationPlan}
               onChange={(event) => setForm({ ...form, mitigationPlan: event.target.value })}
             />
@@ -462,11 +475,13 @@ export default function Risks() {
         <input
           className="input"
           placeholder="Search risks, owners, category..."
+          aria-label="Search risks"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
         <select
           className="input"
+          aria-label="Filter by status"
           value={status}
           onChange={(event) => setStatus(event.target.value)}
         >

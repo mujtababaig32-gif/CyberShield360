@@ -254,7 +254,7 @@ export default function PolicyAudit() {
   }
 
   const evidenceTotal = Math.max(1, data.evidence.length);
-  const evidenceCoverage = Math.round((data.evidenceCollected * 100) / evidenceTotal);
+  const evidenceCoverage = Math.min(100, Math.round((data.evidenceCollected * 100) / evidenceTotal));
 
   return (
     <div className="space-y-6">
@@ -452,6 +452,7 @@ export default function PolicyAudit() {
             <input
               className="input"
               placeholder="Search policies..."
+              aria-label="Search policies"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />

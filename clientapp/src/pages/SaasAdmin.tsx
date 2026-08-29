@@ -17,11 +17,41 @@ type SaasUser = {
   mfaStatus?: string;
 };
 
+type SaasTenant = {
+  id?: string;
+  name?: string;
+  slug?: string;
+  primaryDomain?: string;
+  status?: string;
+  plan?: string;
+  billingStatus?: string;
+  whiteLabelEnabled?: boolean;
+  currentPeriodEndUtc?: string | null;
+};
+
+type SaasLimits = {
+  maxAssets?: number;
+  maxUsers?: number;
+  maxScansPerMonth?: number;
+  assetUsagePercent?: number;
+  userUsagePercent?: number;
+  scanUsagePercent?: number;
+};
+
+type SaasTotals = {
+  users?: number;
+  assets?: number;
+  scansThisMonth?: number;
+  scheduledScans?: number;
+  notifications?: number;
+  auditEvents?: number;
+};
+
 type SaasSummary = {
   generatedUtc: string;
-  tenant: any;
-  limits: any;
-  totals: any;
+  tenant: SaasTenant;
+  limits: SaasLimits;
+  totals: SaasTotals;
   loginMethods: { provider: string; status: string; priority: string }[];
   saasReadiness: { item: string; status: string; priority: string }[];
   users: SaasUser[];

@@ -85,6 +85,15 @@ function moneySafeText(value: string) {
   return value.replace(/,/g, " ").replace(/\n/g, " ");
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function downloadTextFile(filename: string, content: string, type: string) {
   const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
@@ -162,8 +171,8 @@ export default function FixPlan() {
           `<tr>${row
             .map(
               (cell) =>
-                `<td style="border:1px solid #d9e2ec;padding:10px;text-align:center;vertical-align:middle;">${moneySafeText(
-                  String(cell)
+                `<td style="border:1px solid #d9e2ec;padding:10px;text-align:center;vertical-align:middle;">${escapeHtml(
+                  moneySafeText(String(cell))
                 )}</td>`
             )
             .join("")}</tr>`

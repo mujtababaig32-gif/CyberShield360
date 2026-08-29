@@ -136,8 +136,14 @@ export default function AiRemediation() {
       setPlan(result);
       setMessage(`Guidance generated using ${result.provider}.`);
 
-      const refreshed = await AiRemediationApi.summary();
-      setSummary(refreshed);
+      try {
+        const refreshed = await AiRemediationApi.summary();
+        setSummary(refreshed);
+      } catch {
+        setMessage(
+          `Guidance generated using ${result.provider}, but the summary panel could not refresh. Reload the page to see updated totals.`
+        );
+      }
     } catch {
       setError("Failed to generate remediation guidance. Check backend logs and OpenAI configuration.");
     } finally {

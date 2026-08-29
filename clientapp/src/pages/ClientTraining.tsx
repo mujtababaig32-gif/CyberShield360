@@ -301,10 +301,11 @@ export default function ClientTraining() {
 
           <div className="mt-5 space-y-4">
             <div>
-              <label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+              <label htmlFor="training-client-name" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                 Client Name
               </label>
               <input
+                id="training-client-name"
                 className="input mt-2"
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
@@ -313,10 +314,11 @@ export default function ClientTraining() {
             </div>
 
             <div>
-              <label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+              <label htmlFor="training-session-title" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                 Session Title
               </label>
               <input
+                id="training-session-title"
                 className="input mt-2"
                 value={sessionTitle}
                 onChange={(e) => setSessionTitle(e.target.value)}
@@ -326,10 +328,11 @@ export default function ClientTraining() {
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                <label htmlFor="training-attendees" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                   Attendees
                 </label>
                 <input
+                  id="training-attendees"
                   className="input mt-2"
                   value={attendees}
                   onChange={(e) => setAttendees(e.target.value)}
@@ -338,10 +341,11 @@ export default function ClientTraining() {
               </div>
 
               <div>
-                <label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                <label htmlFor="training-fee" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                   Training Fee
                 </label>
                 <input
+                  id="training-fee"
                   className="input mt-2"
                   value={trainingFee}
                   onChange={(e) => setTrainingFee(e.target.value)}

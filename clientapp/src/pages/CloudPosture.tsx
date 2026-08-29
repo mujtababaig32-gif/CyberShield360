@@ -297,7 +297,7 @@ export default function CloudPosture() {
     );
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center text-sm font-semibold text-red-300">
         {error}
@@ -322,6 +322,16 @@ export default function CloudPosture() {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center text-sm font-semibold text-red-300"
+        >
+          {error}
+        </div>
+      )}
+
       <section className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/20">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-4xl">

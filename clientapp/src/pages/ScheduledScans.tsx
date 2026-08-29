@@ -23,6 +23,40 @@ const SCAN_TYPES = [
   { value: 5, label: "DMARC", description: "Email spoofing protection" },
 ];
 
+function isValidCronField(field: string, min: number, max: number): boolean {
+  if (!field) return false;
+
+  return field.split(",").every((part) => {
+    const match = part.match(/^(\*|\d+(?:-\d+)?)(?:\/(\d+))?$/);
+    if (!match) return false;
+
+    const [, range, step] = match;
+    if (step !== undefined && Number(step) < 1) return false;
+    if (range === "*") return true;
+
+    const bounds = range.split("-").map(Number);
+    if (bounds.some((n) => Number.isNaN(n) || n < min || n > max)) return false;
+    if (bounds.length === 2 && bounds[0] > bounds[1]) return false;
+
+    return true;
+  });
+}
+
+function isValidCron(expression: string): boolean {
+  const fields = expression.trim().split(/\s+/);
+  if (fields.length !== 5) return false;
+
+  const [minute, hour, dayOfMonth, month, dayOfWeek] = fields;
+
+  return (
+    isValidCronField(minute, 0, 59) &&
+    isValidCronField(hour, 0, 23) &&
+    isValidCronField(dayOfMonth, 1, 31) &&
+    isValidCronField(month, 1, 12) &&
+    isValidCronField(dayOfWeek, 0, 7)
+  );
+}
+
 function scanTypeLabel(value: number | string | undefined) {
   if (typeof value === "string" && Number.isNaN(Number(value))) return value;
 
@@ -141,7 +175,7 @@ export default function ScheduledScans() {
       return;
     }
 
-    if (!selectedCron.trim() || selectedCron.trim().split(/\s+/).length !== 5) {
+    if (!isValidCron(selectedCron)) {
       setError("Cron must be a standard 5-field expression, for example 0 2 * * *.");
       return;
     }

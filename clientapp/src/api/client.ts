@@ -18,6 +18,8 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export const SESSION_EXPIRED_EVENT = "cs360:session-expired";
+
 api.interceptors.response.use(
   (r) => r,
   (error) => {
@@ -26,7 +28,7 @@ api.interceptors.response.use(
       localStorage.removeItem("cs360_user");
 
       if (location.pathname !== "/login") {
-        location.href = "/login";
+        window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
       }
     }
 

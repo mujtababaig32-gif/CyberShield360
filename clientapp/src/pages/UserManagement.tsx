@@ -76,9 +76,16 @@ function csvSafe(value: unknown) {
 function stripHtml(html?: string) {
   if (!html) return "";
 
-  const div = document.createElement("div");
-  div.innerHTML = html;
-  return div.textContent || div.innerText || "";
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function extractRoleFromInvitation(message?: string, fallback?: string) {
@@ -216,9 +223,21 @@ export default function UserManagement() {
       textarea.value = link;
       document.body.appendChild(textarea);
       textarea.select();
-      document.execCommand("copy");
+
+      let copied = false;
+      try {
+        copied = document.execCommand("copy");
+      } catch {
+        copied = false;
+      }
+
       document.body.removeChild(textarea);
-      setInviteMessage(`Invite link copied for ${email}.`);
+
+      setInviteMessage(
+        copied
+          ? `Invite link copied for ${email}.`
+          : `Could not copy automatically. Invite link for ${email}: ${link}`
+      );
     }
   };
 

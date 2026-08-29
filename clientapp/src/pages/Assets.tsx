@@ -253,6 +253,7 @@ export default function Assets() {
       for (let index = 0; index < assets.length; index += 1) {
         const asset = assets[index];
         setMsg(`Scanning ${index + 1}/${assets.length}: ${asset.domain}...`);
+        setBusyAssetId(asset.id);
 
         try {
           await AssetApi.runScan(asset.id, 6);
@@ -262,6 +263,7 @@ export default function Assets() {
         }
       }
 
+      setBusyAssetId(null);
       await load();
 
       if (failed === 0) {
@@ -276,6 +278,7 @@ export default function Assets() {
       setMsg(null);
       setError(err?.response?.data?.message ?? "Scan All could not complete. Please retry.");
     } finally {
+      setBusyAssetId(null);
       setScanAllLoading(false);
     }
   };
@@ -466,6 +469,7 @@ export default function Assets() {
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           {assets.map((asset) => {
             const isBusy = busyAssetId === asset.id;
+            const isLocked = isBusy || scanAllLoading;
             const latestScore = latestPostureScore(asset);
             const fullPostureScan = SCAN_TYPES.find((scanType) => scanType.primary);
             const targetedScans = SCAN_TYPES.filter((scanType) => !scanType.primary);
@@ -540,7 +544,7 @@ export default function Assets() {
                       <button
                         type="button"
                         onClick={() => scan(asset.id, fullPostureScan.v)}
-                        disabled={isBusy}
+                        disabled={isLocked}
                         className="btn-primary justify-center text-xs disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isBusy ? "Running..." : "Run Full Posture"}
@@ -561,7 +565,7 @@ export default function Assets() {
                     <button
                       type="button"
                       onClick={() => discover(asset.id)}
-                      disabled={isBusy}
+                      disabled={isLocked}
                       className="btn-ghost justify-center text-xs disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Discover Subdomains
@@ -574,7 +578,7 @@ export default function Assets() {
                         key={scanType.v}
                         type="button"
                         onClick={() => scan(asset.id, scanType.v)}
-                        disabled={isBusy}
+                        disabled={isLocked}
                         className="rounded-2xl border border-white/10 bg-slate-900/80 px-3 py-3 text-center transition hover:border-brand-500/40 hover:bg-brand-500/10 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <div className="text-sm font-black text-white">

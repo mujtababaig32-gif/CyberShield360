@@ -1,9 +1,25 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { SESSION_EXPIRED_EVENT } from "../api/client";
 import type { AuthResponse } from "../types";
+
+type RawAuthResponse = {
+  accessToken?: string;
+  AccessToken?: string;
+  refreshToken?: string;
+  RefreshToken?: string;
+  expiresUtc?: string;
+  ExpiresUtc?: string;
+  tenantId?: string;
+  TenantId?: string;
+  email?: string;
+  Email?: string;
+  roles?: string[];
+  Roles?: string[];
+};
 
 interface AuthState {
   user: AuthResponse | null;
-  login: (auth: AuthResponse | any) => void;
+  login: (auth: RawAuthResponse) => void;
   logout: () => void;
   hasRole: (role: string) => boolean;
 }
@@ -24,7 +40,7 @@ function getSavedUser(): AuthResponse | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthResponse | null>(() => getSavedUser());
 
-  const login = (auth: AuthResponse | any) => {
+  const login = (auth: RawAuthResponse) => {
     const token = auth.accessToken ?? auth.AccessToken;
 
     if (!token) {
@@ -32,13 +48,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const normalizedAuth = {
-      ...auth,
+    const normalizedAuth: AuthResponse = {
       accessToken: token,
-      refreshToken: auth.refreshToken ?? auth.RefreshToken,
-      expiresUtc: auth.expiresUtc ?? auth.ExpiresUtc,
-      tenantId: auth.tenantId ?? auth.TenantId,
-      email: auth.email ?? auth.Email,
+      refreshToken: auth.refreshToken ?? auth.RefreshToken ?? "",
+      expiresUtc: auth.expiresUtc ?? auth.ExpiresUtc ?? "",
+      tenantId: auth.tenantId ?? auth.TenantId ?? "",
+      email: auth.email ?? auth.Email ?? "",
       roles: auth.roles ?? auth.Roles ?? [],
     };
 
@@ -54,6 +69,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const hasRole = (role: string) => user?.roles?.includes(role) ?? false;
+
+  useEffect(() => {
+    const handleSessionExpired = () => logout();
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, login, logout, hasRole }}>

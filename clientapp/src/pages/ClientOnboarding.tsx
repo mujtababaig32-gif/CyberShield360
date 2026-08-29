@@ -206,12 +206,12 @@ export default function ClientOnboarding() {
           <h2 className="text-xl font-black text-white">1. Client Intake</h2>
           <p className="mt-2 text-sm leading-6 text-slate-400">Record the business and the primary assessment target.</p>
           <div className="mt-5 space-y-4">
-            <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Client / Business Name</label><input className="input mt-2" value={clientName} onChange={(e) => setClientName(e.target.value)} /></div>
-            <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Contact Person</label><input className="input mt-2" value={contactName} onChange={(e) => setContactName(e.target.value)} /></div>
-            <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Website / Domain</label><input className="input mt-2" value={website} onChange={(e) => setWebsite(e.target.value)} onBlur={() => setWebsite(normalizeDomainInput(website))} placeholder="example.com" /><div className="mt-2 text-xs leading-5 text-slate-500">Only enter a domain the client owns or is explicitly authorized to assess.</div></div>
+            <div><label htmlFor="onboarding-client-name" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Client / Business Name</label><input id="onboarding-client-name" className="input mt-2" value={clientName} onChange={(e) => setClientName(e.target.value)} /></div>
+            <div><label htmlFor="onboarding-contact-name" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Contact Person</label><input id="onboarding-contact-name" className="input mt-2" value={contactName} onChange={(e) => setContactName(e.target.value)} /></div>
+            <div><label htmlFor="onboarding-website" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Website / Domain</label><input id="onboarding-website" className="input mt-2" value={website} onChange={(e) => setWebsite(e.target.value)} onBlur={() => setWebsite(normalizeDomainInput(website))} placeholder="example.com" /><div className="mt-2 text-xs leading-5 text-slate-500">Only enter a domain the client owns or is explicitly authorized to assess.</div></div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Industry</label><select className="input mt-2" value={industry} onChange={(e) => setIndustry(e.target.value)}>{INDUSTRIES.map((item) => <option key={item}>{item}</option>)}</select></div>
-              <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Assets / Websites</label><input className="input mt-2" value={assetCount} onChange={(e) => setAssetCount(e.target.value)} inputMode="numeric" /></div>
+              <div><label htmlFor="onboarding-industry" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Industry</label><select id="onboarding-industry" className="input mt-2" value={industry} onChange={(e) => setIndustry(e.target.value)}>{INDUSTRIES.map((item) => <option key={item}>{item}</option>)}</select></div>
+              <div><label htmlFor="onboarding-asset-count" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Assets / Websites</label><input id="onboarding-asset-count" className="input mt-2" value={assetCount} onChange={(e) => setAssetCount(e.target.value)} inputMode="numeric" /></div>
             </div>
           </div>
         </div>
@@ -220,9 +220,9 @@ export default function ClientOnboarding() {
           <h2 className="text-xl font-black text-white">2. Engagement Setup</h2>
           <p className="mt-2 text-sm leading-6 text-slate-400">Confirm package, delivery timing, and the approved assessment boundary.</p>
           <div className="mt-5 space-y-4">
-            <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Selected Package</label><select className="input mt-2" value={selectedPackage} onChange={(e) => setSelectedPackage(e.target.value as PackageName)}>{PACKAGE_NAMES.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
-            <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Delivery Timeline</label><input className="input mt-2" value={timeline} onChange={(e) => setTimeline(e.target.value)} /></div>
-            <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Approved Assessment Scope</label><textarea className="input mt-2 min-h-32 resize-y" value={scanScope} onChange={(e) => setScanScope(e.target.value)} /></div>
+            <div><label htmlFor="onboarding-package" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Selected Package</label><select id="onboarding-package" className="input mt-2" value={selectedPackage} onChange={(e) => setSelectedPackage(e.target.value as PackageName)}>{PACKAGE_NAMES.map((item) => <option key={item} value={item}>{item}</option>)}</select></div>
+            <div><label htmlFor="onboarding-timeline" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Delivery Timeline</label><input id="onboarding-timeline" className="input mt-2" value={timeline} onChange={(e) => setTimeline(e.target.value)} /></div>
+            <div><label htmlFor="onboarding-scan-scope" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Approved Assessment Scope</label><textarea id="onboarding-scan-scope" className="input mt-2 min-h-32 resize-y" value={scanScope} onChange={(e) => setScanScope(e.target.value)} /></div>
             <div className={`rounded-2xl border p-4 text-sm ${initial.commercialApproved ? "border-green-500/20 bg-green-500/5 text-green-200" : "border-orange-500/20 bg-orange-500/5 text-orange-200"}`}>
               Commercial quotation: <span className="font-black">{initial.commercialApproved ? "Approved" : "Pending / Draft"}</span>. The assessment can be prepared here, but commercial approval should be completed before paid delivery work begins.
             </div>
@@ -247,8 +247,8 @@ export default function ClientOnboarding() {
           </div>
 
           <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
-            <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Authorized By</label><input className="input mt-2" value={authorizedBy} onChange={(e) => setAuthorizedBy(e.target.value)} placeholder="Client representative name" /></div>
-            <div className="mt-4"><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Authorization Date</label><input type="date" className="input mt-2" value={authorizationDate} onChange={(e) => setAuthorizationDate(e.target.value)} /></div>
+            <div><label htmlFor="onboarding-authorized-by" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Authorized By</label><input id="onboarding-authorized-by" className="input mt-2" value={authorizedBy} onChange={(e) => setAuthorizedBy(e.target.value)} placeholder="Client representative name" /></div>
+            <div className="mt-4"><label htmlFor="onboarding-authorization-date" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Authorization Date</label><input id="onboarding-authorization-date" type="date" className="input mt-2" value={authorizationDate} onChange={(e) => setAuthorizationDate(e.target.value)} /></div>
             <div className="mt-5 rounded-2xl border border-brand-500/20 bg-brand-500/10 p-4 text-center text-xs leading-5 text-slate-300">Authorization status is saved as part of the browser-based commercial workflow draft in this batch. It is not a legal contract or a substitute for your signed client agreement.</div>
           </div>
         </div>

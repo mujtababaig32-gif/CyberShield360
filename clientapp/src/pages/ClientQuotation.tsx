@@ -163,11 +163,11 @@ export default function ClientQuotation() {
         <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/10">
           <h2 className="text-xl font-black text-white">Quotation Details</h2>
           <div className="mt-5 space-y-4">
-            <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Client Name</label><input className="input mt-2" value={clientName} onChange={(e) => setClientName(e.target.value)} /></div>
-            <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Project Name</label><input className="input mt-2" value={projectName} onChange={(e) => setProjectName(e.target.value)} /></div>
+            <div><label htmlFor="quotation-client-name" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Client Name</label><input id="quotation-client-name" className="input mt-2" value={clientName} onChange={(e) => setClientName(e.target.value)} /></div>
+            <div><label htmlFor="quotation-project-name" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Project Name</label><input id="quotation-project-name" className="input mt-2" value={projectName} onChange={(e) => setProjectName(e.target.value)} /></div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Assets / Websites</label><input className="input mt-2" value={assetCount} onChange={(e) => setAssetCount(e.target.value)} inputMode="numeric" /></div>
-              <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Valid Days</label><input className="input mt-2" value={validDays} onChange={(e) => setValidDays(e.target.value)} inputMode="numeric" /></div>
+              <div><label htmlFor="quotation-asset-count" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Assets / Websites</label><input id="quotation-asset-count" className="input mt-2" value={assetCount} onChange={(e) => setAssetCount(e.target.value)} inputMode="numeric" /></div>
+              <div><label htmlFor="quotation-valid-days" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Valid Days</label><input id="quotation-valid-days" className="input mt-2" value={validDays} onChange={(e) => setValidDays(e.target.value)} inputMode="numeric" /></div>
             </div>
             <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
               <input type="checkbox" checked={commercialApproved} onChange={(e) => setCommercialApproved(e.target.checked)} className="mt-1 h-4 w-4" />
@@ -180,9 +180,9 @@ export default function ClientQuotation() {
           <h2 className="text-xl font-black text-white">Pricing Inputs</h2>
           <p className="mt-2 text-sm leading-6 text-slate-400">Assessment remains the core line item. Fixing and training are included only when they are part of the selected scope.</p>
           <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
-            <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Assessment Fee</label><input className="input mt-2" value={assessmentFee} onChange={(e) => setAssessmentFee(e.target.value)} inputMode="numeric" /></div>
-            <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Fixing Fee</label><input className="input mt-2" value={fixingFee} onChange={(e) => setFixingFee(e.target.value)} inputMode="numeric" /></div>
-            <div><label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Training Fee</label><input className="input mt-2" value={trainingFee} onChange={(e) => setTrainingFee(e.target.value)} inputMode="numeric" /></div>
+            <div><label htmlFor="quotation-assessment-fee" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Assessment Fee</label><input id="quotation-assessment-fee" className="input mt-2" value={assessmentFee} onChange={(e) => setAssessmentFee(e.target.value)} inputMode="numeric" /></div>
+            <div><label htmlFor="quotation-fixing-fee" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Fixing Fee</label><input id="quotation-fixing-fee" className="input mt-2" value={fixingFee} onChange={(e) => setFixingFee(e.target.value)} inputMode="numeric" /></div>
+            <div><label htmlFor="quotation-training-fee" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Training Fee</label><input id="quotation-training-fee" className="input mt-2" value={trainingFee} onChange={(e) => setTrainingFee(e.target.value)} inputMode="numeric" /></div>
           </div>
           <div className="mt-5 rounded-3xl border border-brand-500/30 bg-brand-500/10 p-5 text-center"><div className="text-xs font-black uppercase tracking-[0.18em] text-brand-300">Estimated Total</div><div className="mt-2 text-3xl font-black text-white">PKR {money(totals.grandTotal)}</div></div>
         </div>
