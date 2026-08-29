@@ -49,6 +49,8 @@ public class AssetInventoryController : ApiControllerBase
             var high = findings.Count(f => !f.Passed && f.Severity == Severity.High);
             var critical = findings.Count(f => !f.Passed && f.Severity == Severity.Critical);
             var asmFailed = findings.Count(f => !f.Passed && f.CheckKey.StartsWith("asm."));
+            var otherFailed = findings.Count(f =>
+                !f.Passed && f.Severity != Severity.High && f.Severity != Severity.Critical);
 
             var internetFacing = findings.Any(f =>
                 f.CheckKey == "http.https_status" ||
@@ -60,11 +62,16 @@ public class AssetInventoryController : ApiControllerBase
                 .Select(f => f.Detail)
                 .FirstOrDefault();
 
+            // Each failed finding is weighted exactly once by its own severity
+            // (critical/high/other), plus a smaller separate bonus for attack-surface
+            // (asm.*) findings specifically — rather than folding the same finding
+            // into both a generic "failed" bucket and its severity bucket, which
+            // previously let a single critical ASM finding count 3x (5 + 20 + 8 = 33).
             var riskScore = Math.Min(100,
-                (failed * 5) +
-                (high * 10) +
                 (critical * 20) +
-                (asmFailed * 8));
+                (high * 10) +
+                (otherFailed * 3) +
+                (asmFailed * 3));
 
             var criticality =
                 asset.IsPrimary ? "High" :

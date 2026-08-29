@@ -29,11 +29,22 @@ public class ScansController : ApiControllerBase
     [HttpPost("run")]
     [Authorize(Roles = "TenantAdmin,SecurityAnalyst")]
     public async Task<IActionResult> Run([FromBody] RunScanRequest req)
-        => Ok(await Mediator.Send(new RunScanCommand(req.AssetId, req.Type)));
+    {
+        // Defense-in-depth: the global EF Core tenant filter already scopes the asset
+        // lookup, but this guard means the endpoint fails closed even if a token were
+        // ever issued without a tenant_id claim, instead of relying solely on the filter.
+        if (_user.TenantId is not Guid) return Unauthorized();
+
+        return Ok(await Mediator.Send(new RunScanCommand(req.AssetId, req.Type)));
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id)
-        => Ok(await Mediator.Send(new GetScanByIdQuery(id)));
+    {
+        if (_user.TenantId is not Guid) return Unauthorized();
+
+        return Ok(await Mediator.Send(new GetScanByIdQuery(id)));
+    }
 
     [HttpGet("{id:guid}/recommendations")]
     public async Task<IActionResult> Recommendations(Guid id, CancellationToken ct)

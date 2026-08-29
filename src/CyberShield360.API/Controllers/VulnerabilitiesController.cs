@@ -27,7 +27,13 @@ public class VulnerabilitiesController : ApiControllerBase
         [FromQuery] Severity? severity,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
-        => Ok(await Mediator.Send(new GetVulnerabilitiesQuery(status, severity, page, pageSize)));
+    {
+        // Defense-in-depth: fail closed even if a token were ever issued without a
+        // tenant_id claim, rather than relying solely on the global EF query filter.
+        if (_user.TenantId is not Guid) return Unauthorized();
+
+        return Ok(await Mediator.Send(new GetVulnerabilitiesQuery(status, severity, page, pageSize)));
+    }
 
     [HttpGet("summary")]
     public async Task<IActionResult> Summary(CancellationToken ct)
@@ -65,12 +71,20 @@ public class VulnerabilitiesController : ApiControllerBase
     [HttpPost]
     [Authorize(Roles = "TenantAdmin,SecurityAnalyst")]
     public async Task<IActionResult> Create([FromBody] CreateVulnerabilityCommand command)
-        => Ok(await Mediator.Send(command));
+    {
+        if (_user.TenantId is not Guid) return Unauthorized();
+
+        return Ok(await Mediator.Send(command));
+    }
 
     [HttpPut("{id:guid}/status")]
     [Authorize(Roles = "TenantAdmin,SecurityAnalyst")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateStatusRequest req)
-        => Ok(await Mediator.Send(new UpdateVulnerabilityStatusCommand(id, req.Status, req.Notes)));
+    {
+        if (_user.TenantId is not Guid) return Unauthorized();
+
+        return Ok(await Mediator.Send(new UpdateVulnerabilityStatusCommand(id, req.Status, req.Notes)));
+    }
 }
 
 public record UpdateStatusRequest(VulnerabilityStatus Status, string? Notes);

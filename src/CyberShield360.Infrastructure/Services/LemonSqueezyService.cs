@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using CyberShield360.Application.Common.Interfaces;
@@ -140,9 +141,51 @@ public class LemonSqueezyService : ILemonSqueezyService
         return url;
     }
 
-    public Task HandleWebhookAsync(string payload, string signature, CancellationToken ct = default)
+    public Task<bool> HandleWebhookAsync(string payload, string signature, CancellationToken ct = default)
     {
-        _logger.LogInformation("Lemon Squeezy webhook received.");
-        return Task.CompletedTask;
+        var webhookSecret = _config["LemonSqueezy:WebhookSecret"];
+
+        if (string.IsNullOrWhiteSpace(webhookSecret))
+        {
+            _logger.LogWarning("Lemon Squeezy webhook rejected: no webhook secret configured.");
+            return Task.FromResult(false);
+        }
+
+        if (string.IsNullOrWhiteSpace(signature) || !IsSignatureValid(payload, signature, webhookSecret))
+        {
+            _logger.LogWarning("Lemon Squeezy webhook rejected: signature missing or invalid.");
+            return Task.FromResult(false);
+        }
+
+        _logger.LogInformation("Lemon Squeezy webhook received and signature verified.");
+
+        // TODO: parse `payload` and update the tenant's Subscription (plan/status)
+        // from the event's data.attributes now that the signature is trusted.
+
+        return Task.FromResult(true);
     }
+
+    private static bool IsSignatureValid(string payload, string signature, string webhookSecret)
+    {
+        var expected = HMACSHA256.HashData(Encoding.UTF8.GetBytes(webhookSecret), Encoding.UTF8.GetBytes(payload));
+
+        return TryParseHex(signature, out var provided) &&
+            CryptographicOperations.FixedTimeEquals(provided, expected);
+    }
+
+    private static bool TryParseHex(string value, out byte[] bytes)
+    {
+        try
+        {
+            bytes = Convert.FromHexString(PadEvenHex(value));
+            return true;
+        }
+        catch (FormatException)
+        {
+            bytes = [];
+            return false;
+        }
+    }
+
+    private static string PadEvenHex(string value) => value.Length % 2 == 0 ? value : "0" + value;
 }

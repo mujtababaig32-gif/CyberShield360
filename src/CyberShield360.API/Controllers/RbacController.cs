@@ -20,6 +20,7 @@ public class RbacController : ApiControllerBase
     }
 
     [HttpGet("summary")]
+    [Authorize(Roles = "TenantAdmin,Auditor")]
     public async Task<IActionResult> Summary(CancellationToken ct)
     {
         if (_user.TenantId is not Guid tid)

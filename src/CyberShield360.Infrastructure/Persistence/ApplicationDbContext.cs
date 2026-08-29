@@ -42,6 +42,7 @@ public class ApplicationDbContext
     public DbSet<ScheduledScan> ScheduledScans => Set<ScheduledScan>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<GeneratedReport> Reports => Set<GeneratedReport>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<AiRemediationGuidance> AiRemediationGuidance => Set<AiRemediationGuidance>();
 
     protected override void OnModelCreating(ModelBuilder builder)

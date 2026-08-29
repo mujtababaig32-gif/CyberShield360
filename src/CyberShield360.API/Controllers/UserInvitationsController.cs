@@ -28,6 +28,7 @@ public class UserInvitationsController : ApiControllerBase
     public record InviteUserRequest(string Email, string Role);
 
     [HttpPost("send")]
+    [Authorize(Roles = "TenantAdmin")]
     public async Task<IActionResult> SendInvite([FromBody] InviteUserRequest request, CancellationToken ct)
     {
         if (_user.TenantId is not Guid tid)
@@ -35,6 +36,18 @@ public class UserInvitationsController : ApiControllerBase
 
         if (string.IsNullOrWhiteSpace(request.Email))
             return BadRequest("Email is required.");
+
+        // A TenantAdmin can grant any workspace role but never the cross-tenant
+        // platform-owner role, and the role must be a real, known role rather than
+        // arbitrary free text an invitee's inbox would otherwise display as-is.
+        var allowedInviteRoles = AppRoles.All.Where(r => r != AppRoles.SuperAdmin).ToArray();
+        if (!allowedInviteRoles.Contains(request.Role, StringComparer.OrdinalIgnoreCase))
+        {
+            return BadRequest(new
+            {
+                message = $"Role must be one of: {string.Join(", ", allowedInviteRoles)}."
+            });
+        }
 
         var tenant = await _db.Tenants
             .IgnoreQueryFilters()
@@ -47,12 +60,15 @@ public class UserInvitationsController : ApiControllerBase
 
         var inviteLink = $"{Request.Scheme}://{Request.Host}/invite/accept?token={token}";
 
-        var subject = $"You are invited to CyberShield360 - {tenant?.Name ?? "Security Workspace"}";
+        var safeTenantName = System.Net.WebUtility.HtmlEncode(tenant?.Name ?? "CyberShield360");
+        var safeRole = System.Net.WebUtility.HtmlEncode(request.Role);
+
+        var subject = $"You are invited to CyberShield360 - {safeTenantName}";
 
         var body = $@"
             <h2>CyberShield360 Invitation</h2>
-            <p>You have been invited to join <b>{tenant?.Name ?? "CyberShield360"}</b>.</p>
-            <p><b>Role:</b> {request.Role}</p>
+            <p>You have been invited to join <b>{safeTenantName}</b>.</p>
+            <p><b>Role:</b> {safeRole}</p>
             <p>Click below to accept your invitation:</p>
             <p><a href='{inviteLink}'>Accept Invitation</a></p>
             <p>This invitation link is generated for onboarding workflow.</p>

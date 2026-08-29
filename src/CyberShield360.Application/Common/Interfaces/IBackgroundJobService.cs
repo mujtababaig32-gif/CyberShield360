@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using CyberShield360.Domain.Enums;
 
 namespace CyberShield360.Application.Common.Interfaces;
 
@@ -18,4 +19,5 @@ public interface IScanJobRunner
     Task RunSingleScheduledScanAsync(Guid scheduledScanId, CancellationToken ct = default);
     Task RefreshBrandMonitoringAsync(CancellationToken ct = default);
     Task SendScanDigestEmailsAsync(CancellationToken ct = default);
+    Task RunAdHocScanAsync(Guid tenantId, Guid assetId, ScanType type, CancellationToken ct = default);
 }

@@ -5,6 +5,7 @@ namespace CyberShield360.Application.Common.Interfaces;
 
 public interface IApplicationDbContext
 {
+    DbSet<ApplicationUser> Users { get; }
     DbSet<Tenant> Tenants { get; }
     DbSet<Subscription> Subscriptions { get; }
     DbSet<MonitoredAsset> Assets { get; }
@@ -26,6 +27,7 @@ public interface IApplicationDbContext
     DbSet<ScheduledScan> ScheduledScans { get; }
     DbSet<ApiKey> ApiKeys { get; }
     DbSet<GeneratedReport> Reports { get; }
+    DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<AiRemediationGuidance> AiRemediationGuidance { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

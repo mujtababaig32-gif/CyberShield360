@@ -187,9 +187,19 @@ public class GoogleAuthController : ApiControllerBase
         var roles = await _users.GetRolesAsync(user);
         var (token, expires) = _jwt.CreateToken(user.Id, user.Email!, user.TenantId, roles);
 
+        var refreshToken = _jwt.CreateRefreshToken();
+        _db.RefreshTokens.Add(new RefreshToken
+        {
+            TenantId = user.TenantId,
+            UserId = user.Id,
+            TokenHash = _jwt.HashRefreshToken(refreshToken),
+            ExpiresUtc = DateTime.UtcNow.AddDays(30)
+        });
+        await _db.SaveChangesAsync();
+
         return Ok(new AuthResponse(
             token,
-            _jwt.CreateRefreshToken(),
+            refreshToken,
             expires,
             user.TenantId,
             user.Email!,

@@ -1,3 +1,4 @@
+using System.Threading.RateLimiting;
 using CyberShield360.API.Middleware;
 using CyberShield360.Application;
 using CyberShield360.Infrastructure;
@@ -5,6 +6,7 @@ using CyberShield360.Infrastructure.Persistence;
 using CyberShield360.Infrastructure.Services;
 using Hangfire;
 using CyberShield360.API.Security;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi.Models;
 using Serilog;
 
@@ -48,6 +50,33 @@ builder.Services.AddCors(o => o.AddPolicy("default", p =>
     }
 }));
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Throttles credential-stuffing / mass fake-tenant creation attempts by source IP.
+    options.AddPolicy("auth", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(5),
+            QueueLimit = 0,
+        }));
+
+    // Caps billed AI-provider calls per tenant to prevent cost-exhaustion abuse.
+    options.AddPolicy("ai", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: httpContext.User.FindFirst("tenant_id")?.Value
+            ?? httpContext.Connection.RemoteIpAddress?.ToString()
+            ?? "unknown",
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 20,
+            Window = TimeSpan.FromMinutes(60),
+            QueueLimit = 0,
+        }));
+});
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
@@ -80,6 +109,7 @@ app.UseCors("default");
 app.UseAuthentication();
 app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.UseMiddleware<AuditLoggingMiddleware>();
 // Hangfire dashboard (protected; see HangfireDashboardAuthFilter)
 app.UseHangfireDashboard("/jobs", new DashboardOptions
@@ -92,6 +122,11 @@ using (var scope = app.Services.CreateScope())
 {
     var recurring = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
     RecurringJobRegistrar.Register(recurring);
+}
+
+if (app.Configuration.GetValue<bool>("SeedOnStartup"))
+{
+    await DbSeeder.SeedAsync(app.Services);
 }
 
 app.MapGet("/", () => Results.Ok(new

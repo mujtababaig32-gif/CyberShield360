@@ -1,3 +1,4 @@
+using System.Net.Http;
 using System.Text;
 using CyberShield360.Application.Common.Interfaces;
 using CyberShield360.Domain.Entities;
@@ -51,6 +52,16 @@ public static class DependencyInjection
 
         var jwt = config.GetSection("Jwt").Get<JwtSettings>()!;
 
+        if (string.IsNullOrWhiteSpace(jwt.Secret) ||
+            jwt.Secret.Contains("CHANGE_THIS", StringComparison.OrdinalIgnoreCase) ||
+            jwt.Secret.Contains("REPLACE_WITH", StringComparison.OrdinalIgnoreCase) ||
+            jwt.Secret.Length < 32)
+        {
+            throw new InvalidOperationException(
+                "Jwt:Secret is missing, too short, or still set to the placeholder value. " +
+                "Configure a real, random secret of at least 32 characters before starting the API.");
+        }
+
         services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -87,6 +98,13 @@ public static class DependencyInjection
         {
             client.Timeout = TimeSpan.FromSeconds(15);
             client.DefaultRequestHeaders.UserAgent.ParseAdd("CyberShield360-Scanner/1.0");
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+        {
+            // Resolve and validate the target on every connection this handler makes,
+            // including redirect hops, so the scanner can never be pointed at a
+            // private/internal address (SSRF) via DNS or a redirect chain.
+            ConnectCallback = SsrfProtection.ConnectCallback,
         });
 
         services.AddHangfire(cfg => cfg

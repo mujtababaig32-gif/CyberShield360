@@ -5,9 +5,12 @@ using CyberShield360.Domain.Enums;
 using CyberShield360.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 
 namespace CyberShield360.API.Controllers;
 
+[EnableRateLimiting("auth")]
 public class AuthController : ApiControllerBase
 {
     private readonly UserManager<ApplicationUser> _users;
@@ -100,10 +103,92 @@ public class AuthController : ApiControllerBase
         return Ok(await BuildResponse(user));
     }
 
+    public record RefreshTokenRequest(string RefreshToken);
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest req, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(req.RefreshToken))
+            return Unauthorized(new { message = "Refresh token is required." });
+
+        var tokenHash = _jwt.HashRefreshToken(req.RefreshToken);
+
+        // The caller has no access token yet at this point, so there is no tenant
+        // context to filter by — the token hash itself is what identifies the record.
+        var stored = await _db.RefreshTokens.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(t => t.TokenHash == tokenHash, ct);
+
+        if (stored is null)
+            return Unauthorized(new { message = "Invalid refresh token." });
+
+        if (stored.RevokedUtc is not null)
+        {
+            // A revoked token being presented again means it was likely stolen from
+            // an earlier response: revoke every other active token for this user.
+            var activeTokens = await _db.RefreshTokens.IgnoreQueryFilters()
+                .Where(t => t.UserId == stored.UserId && t.RevokedUtc == null)
+                .ToListAsync(ct);
+
+            foreach (var active in activeTokens)
+                active.RevokedUtc = DateTime.UtcNow;
+
+            if (activeTokens.Count > 0)
+                await _db.SaveChangesAsync(ct);
+
+            return Unauthorized(new { message = "Refresh token has already been used." });
+        }
+
+        if (stored.ExpiresUtc <= DateTime.UtcNow)
+            return Unauthorized(new { message = "Refresh token has expired." });
+
+        var user = await _users.FindByIdAsync(stored.UserId.ToString());
+        if (user is null || !user.IsActive)
+            return Unauthorized(new { message = "Account is not available." });
+
+        var newRefreshToken = _jwt.CreateRefreshToken();
+        var newHash = _jwt.HashRefreshToken(newRefreshToken);
+
+        stored.RevokedUtc = DateTime.UtcNow;
+        stored.ReplacedByTokenHash = newHash;
+
+        _db.RefreshTokens.Add(new RefreshToken
+        {
+            TenantId = user.TenantId,
+            UserId = user.Id,
+            TokenHash = newHash,
+            ExpiresUtc = DateTime.UtcNow.AddDays(30)
+        });
+
+        var roles = await _users.GetRolesAsync(user);
+        var (accessToken, expires) = _jwt.CreateToken(user.Id, user.Email!, user.TenantId, roles);
+
+        await _db.SaveChangesAsync(ct);
+
+        return Ok(new AuthResponse(accessToken, newRefreshToken, expires, user.TenantId, user.Email!, roles.ToArray()));
+    }
+
     private async Task<AuthResponse> BuildResponse(ApplicationUser user)
     {
         var roles = await _users.GetRolesAsync(user);
         var (token, expires) = _jwt.CreateToken(user.Id, user.Email!, user.TenantId, roles);
-        return new AuthResponse(token, _jwt.CreateRefreshToken(), expires, user.TenantId, user.Email!, roles.ToArray());
+        var refreshToken = await IssueRefreshTokenAsync(user);
+        return new AuthResponse(token, refreshToken, expires, user.TenantId, user.Email!, roles.ToArray());
+    }
+
+    private async Task<string> IssueRefreshTokenAsync(ApplicationUser user)
+    {
+        var refreshToken = _jwt.CreateRefreshToken();
+
+        _db.RefreshTokens.Add(new RefreshToken
+        {
+            TenantId = user.TenantId,
+            UserId = user.Id,
+            TokenHash = _jwt.HashRefreshToken(refreshToken),
+            ExpiresUtc = DateTime.UtcNow.AddDays(30)
+        });
+
+        await _db.SaveChangesAsync();
+
+        return refreshToken;
     }
 }

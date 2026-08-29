@@ -1,25 +1,16 @@
-using CyberShield360.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CyberShield360.API.Controllers;
 
-[Authorize]
+// This controller serves the public, pre-login "sign up a new company" flow, so it
+// must stay reachable without an existing session or tenant context.
+[AllowAnonymous]
 public class TenantRegistrationController : ApiControllerBase
 {
-    private readonly ICurrentUser _user;
-
-    public TenantRegistrationController(ICurrentUser user)
-    {
-        _user = user;
-    }
-
     [HttpGet("summary")]
     public IActionResult Summary()
     {
-        if (_user.TenantId is not Guid)
-            return Unauthorized();
-
         var plans = new[]
         {
             new
@@ -79,7 +70,6 @@ public class TenantRegistrationController : ApiControllerBase
             },
             recommendations = new[]
             {
-                "Add public registration page outside protected routes.",
                 "Create tenant and admin user in one transaction.",
                 "Connect selected plan to Stripe checkout.",
                 "Send welcome email after registration.",

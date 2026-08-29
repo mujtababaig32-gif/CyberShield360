@@ -5,6 +5,7 @@ using CyberShield360.Application.Common.Interfaces;
 using CyberShield360.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace CyberShield360.API.Controllers;
@@ -12,21 +13,26 @@ namespace CyberShield360.API.Controllers;
 [Authorize]
 public class AiCopilotController : ApiControllerBase
 {
+    private const int MaxQuestionLength = 2000;
+
     private readonly ApplicationDbContext _db;
     private readonly ICurrentUser _user;
     private readonly IConfiguration _config;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<AiCopilotController> _logger;
 
     public AiCopilotController(
         ApplicationDbContext db,
         ICurrentUser user,
         IConfiguration config,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        ILogger<AiCopilotController> logger)
     {
         _db = db;
         _user = user;
         _config = config;
         _httpClientFactory = httpClientFactory;
+        _logger = logger;
     }
 
     public record AskCopilotRequest(string Question);
@@ -101,6 +107,7 @@ public class AiCopilotController : ApiControllerBase
     }
 
     [HttpPost("ask")]
+    [EnableRateLimiting("ai")]
     public async Task<IActionResult> Ask([FromBody] AskCopilotRequest request, CancellationToken ct)
     {
         if (_user.TenantId is not Guid tid)
@@ -108,6 +115,9 @@ public class AiCopilotController : ApiControllerBase
 
         if (string.IsNullOrWhiteSpace(request.Question))
             return BadRequest(new { message = "Question is required." });
+
+        if (request.Question.Length > MaxQuestionLength)
+            return BadRequest(new { message = $"Question must be {MaxQuestionLength} characters or fewer." });
 
         var assets = await _db.Assets.AsNoTracking().Where(a => a.TenantId == tid).CountAsync(ct);
         var risks = await _db.Risks.AsNoTracking().Where(r => r.TenantId == tid).CountAsync(ct);
@@ -125,12 +135,7 @@ public class AiCopilotController : ApiControllerBase
 
             if (string.IsNullOrWhiteSpace(answer))
             {
-                answer = "OpenAI returned an empty response.";
-                mode = "OpenAI Error";
-                provider = "OpenAI";
-            }
-            else if (answer.StartsWith("OpenAI API error:"))
-            {
+                answer = "AI Copilot could not generate a response right now. Please try again shortly.";
                 mode = "OpenAI Error";
                 provider = "OpenAI";
             }
@@ -212,25 +217,40 @@ public class AiCopilotController : ApiControllerBase
 
         var json = JsonSerializer.Serialize(payload);
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/responses");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.openai.com/v1/responses");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        using var client = _httpClientFactory.CreateClient();
-        using var response = await client.SendAsync(request, ct);
+            using var client = _httpClientFactory.CreateClient();
+            using var response = await client.SendAsync(request, ct);
 
-        var responseText = await response.Content.ReadAsStringAsync(ct);
+            var responseText = await response.Content.ReadAsStringAsync(ct);
 
-        if (!response.IsSuccessStatusCode)
-            return $"OpenAI API error: {(int)response.StatusCode} {response.ReasonPhrase}. Details: {responseText}";
+            if (!response.IsSuccessStatusCode)
+            {
+                // Never relay the raw upstream body to the tenant: it can contain the
+                // platform's own OpenAI account/billing/quota details.
+                _logger.LogWarning(
+                    "OpenAI API error {StatusCode} for tenant {TenantId}: {Body}",
+                    (int)response.StatusCode, tenantId, responseText);
+                return null;
+            }
 
-        using var doc = JsonDocument.Parse(responseText);
+            using var doc = JsonDocument.Parse(responseText);
 
-        if (doc.RootElement.TryGetProperty("output_text", out var outputText))
-            return outputText.GetString();
+            if (doc.RootElement.TryGetProperty("output_text", out var outputText))
+                return outputText.GetString();
 
-        return null;
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "AI Copilot call to OpenAI failed for tenant {TenantId}", tenantId);
+            return null;
+        }
     }
 
     private static string BuildRuleBasedAnswer(string question, int assets, int risks, int scans)

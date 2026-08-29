@@ -64,3 +64,13 @@ public class AuditLogConfig : IEntityTypeConfiguration<AuditLog>
         b.Property(x => x.EntityType).HasMaxLength(128);
     }
 }
+
+public class RefreshTokenConfig : IEntityTypeConfiguration<RefreshToken>
+{
+    public void Configure(EntityTypeBuilder<RefreshToken> b)
+    {
+        b.HasIndex(x => x.TokenHash).IsUnique();
+        b.Property(x => x.TokenHash).IsRequired();
+        b.HasIndex(x => new { x.UserId, x.ExpiresUtc });
+    }
+}

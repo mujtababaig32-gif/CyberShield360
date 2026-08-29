@@ -18,6 +18,7 @@ public interface IJwtTokenService
 {
     (string accessToken, DateTime expiresUtc) CreateToken(Guid userId, string email, Guid tenantId, IEnumerable<string> roles);
     string CreateRefreshToken();
+    string HashRefreshToken(string refreshToken);
 }
 
 public interface IEmailSender
@@ -89,6 +90,7 @@ public interface ILemonSqueezyService
         string? customerEmail = null,
         CancellationToken ct = default);
 
-    Task HandleWebhookAsync(string payload, string signature, CancellationToken ct = default);
+    /// <summary>Verifies the webhook's HMAC signature before processing it. Returns false (and does not process) on an invalid or missing signature.</summary>
+    Task<bool> HandleWebhookAsync(string payload, string signature, CancellationToken ct = default);
 }
 public interface IDateTime { DateTime UtcNow { get; } }

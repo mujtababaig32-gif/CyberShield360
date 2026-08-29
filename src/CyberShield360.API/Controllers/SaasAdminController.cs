@@ -20,6 +20,7 @@ public class SaasAdminController : ApiControllerBase
     }
 
     [HttpGet("summary")]
+    [Authorize(Roles = "TenantAdmin")]
     public async Task<IActionResult> Summary(CancellationToken ct)
     {
         if (_user.TenantId is not Guid tid)
@@ -48,6 +49,15 @@ public class SaasAdminController : ApiControllerBase
             })
             .ToListAsync(ct);
 
+        var userIds = users.Select(u => u.Id).ToList();
+
+        var userRoles = await (
+            from ur in _db.UserRoles.AsNoTracking()
+            join r in _db.Roles.AsNoTracking() on ur.RoleId equals r.Id
+            where userIds.Contains(ur.UserId)
+            select new { ur.UserId, Role = r.Name ?? "Unknown" }
+        ).ToListAsync(ct);
+
         var now = DateTime.UtcNow;
         var monthStart = new DateTime(now.Year, now.Month, 1);
 
@@ -66,9 +76,7 @@ public class SaasAdminController : ApiControllerBase
             isActive = u.IsActive,
             emailConfirmed = u.EmailConfirmed,
             lastLoginUtc = u.LastLoginUtc,
-            role = u.Email != null && u.Email.Contains("admin", StringComparison.OrdinalIgnoreCase)
-                ? "TenantAdmin"
-                : "SecurityAnalyst",
+            role = userRoles.Where(r => r.UserId == u.Id).Select(r => r.Role).FirstOrDefault() ?? "Unassigned",
             loginMethod = "Email + Password",
             mfaStatus = "Not Connected"
         }).ToList();

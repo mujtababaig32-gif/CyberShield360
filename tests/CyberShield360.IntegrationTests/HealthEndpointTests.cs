@@ -5,10 +5,10 @@ using Xunit;
 
 namespace CyberShield360.IntegrationTests;
 
-public class HealthEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public class HealthEndpointTests : IClassFixture<TestWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
-    public HealthEndpointTests(WebApplicationFactory<Program> factory) => _factory = factory;
+    private readonly TestWebApplicationFactory _factory;
+    public HealthEndpointTests(TestWebApplicationFactory factory) => _factory = factory;
 
     [Fact]
     public async Task Health_ReturnsOk()

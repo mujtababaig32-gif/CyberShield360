@@ -349,8 +349,10 @@ public class SecurityScannerService : ISecurityScannerService
 
         try
         {
+            var targetAddress = await SsrfProtection.ResolvePublicAddressAsync(host, ct);
+
             using var tcp = new TcpClient();
-            await tcp.ConnectAsync(host, 443, ct);
+            await tcp.ConnectAsync(targetAddress, 443, ct);
 
             X509Certificate2? cert = null;
             SslPolicyErrors sslErrors = SslPolicyErrors.None;
@@ -932,9 +934,11 @@ public class SecurityScannerService : ISecurityScannerService
     {
         try
         {
+            var targetAddress = await SsrfProtection.ResolvePublicAddressAsync(host, ct);
+
             using var tcp = new TcpClient();
 
-            var connectTask = tcp.ConnectAsync(host, port);
+            var connectTask = tcp.ConnectAsync(targetAddress, port);
             var timeoutTask = Task.Delay(timeoutMs, ct);
 
             var completed = await Task.WhenAny(connectTask, timeoutTask);

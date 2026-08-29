@@ -5,6 +5,7 @@ using CyberShield360.Domain.Enums;
 using CyberShield360.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace CyberShield360.API.Controllers;
@@ -142,6 +143,7 @@ public class AiRemediationController : ApiControllerBase
 
     [HttpPost("scans/{scanId:guid}/generate")]
     [Authorize(Roles = "TenantAdmin,SecurityAnalyst")]
+    [EnableRateLimiting("ai")]
     public async Task<IActionResult> GenerateForScan(Guid scanId, CancellationToken ct)
     {
         if (_user.TenantId is not Guid tid)

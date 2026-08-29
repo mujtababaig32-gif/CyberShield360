@@ -164,6 +164,100 @@ public class ScanJobRunner : IScanJobRunner
         await db.SaveChangesAsync(ct);
     }
 
+    /// <summary>Runs a single on-demand scan for one asset in its own tenant context (used by "Scan All Assets").</summary>
+    public async Task RunAdHocScanAsync(Guid tenantId, Guid assetId, ScanType type, CancellationToken ct = default)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var sp = scope.ServiceProvider;
+        var db = sp.GetRequiredService<ApplicationDbContext>();
+        var tenantProvider = sp.GetRequiredService<ITenantProvider>();
+        var scanner = sp.GetRequiredService<ISecurityScannerService>();
+        var emailSender = sp.GetRequiredService<IEmailSender>();
+
+        tenantProvider.SetTenantId(tenantId);
+
+        var asset = await db.Assets.FirstOrDefaultAsync(a => a.Id == assetId, ct);
+        if (asset is null)
+        {
+            _logger.LogWarning("Asset {AssetId} not found for ad-hoc scan (tenant {TenantId})", assetId, tenantId);
+            return;
+        }
+
+        var scan = new SecurityScan
+        {
+            TenantId = tenantId,
+            AssetId = asset.Id,
+            Type = type,
+            Status = ScanStatus.Running,
+            StartedUtc = DateTime.UtcNow
+        };
+
+        db.Scans.Add(scan);
+        await db.SaveChangesAsync(ct);
+
+        try
+        {
+            var result = await scanner.RunScanAsync(asset.Domain, type, ct);
+
+            scan.Score = result.Score;
+            scan.Grade = result.Grade;
+            scan.Status = ScanStatus.Completed;
+            scan.CompletedUtc = DateTime.UtcNow;
+            scan.RawResultJson = result.RawJson;
+
+            foreach (var finding in result.Findings)
+            {
+                db.ScanFindings.Add(new ScanFinding
+                {
+                    ScanId = scan.Id,
+                    TenantId = tenantId,
+                    CheckKey = finding.CheckKey,
+                    Title = finding.Title,
+                    Severity = finding.Severity,
+                    Passed = finding.Passed,
+                    Detail = finding.Detail,
+                    Recommendation = finding.Recommendation
+                });
+            }
+
+            asset.LastScannedUtc = scan.CompletedUtc;
+
+            foreach (var finding in result.Findings.Where(x => !x.Passed && x.Severity >= Severity.High))
+            {
+                var exists = await db.Vulnerabilities.AnyAsync(
+                    vulnerability =>
+                        vulnerability.AssetId == asset.Id &&
+                        vulnerability.Title == finding.Title &&
+                        vulnerability.Status == VulnerabilityStatus.Open,
+                    ct);
+
+                if (!exists)
+                {
+                    db.Vulnerabilities.Add(new Vulnerability
+                    {
+                        TenantId = tenantId,
+                        AssetId = asset.Id,
+                        Title = finding.Title,
+                        Description = finding.Detail,
+                        Severity = finding.Severity,
+                        Status = VulnerabilityStatus.Open,
+                        DueDateUtc = DateTime.UtcNow.AddDays(finding.Severity == Severity.Critical ? 7 : 30)
+                    });
+                }
+            }
+
+            await NotifyAsync(db, emailSender, tenantId, asset.Domain, scan, ct);
+        }
+        catch (Exception ex)
+        {
+            scan.Status = ScanStatus.Failed;
+            scan.ErrorMessage = ex.Message;
+            _logger.LogError(ex, "Ad-hoc scan failed for {Domain}", asset.Domain);
+        }
+
+        await db.SaveChangesAsync(ct);
+    }
+
     public async Task RefreshBrandMonitoringAsync(CancellationToken ct = default)
     {
         using var scope = _scopeFactory.CreateScope();

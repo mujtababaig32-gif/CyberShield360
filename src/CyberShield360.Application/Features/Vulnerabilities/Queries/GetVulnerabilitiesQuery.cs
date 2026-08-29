@@ -17,16 +17,19 @@ public class GetVulnerabilitiesHandler : IRequestHandler<GetVulnerabilitiesQuery
 
     public async Task<PaginatedList<VulnerabilityDto>> Handle(GetVulnerabilitiesQuery r, CancellationToken ct)
     {
+        var pageNumber = Math.Max(1, r.PageNumber);
+        var pageSize = Math.Clamp(r.PageSize, 1, 100);
+
         var q = _db.Vulnerabilities.AsNoTracking().AsQueryable();
         if (r.Status.HasValue) q = q.Where(v => v.Status == r.Status);
         if (r.Severity.HasValue) q = q.Where(v => v.Severity == r.Severity);
         q = q.OrderByDescending(v => v.Severity).ThenByDescending(v => v.CreatedAtUtc);
 
         var count = await q.CountAsync(ct);
-        var items = await q.Skip((r.PageNumber - 1) * r.PageSize).Take(r.PageSize)
+        var items = await q.Skip((pageNumber - 1) * pageSize).Take(pageSize)
             .Select(v => new VulnerabilityDto(v.Id, v.Title, v.CveId, v.CvssScore, v.Severity,
                 v.Status, v.AssignedToUserId, v.DueDateUtc))
             .ToListAsync(ct);
-        return new PaginatedList<VulnerabilityDto>(items, count, r.PageNumber, r.PageSize);
+        return new PaginatedList<VulnerabilityDto>(items, count, pageNumber, pageSize);
     }
 }

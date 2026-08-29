@@ -1,6 +1,5 @@
 using System.Text.RegularExpressions;
 using CyberShield360.Application.Common.Interfaces;
-using CyberShield360.Application.Features.Scans.Commands;
 using CyberShield360.Domain.Entities;
 using CyberShield360.Domain.Enums;
 using CyberShield360.Infrastructure.Persistence;
@@ -16,12 +15,20 @@ public class AssetsController : ApiControllerBase
 {
     private readonly ApplicationDbContext _db;
     private readonly ICurrentUser _user;
+    private readonly IBackgroundJobService _jobs;
+    private readonly IScanJobRunner _scanJobRunner;
     private readonly LookupClient _dns = new();
 
-    public AssetsController(ApplicationDbContext db, ICurrentUser user)
+    public AssetsController(
+        ApplicationDbContext db,
+        ICurrentUser user,
+        IBackgroundJobService jobs,
+        IScanJobRunner scanJobRunner)
     {
         _db = db;
         _user = user;
+        _jobs = jobs;
+        _scanJobRunner = scanJobRunner;
     }
 
     [HttpGet]
@@ -228,29 +235,19 @@ public class AssetsController : ApiControllerBase
             .Select(a => new { a.Id, a.Domain })
             .ToListAsync(ct);
 
-        var results = new List<object>();
-
+        // Queue each asset's scan as its own background job instead of running them
+        // sequentially inside this request: a tenant with 20+ assets would otherwise
+        // make this request run long enough to hit a reverse-proxy/load-balancer
+        // timeout, killing the connection with scans left in an unknown partial state.
         foreach (var asset in assets)
         {
-            var scanResult = await Mediator.Send(
-                new RunScanCommand(asset.Id, ScanType.FullPosture),
-                ct
-            );
-
-            results.Add(new
-            {
-                asset.Id,
-                asset.Domain,
-                scanResult.Succeeded,
-                scan = scanResult.Data,
-                scanResult.Errors
-            });
+            _jobs.Enqueue(() => _scanJobRunner.RunAdHocScanAsync(tid, asset.Id, ScanType.FullPosture, CancellationToken.None));
         }
 
-        return Ok(new
+        return Accepted(new
         {
-            scannedCount = results.Count,
-            results
+            queuedCount = assets.Count,
+            message = "Full Posture scans have been queued for all monitored assets. Check each asset for updated results as scans complete."
         });
     }
 

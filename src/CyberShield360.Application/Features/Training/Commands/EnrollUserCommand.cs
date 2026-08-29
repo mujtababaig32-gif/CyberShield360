@@ -18,6 +18,18 @@ public class EnrollUserHandler : IRequestHandler<EnrollUserCommand, Result<Guid>
     public async Task<Result<Guid>> Handle(EnrollUserCommand r, CancellationToken ct)
     {
         if (_user.TenantId is null) return Result<Guid>.Failure("No tenant context.");
+
+        // TrainingCourse is tenant-scoped so the global query filter already protects
+        // this lookup. ApplicationUser is not covered by that filter (it has no soft
+        // delete), so it must be checked explicitly here or a TenantAdmin could enroll
+        // an arbitrary user from another tenant into one of their own courses.
+        var courseExists = await _db.TrainingCourses.AnyAsync(c => c.Id == r.CourseId, ct);
+        if (!courseExists) return Result<Guid>.Failure("Course not found.");
+
+        var userInTenant = await _db.Users
+            .AnyAsync(u => u.Id == r.UserId && u.TenantId == _user.TenantId, ct);
+        if (!userInTenant) return Result<Guid>.Failure("User not found in this tenant.");
+
         var exists = await _db.TrainingEnrollments
             .AnyAsync(e => e.CourseId == r.CourseId && e.UserId == r.UserId, ct);
         if (exists) return Result<Guid>.Failure("User already enrolled.");

@@ -41,9 +41,9 @@ public class SubscriptionsController : ApiControllerBase
         var payload = await reader.ReadToEndAsync();
         var signature = Request.Headers["X-Signature"].ToString();
 
-        await _lemonSqueezy.HandleWebhookAsync(payload, signature);
+        var verified = await _lemonSqueezy.HandleWebhookAsync(payload, signature);
 
-        return Ok();
+        return verified ? Ok() : Unauthorized();
     }
 }
 
