@@ -40,7 +40,6 @@ export function StatCard({
 }) {
   return (
     <div className="card card-3d hover-lift overflow-hidden">
-      <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-brand-500/10 blur-2xl" />
       <div className="relative flex items-start justify-between gap-3">
         <div>
           <div

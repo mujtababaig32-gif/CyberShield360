@@ -809,11 +809,6 @@ export default function Layout() {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-slate-950 text-slate-100">
-      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 opacity-80">
-        <div className="absolute left-[18rem] top-20 h-72 w-72 rounded-full bg-brand-500/10 blur-3xl" />
-        <div className="absolute right-0 top-1/3 h-80 w-80 rounded-full bg-accent-500/10 blur-3xl" />
-        <div className="absolute bottom-10 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-brand-500/5 blur-3xl" />
-      </div>
 
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-80 flex-col border-r border-slate-800 bg-slate-950/90 shadow-2xl shadow-black/20 backdrop-blur-xl lg:flex">
         <SidebarContent />

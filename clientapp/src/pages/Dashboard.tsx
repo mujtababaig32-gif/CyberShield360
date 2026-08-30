@@ -320,10 +320,7 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden rounded-3xl border border-brand-500/20 bg-slate-950 p-6 shadow-2xl shadow-black/30">
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-brand-500/20 blur-3xl" />
-        <div className="absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-cyan-500/10 blur-3xl" />
-
+      <section className="relative overflow-hidden rounded-3xl border border-brand-500/20 bg-slate-950 p-6">
         <div className="relative flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex min-w-0 flex-col items-center gap-5 text-center sm:flex-row sm:items-center sm:text-left">
             <div

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { AuthApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
+import { isMfaRequired } from "../types";
 
 const HIGHLIGHTS = [
   { label: "Security visibility", value: "360°" },
@@ -11,6 +12,7 @@ const HIGHLIGHTS = [
 ];
 
 const API_BASE = (import.meta.env.VITE_API_BASE ?? "/api/v1").replace(/\/+$/, "");
+const GOOGLE_CLIENT_ID_CONFIGURED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
 function getGoogleButtonWidth() {
   if (typeof window === "undefined") return 360;
@@ -31,6 +33,8 @@ export default function Login() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleButtonWidth, setGoogleButtonWidth] = useState(getGoogleButtonWidth);
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
 
   useEffect(() => {
     const syncGoogleButtonWidth = () => setGoogleButtonWidth(getGoogleButtonWidth());
@@ -44,8 +48,14 @@ export default function Login() {
     setError(null);
 
     try {
-      const auth = await AuthApi.login(email.trim(), password);
-      login(auth);
+      const result = await AuthApi.login(email.trim(), password);
+
+      if (isMfaRequired(result)) {
+        setMfaToken(result.mfaToken);
+        return;
+      }
+
+      login(result);
       navigate("/");
     } catch (err: any) {
       const status = err?.response?.status;
@@ -56,6 +66,30 @@ export default function Login() {
         setError("Login failed due to a server error. Please try again shortly.");
       } else {
         setError("Could not reach the server. Check your connection and try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitMfa = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!mfaToken) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const auth = await AuthApi.loginMfa(mfaToken, mfaCode.trim());
+      login(auth);
+      navigate("/");
+    } catch (err: any) {
+      const status = err?.response?.status;
+
+      if (status === 401) {
+        setError("That code is invalid or has expired.");
+      } else {
+        setError("Could not verify the code. Check your connection and try again.");
       }
     } finally {
       setLoading(false);
@@ -167,38 +201,25 @@ export default function Login() {
                 ))}
               </div>
 
-              <div className="auth-3d-scene" aria-hidden="true">
-                <div className="auth-grid" />
-
-                <div className="floating-chip chip-top-left">Full Posture Scan</div>
-
-                <div
-                  className="floating-chip chip-top-right"
-                  style={{ animationDelay: "0.7s" }}
-                >
-                  Compliance Ready
+              <div className="login-showcase" aria-hidden="true">
+                <div className="login-showcase-item">
+                  <div className="login-showcase-icon">🛡️</div>
+                  <span className="login-showcase-label">Full Posture Scan</span>
                 </div>
 
-                <div
-                  className="floating-chip chip-bottom-left"
-                  style={{ animationDelay: "1.2s" }}
-                >
-                  Risk Intelligence
+                <div className="login-showcase-item">
+                  <div className="login-showcase-icon">📋</div>
+                  <span className="login-showcase-label">Compliance Ready</span>
                 </div>
 
-                <div
-                  className="floating-chip chip-bottom-right"
-                  style={{ animationDelay: "1.8s" }}
-                >
-                  Executive Reports
+                <div className="login-showcase-item">
+                  <div className="login-showcase-icon">⚠️</div>
+                  <span className="login-showcase-label">Risk Intelligence</span>
                 </div>
 
-                <div className="ring-3d ring-3d-one" />
-                <div className="ring-3d ring-3d-two" />
-                <div className="ring-3d ring-3d-three" />
-
-                <div className="shield-diamond">
-                  <div className="shield-diamond-inner">🛡️</div>
+                <div className="login-showcase-item">
+                  <div className="login-showcase-icon">📊</div>
+                  <span className="login-showcase-label">Executive Reports</span>
                 </div>
               </div>
             </div>
@@ -216,7 +237,7 @@ export default function Login() {
             <strong>See risk clearly. Fix what matters.</strong>
           </div>
 
-          <form onSubmit={submit} className="login-card">
+          <form onSubmit={mfaToken ? submitMfa : submit} className="login-card">
             <div className="login-card-head">
               <div className="login-card-logo">
                 <img src="/logo.svg" alt="CyberShield360 By Mujtaba" />
@@ -232,7 +253,53 @@ export default function Login() {
             </div>
 
             <div className="login-actions">
-              {!showForm ? (
+              {mfaToken ? (
+                <>
+                  <div className="login-form-toolbar">
+                    <button
+                      type="button"
+                      className="login-back-button"
+                      onClick={() => {
+                        setError(null);
+                        setMfaToken(null);
+                        setMfaCode("");
+                      }}
+                    >
+                      <span aria-hidden="true">←</span>
+                      Back
+                    </button>
+                  </div>
+
+                  <p className="text-sm text-slate-400">
+                    Enter the 6-digit code from your authenticator app, or a recovery code.
+                  </p>
+
+                  {error && (
+                    <div className="login-error" role="alert" aria-live="assertive">
+                      {error}
+                    </div>
+                  )}
+
+                  <div className="login-field">
+                    <label htmlFor="login-mfa-code">Authentication code</label>
+                    <input
+                      id="login-mfa-code"
+                      className="input border-white/10 bg-slate-950/70 text-white"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      placeholder="123456"
+                      value={mfaCode}
+                      onChange={(e) => setMfaCode(e.target.value)}
+                      autoFocus
+                      required
+                    />
+                  </div>
+
+                  <button className="btn-primary w-full" disabled={loading}>
+                    {loading ? "Verifying..." : "Verify and sign in"}
+                  </button>
+                </>
+              ) : !showForm ? (
                 <>
                   <button
                     type="button"
@@ -270,20 +337,30 @@ export default function Login() {
                   </div>
 
                   <div className="google-login-official">
-                    <GoogleLogin
-                      onSuccess={handleGoogleSuccess}
-                      onError={() => {
-                        setError("Google login failed. Please try again.");
-                      }}
-                      useOneTap={false}
-                      auto_select={false}
-                      theme="outline"
-                      size="large"
-                      text="signin_with"
-                      shape="rectangular"
-                      logo_alignment="left"
-                      width={String(googleButtonWidth)}
-                    />
+                    {GOOGLE_CLIENT_ID_CONFIGURED ? (
+                      <GoogleLogin
+                        onSuccess={handleGoogleSuccess}
+                        onError={() => {
+                          setError("Google login failed. Please try again.");
+                        }}
+                        useOneTap={false}
+                        auto_select={false}
+                        theme="outline"
+                        size="large"
+                        text="signin_with"
+                        shape="rectangular"
+                        logo_alignment="left"
+                        width={String(googleButtonWidth)}
+                      />
+                    ) : (
+                      <div
+                        className="login-provider-status"
+                        role="alert"
+                        title="Set VITE_GOOGLE_CLIENT_ID to enable Google sign-in."
+                      >
+                        Google sign-in is not configured for this deployment.
+                      </div>
+                    )}
                   </div>
 
                   {googleLoading && (

@@ -43,6 +43,7 @@ public class ApplicationDbContext
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
     public DbSet<GeneratedReport> Reports => Set<GeneratedReport>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<MfaChallenge> MfaChallenges => Set<MfaChallenge>();
     public DbSet<AiRemediationGuidance> AiRemediationGuidance => Set<AiRemediationGuidance>();
 
     protected override void OnModelCreating(ModelBuilder builder)

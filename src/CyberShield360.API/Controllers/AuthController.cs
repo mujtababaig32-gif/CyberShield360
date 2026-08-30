@@ -60,6 +60,64 @@ public class AuthController : ApiControllerBase
         if (user is null || !user.IsActive || !await _users.CheckPasswordAsync(user, req.Password))
             return Unauthorized(new { message = "Invalid credentials." });
 
+        if (user.TwoFactorEnabled)
+        {
+            // Don't record the sign-in or issue any token yet — the password alone
+            // isn't a completed login for an MFA-enabled account. This challenge
+            // token only proves "password was correct"; it grants no API access.
+            var challengeToken = _jwt.CreateRefreshToken();
+
+            _db.MfaChallenges.Add(new MfaChallenge
+            {
+                TenantId = user.TenantId,
+                UserId = user.Id,
+                TokenHash = _jwt.HashRefreshToken(challengeToken),
+                ExpiresUtc = DateTime.UtcNow.AddMinutes(5)
+            });
+
+            await _db.SaveChangesAsync();
+
+            return Ok(new { mfaRequired = true, mfaToken = challengeToken });
+        }
+
+        return Ok(await CompleteLoginAsync(user, req.Email));
+    }
+
+    public record LoginMfaRequest(string MfaToken, string Code);
+
+    [HttpPost("login/mfa")]
+    public async Task<IActionResult> LoginMfa([FromBody] LoginMfaRequest req, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(req.MfaToken) || string.IsNullOrWhiteSpace(req.Code))
+            return Unauthorized(new { message = "MFA token and code are required." });
+
+        var tokenHash = _jwt.HashRefreshToken(req.MfaToken);
+
+        var challenge = await _db.MfaChallenges.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(c => c.TokenHash == tokenHash, ct);
+
+        if (challenge is null || challenge.Consumed || challenge.ExpiresUtc <= DateTime.UtcNow)
+            return Unauthorized(new { message = "MFA challenge is invalid or has expired. Sign in again." });
+
+        var user = await _users.FindByIdAsync(challenge.UserId.ToString());
+        if (user is null || !user.IsActive)
+            return Unauthorized(new { message = "Account is not available." });
+
+        var code = req.Code.Replace(" ", "");
+        var validCode = await _users.VerifyTwoFactorTokenAsync(user, TokenOptions.DefaultAuthenticatorProvider, code)
+            || (await _users.RedeemTwoFactorRecoveryCodeAsync(user, code)).Succeeded;
+
+        if (!validCode)
+            return Unauthorized(new { message = "Invalid authentication code." });
+
+        challenge.Consumed = true;
+        await _db.SaveChangesAsync(ct);
+
+        return Ok(await CompleteLoginAsync(user, user.Email!));
+    }
+
+    private async Task<AuthResponse> CompleteLoginAsync(ApplicationUser user, string emailFallback)
+    {
         var now = DateTime.UtcNow;
         var previousLoginUtc = user.LastLoginUtc;
 
@@ -89,7 +147,7 @@ public class AuthController : ApiControllerBase
         {
             TenantId = user.TenantId,
             Channel = NotificationChannel.InApp,
-            Recipient = user.Email ?? req.Email,
+            Recipient = user.Email ?? emailFallback,
             Subject = previousLoginUtc is null ? "Login tracking enabled" : "Successful sign-in",
             Body = previousLoginUtc is null
                 ? "CyberShield360 has started tracking last-login activity for this account."
@@ -100,7 +158,7 @@ public class AuthController : ApiControllerBase
 
         await _db.SaveChangesAsync();
 
-        return Ok(await BuildResponse(user));
+        return await BuildResponse(user);
     }
 
     public record RefreshTokenRequest(string RefreshToken);

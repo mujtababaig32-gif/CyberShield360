@@ -28,6 +28,7 @@ public interface IApplicationDbContext
     DbSet<ApiKey> ApiKeys { get; }
     DbSet<GeneratedReport> Reports { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
+    DbSet<MfaChallenge> MfaChallenges { get; }
     DbSet<AiRemediationGuidance> AiRemediationGuidance { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

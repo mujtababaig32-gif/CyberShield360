@@ -19,6 +19,7 @@ public class PhishingCampaign : AuditableTenantEntity
 public class PhishingTarget : AuditableTenantEntity
 {
     public Guid CampaignId { get; set; }
+    public PhishingCampaign? Campaign { get; set; }
     public Guid UserId { get; set; }
     public PhishingResult Result { get; set; } = PhishingResult.NotSent;
     public DateTime? DeliveredUtc { get; set; }

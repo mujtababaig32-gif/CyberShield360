@@ -74,3 +74,12 @@ public class RefreshTokenConfig : IEntityTypeConfiguration<RefreshToken>
         b.HasIndex(x => new { x.UserId, x.ExpiresUtc });
     }
 }
+
+public class MfaChallengeConfig : IEntityTypeConfiguration<MfaChallenge>
+{
+    public void Configure(EntityTypeBuilder<MfaChallenge> b)
+    {
+        b.HasIndex(x => x.TokenHash).IsUnique();
+        b.Property(x => x.TokenHash).IsRequired();
+    }
+}

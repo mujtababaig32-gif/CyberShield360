@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   Bar,
   BarChart,
@@ -8,12 +8,16 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { PhishingSimulationApi } from "../api/endpoints";
+import { PhishingApi, PhishingSimulationApi, UserManagementApi } from "../api/endpoints";
+import { useAuth } from "../auth/AuthContext";
 import CyberChartCard from "../components/CyberChartCard";
 import CyberStatCard from "../components/CyberStatCard";
 import CyberStatusBadge from "../components/CyberStatusBadge";
 import CyberTable from "../components/CyberTable";
 import ModuleTabs from "../components/ModuleTabs";
+
+type PhishingTemplate = { name: string; category: string; difficulty: string; subject: string };
+type TenantUser = { id: string; email: string; fullName?: string; isActive: boolean };
 
 type Campaign = {
   id: string;
@@ -104,6 +108,9 @@ function downloadTextFile(filename: string, content: string) {
 }
 
 export default function PhishingSimulation() {
+  const { hasRole } = useAuth();
+  const canManageCampaigns = hasRole("TenantAdmin");
+
   const [data, setData] = useState<PhishingSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState("Overview");
@@ -111,6 +118,17 @@ export default function PhishingSimulation() {
   const [riskFilter, setRiskFilter] = useState("All");
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const [catalogTemplates, setCatalogTemplates] = useState<PhishingTemplate[]>([]);
+  const [tenantUsers, setTenantUsers] = useState<TenantUser[]>([]);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [campaignName, setCampaignName] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [authorizationConfirmed, setAuthorizationConfirmed] = useState(false);
+  const [formBusy, setFormBusy] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [launchingId, setLaunchingId] = useState<string | null>(null);
 
   const load = async () => {
     try {
@@ -129,6 +147,64 @@ export default function PhishingSimulation() {
   useEffect(() => {
     void load();
   }, []);
+
+  useEffect(() => {
+    if (!canManageCampaigns) return;
+
+    void PhishingApi.templates().then(setCatalogTemplates).catch(() => setCatalogTemplates([]));
+
+    void UserManagementApi.summary()
+      .then((result) => setTenantUsers(result?.users ?? []))
+      .catch(() => setTenantUsers([]));
+  }, [canManageCampaigns]);
+
+  const toggleTargetUser = (id: string) => {
+    setSelectedUserIds((current) =>
+      current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
+    );
+  };
+
+  const submitCreateCampaign = async (e: FormEvent) => {
+    e.preventDefault();
+    setFormBusy(true);
+    setFormError(null);
+
+    try {
+      await PhishingApi.createCampaign({
+        name: campaignName.trim(),
+        templateName: selectedTemplate,
+        targetUserIds: selectedUserIds,
+        authorizationConfirmed,
+      });
+
+      setCampaignName("");
+      setSelectedTemplate("");
+      setSelectedUserIds([]);
+      setAuthorizationConfirmed(false);
+      setShowCreateForm(false);
+      setMessage("Campaign created. Launch it from the Campaigns tab when you're ready to send.");
+      await load();
+    } catch (err: any) {
+      setFormError(err?.response?.data?.message ?? "Could not create the campaign.");
+    } finally {
+      setFormBusy(false);
+    }
+  };
+
+  const launchCampaign = async (campaignId: string) => {
+    setLaunchingId(campaignId);
+    setMessage(null);
+
+    try {
+      const result = await PhishingApi.launch(campaignId);
+      setMessage(`Campaign launched: ${result.sent} sent, ${result.failed} failed.`);
+      await load();
+    } catch (err: any) {
+      setMessage(err?.response?.data?.message ?? "Could not launch the campaign.");
+    } finally {
+      setLaunchingId(null);
+    }
+  };
 
   const filteredRecipients = useMemo(() => {
     if (!data) return [];
@@ -331,12 +407,124 @@ export default function PhishingSimulation() {
       )}
 
       {tab === "Campaigns" && (
-        <CyberTable
-          title="Campaign Register"
-          description="Authorized campaign status, audience, template, engagement rates, and launch date."
-          data={data.campaigns}
-          emptyText="No phishing campaigns configured yet."
-          columns={[
+        <div className="space-y-6">
+          {canManageCampaigns && (
+            <section className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-black tracking-tight text-white">New Campaign</h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Authorized internal simulation only — targets are restricted to this tenant's own users.
+                  </p>
+                </div>
+                <button type="button" onClick={() => setShowCreateForm((v) => !v)} className="btn-ghost">
+                  {showCreateForm ? "Cancel" : "Create Campaign"}
+                </button>
+              </div>
+
+              {showCreateForm && (
+                <form onSubmit={submitCreateCampaign} className="mt-5 space-y-4">
+                  {formError && (
+                    <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">
+                      {formError}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                      <label htmlFor="campaign-name" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                        Campaign Name
+                      </label>
+                      <input
+                        id="campaign-name"
+                        className="input mt-2"
+                        value={campaignName}
+                        onChange={(e) => setCampaignName(e.target.value)}
+                        placeholder="Q3 Security Awareness Test"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="campaign-template" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                        Template
+                      </label>
+                      <select
+                        id="campaign-template"
+                        className="input mt-2"
+                        value={selectedTemplate}
+                        onChange={(e) => setSelectedTemplate(e.target.value)}
+                        required
+                      >
+                        <option value="">Select a template</option>
+                        {catalogTemplates.map((t) => (
+                          <option key={t.name} value={t.name}>
+                            {t.name} — {t.category}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                      Targets ({selectedUserIds.length} selected)
+                    </div>
+                    <div className="mt-2 max-h-56 overflow-y-auto rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                      {tenantUsers.length === 0 ? (
+                        <div className="p-3 text-center text-sm text-slate-500">No active users found.</div>
+                      ) : (
+                        tenantUsers
+                          .filter((u) => u.isActive)
+                          .map((u) => (
+                            <label
+                              key={u.id}
+                              className="flex items-center gap-3 rounded-xl px-2 py-2 text-sm text-slate-300 hover:bg-white/[0.04]"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedUserIds.includes(u.id)}
+                                onChange={() => toggleTargetUser(u.id)}
+                              />
+                              <span className="truncate">{u.fullName || u.email}</span>
+                              <span className="ml-auto truncate text-xs text-slate-500">{u.email}</span>
+                            </label>
+                          ))
+                      )}
+                    </div>
+                  </div>
+
+                  <label className="flex items-start gap-3 rounded-2xl border border-orange-500/30 bg-orange-500/10 p-4 text-sm text-orange-100">
+                    <input
+                      type="checkbox"
+                      className="mt-1"
+                      checked={authorizationConfirmed}
+                      onChange={(e) => setAuthorizationConfirmed(e.target.checked)}
+                      required
+                    />
+                    <span>
+                      I confirm this is an authorized internal security-awareness test against this tenant's own employees.
+                    </span>
+                  </label>
+
+                  <button
+                    type="submit"
+                    disabled={formBusy || selectedUserIds.length === 0 || !authorizationConfirmed}
+                    className="btn-primary w-full justify-center disabled:opacity-60"
+                  >
+                    {formBusy ? "Creating..." : "Create Campaign"}
+                  </button>
+                </form>
+              )}
+            </section>
+          )}
+
+          <CyberTable
+            title="Campaign Register"
+            description="Authorized campaign status, audience, template, engagement rates, and launch date."
+            data={data.campaigns}
+            emptyText="No phishing campaigns configured yet."
+            columns={[
             {
               key: "campaign",
               label: "Campaign",
@@ -388,8 +576,30 @@ export default function PhishingSimulation() {
                 </div>
               ),
             },
+            ...(canManageCampaigns
+              ? [
+                  {
+                    key: "action",
+                    label: "Action",
+                    render: (campaign: Campaign) =>
+                      campaign.status === "Draft" ? (
+                        <button
+                          type="button"
+                          onClick={() => launchCampaign(campaign.id)}
+                          disabled={launchingId === campaign.id || !campaign.authorizationConfirmed}
+                          className="btn-primary text-xs disabled:opacity-60"
+                        >
+                          {launchingId === campaign.id ? "Launching..." : "Launch"}
+                        </button>
+                      ) : (
+                        <span className="text-xs text-slate-500">—</span>
+                      ),
+                  },
+                ]
+              : []),
           ]}
-        />
+          />
+        </div>
       )}
 
       {tab === "Recipients" && (

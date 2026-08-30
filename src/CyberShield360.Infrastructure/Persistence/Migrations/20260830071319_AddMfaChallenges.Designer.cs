@@ -4,16 +4,19 @@ using CyberShield360.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace CyberShield360.Infrastructure.Migrations
+namespace CyberShield360.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260830071319_AddMfaChallenges")]
+    partial class AddMfaChallenges
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -688,6 +691,9 @@ namespace CyberShield360.Infrastructure.Migrations
                     b.Property<DateTime?>("OpenedUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid?>("PhishingCampaignId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime?>("ReportedUtc")
                         .HasColumnType("datetime2");
 
@@ -708,7 +714,7 @@ namespace CyberShield360.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CampaignId");
+                    b.HasIndex("PhishingCampaignId");
 
                     b.ToTable("PhishingTargets");
                 });
@@ -1726,13 +1732,9 @@ namespace CyberShield360.Infrastructure.Migrations
 
             modelBuilder.Entity("CyberShield360.Domain.Entities.PhishingTarget", b =>
                 {
-                    b.HasOne("CyberShield360.Domain.Entities.PhishingCampaign", "Campaign")
+                    b.HasOne("CyberShield360.Domain.Entities.PhishingCampaign", null)
                         .WithMany("Targets")
-                        .HasForeignKey("CampaignId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Campaign");
+                        .HasForeignKey("PhishingCampaignId");
                 });
 
             modelBuilder.Entity("CyberShield360.Domain.Entities.RemediationStep", b =>

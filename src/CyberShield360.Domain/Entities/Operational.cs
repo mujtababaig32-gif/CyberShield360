@@ -64,3 +64,16 @@ public class RefreshToken : AuditableTenantEntity
     public DateTime? RevokedUtc { get; set; }
     public string? ReplacedByTokenHash { get; set; } // rotation chain, for detecting reuse of a revoked token
 }
+
+/// <summary>
+/// A short-lived, single-use ticket issued after a correct password but before a
+/// correct MFA code, so /auth/login/mfa can complete the sign-in without ever
+/// re-accepting the password. Not a session credential on its own.
+/// </summary>
+public class MfaChallenge : AuditableTenantEntity
+{
+    public Guid UserId { get; set; }
+    public string TokenHash { get; set; } = default!; // store only a SHA-256 hash, never the raw token
+    public DateTime ExpiresUtc { get; set; }
+    public bool Consumed { get; set; }
+}

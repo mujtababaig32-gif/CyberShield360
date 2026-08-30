@@ -41,7 +41,7 @@ public class ProfileController : ApiControllerBase
         var recommendations = new List<string>();
 
         if (!mfaEnabled)
-            recommendations.Add("MFA setup is on the production security roadmap. Until then, use a strong password and restrict admin access.");
+            recommendations.Add("Enable multi-factor authentication for this account to protect it against password compromise.");
 
         if (currentUser?.LastLoginUtc is null)
             recommendations.Add("Login tracking will populate after the next successful sign-in.");
@@ -61,12 +61,12 @@ public class ProfileController : ApiControllerBase
                 name = currentUser?.FullName ?? "CyberShield User",
                 email = currentUser?.Email ?? _user.Email,
                 role = FormatRole(primaryRole),
-                mfaStatus = mfaEnabled ? "Enabled" : "Coming Soon",
+                mfaStatus = mfaEnabled ? "Enabled" : "Not Enabled",
                 loginMethod,
-                mfaAvailable = false,
+                mfaAvailable = true,
                 mfaMessage = mfaEnabled
                     ? "Multi-factor authentication is enabled for this account."
-                    : "MFA setup is not enabled in this build. It is tracked as a production security roadmap item."
+                    : "Multi-factor authentication is not enabled for this account."
             },
             tenant = new
             {

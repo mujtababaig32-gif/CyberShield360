@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
-import { ProfileApi } from "../api/endpoints";
+import { useEffect, useState, type FormEvent } from "react";
+import { MfaApi, ProfileApi } from "../api/endpoints";
 import CyberStatCard from "../components/CyberStatCard";
 import CyberStatusBadge from "../components/CyberStatusBadge";
+
+type MfaFlowStep = "idle" | "setup" | "recovery-codes" | "disable";
+type MfaSetupData = { manualEntryKey: string; qrCodePngBase64: string; otpAuthUri: string };
 
 type ProfileSummary = {
   generatedUtc: string;
@@ -93,6 +96,14 @@ export default function Profile() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [mfaStep, setMfaStep] = useState<MfaFlowStep>("idle");
+  const [mfaSetupData, setMfaSetupData] = useState<MfaSetupData | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaBusy, setMfaBusy] = useState(false);
+  const [mfaError, setMfaError] = useState<string | null>(null);
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const [disablePassword, setDisablePassword] = useState("");
+
   const load = async () => {
     try {
       setLoading(true);
@@ -110,6 +121,67 @@ export default function Profile() {
   useEffect(() => {
     void load();
   }, []);
+
+  const cancelMfaFlow = () => {
+    setMfaStep("idle");
+    setMfaSetupData(null);
+    setMfaCode("");
+    setMfaError(null);
+    setDisablePassword("");
+  };
+
+  const startMfaSetup = async () => {
+    setMfaBusy(true);
+    setMfaError(null);
+
+    try {
+      const result = await MfaApi.setup();
+      setMfaSetupData(result);
+      setMfaStep("setup");
+    } catch (err: any) {
+      setMfaError(err?.response?.data?.message ?? "Could not start MFA setup.");
+    } finally {
+      setMfaBusy(false);
+    }
+  };
+
+  const confirmMfaSetup = async (e: FormEvent) => {
+    e.preventDefault();
+    setMfaBusy(true);
+    setMfaError(null);
+
+    try {
+      const result = await MfaApi.verify(mfaCode.trim());
+      setRecoveryCodes(result.recoveryCodes);
+      setMfaStep("recovery-codes");
+      setMfaCode("");
+    } catch (err: any) {
+      setMfaError(err?.response?.data?.message ?? "That code did not match. Try again.");
+    } finally {
+      setMfaBusy(false);
+    }
+  };
+
+  const finishMfaSetup = () => {
+    cancelMfaFlow();
+    void load();
+  };
+
+  const submitDisableMfa = async (e: FormEvent) => {
+    e.preventDefault();
+    setMfaBusy(true);
+    setMfaError(null);
+
+    try {
+      await MfaApi.disable(disablePassword.trim() || undefined);
+      cancelMfaFlow();
+      void load();
+    } catch (err: any) {
+      setMfaError(err?.response?.data?.message ?? "Could not disable MFA. Check your password.");
+    } finally {
+      setMfaBusy(false);
+    }
+  };
 
   if (error) {
     return (
@@ -194,7 +266,7 @@ export default function Profile() {
         <CyberStatCard
           label="MFA"
           value={data.user.mfaStatus}
-          hint={mfaEnabled ? "Extra protection enabled" : "Roadmap item, not a dead action"}
+          hint={mfaEnabled ? "Extra protection enabled" : "Not protected — enable it below"}
           tone={mfaEnabled ? "green" : "orange"}
         />
         <CyberStatCard
@@ -230,19 +302,137 @@ export default function Profile() {
               <div>
                 <h2 className="text-lg font-black tracking-tight text-white">MFA Readiness</h2>
                 <p className="mt-2 text-sm leading-6 text-orange-100/85">
-                  {data.user.mfaMessage ?? "MFA setup is listed as a production security roadmap item."}
+                  {data.user.mfaMessage ?? "Multi-factor authentication is not enabled for this account."}
                 </p>
               </div>
             </div>
 
-            <button
-              type="button"
-              disabled={!data.user.mfaAvailable}
-              title="MFA setup will be enabled in a later production security batch."
-              className="mt-4 w-full cursor-not-allowed rounded-2xl border border-orange-500/20 bg-black/20 px-4 py-3 text-sm font-black text-orange-200 opacity-80"
-            >
-              MFA Setup Coming Soon
-            </button>
+            {mfaError && (
+              <div className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">
+                {mfaError}
+              </div>
+            )}
+
+            {mfaStep === "idle" && !mfaEnabled && (
+              <button
+                type="button"
+                onClick={startMfaSetup}
+                disabled={mfaBusy}
+                className="btn-primary mt-4 w-full justify-center disabled:opacity-60"
+              >
+                {mfaBusy ? "Starting setup..." : "Enable MFA"}
+              </button>
+            )}
+
+            {mfaStep === "idle" && mfaEnabled && (
+              <button
+                type="button"
+                onClick={() => setMfaStep("disable")}
+                className="mt-4 w-full rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-black text-red-200 transition hover:bg-red-500/20"
+              >
+                Disable MFA
+              </button>
+            )}
+
+            {mfaStep === "setup" && mfaSetupData && (
+              <form onSubmit={confirmMfaSetup} className="mt-4 space-y-4">
+                <p className="text-sm leading-6 text-orange-100/85">
+                  Scan this QR code with your authenticator app (Google Authenticator, Authy, 1Password, etc.), or enter the key manually.
+                </p>
+
+                <div className="flex justify-center rounded-2xl bg-white p-3">
+                  <img
+                    src={`data:image/png;base64,${mfaSetupData.qrCodePngBase64}`}
+                    alt="MFA enrollment QR code"
+                    className="h-40 w-40"
+                  />
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-3 text-center">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Manual entry key</div>
+                  <div className="mt-1 break-all font-mono text-sm text-white">{mfaSetupData.manualEntryKey}</div>
+                </div>
+
+                <div>
+                  <label htmlFor="mfa-setup-code" className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                    Enter the 6-digit code
+                  </label>
+                  <input
+                    id="mfa-setup-code"
+                    className="input mt-2"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder="123456"
+                    value={mfaCode}
+                    onChange={(e) => setMfaCode(e.target.value)}
+                    autoFocus
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button type="button" onClick={cancelMfaFlow} className="btn-ghost flex-1 justify-center">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={mfaBusy} className="btn-primary flex-1 justify-center disabled:opacity-60">
+                    {mfaBusy ? "Verifying..." : "Confirm"}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {mfaStep === "recovery-codes" && (
+              <div className="mt-4 space-y-4">
+                <div className="rounded-2xl border border-brand-500/30 bg-brand-500/10 p-3 text-sm leading-6 text-brand-100">
+                  Save these recovery codes now. Each one can be used once to sign in if you lose access to your authenticator app. They will not be shown again.
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-black/20 p-4 font-mono text-sm text-white">
+                  {recoveryCodes.map((code) => (
+                    <div key={code} className="text-center">{code}</div>
+                  ))}
+                </div>
+
+                <button type="button" onClick={finishMfaSetup} className="btn-primary w-full justify-center">
+                  I've saved these codes
+                </button>
+              </div>
+            )}
+
+            {mfaStep === "disable" && (
+              <form onSubmit={submitDisableMfa} className="mt-4 space-y-4">
+                <p className="text-sm leading-6 text-orange-100/85">
+                  {data.user.loginMethod === "Passwordless / OAuth"
+                    ? "Confirm you want to disable MFA for this account."
+                    : "Confirm your password to disable MFA."}
+                </p>
+
+                {data.user.loginMethod !== "Passwordless / OAuth" && (
+                  <input
+                    type="password"
+                    className="input"
+                    placeholder="Current password"
+                    value={disablePassword}
+                    onChange={(e) => setDisablePassword(e.target.value)}
+                    autoFocus
+                    required
+                  />
+                )}
+
+                <div className="flex gap-2">
+                  <button type="button" onClick={cancelMfaFlow} className="btn-ghost flex-1 justify-center">
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={mfaBusy}
+                    className="flex-1 justify-center rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-black text-red-200 transition hover:bg-red-500/20 disabled:opacity-60"
+                  >
+                    {mfaBusy ? "Disabling..." : "Disable MFA"}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
 
           <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-5 shadow-2xl shadow-black/10">
@@ -300,11 +490,14 @@ export default function Profile() {
 
           <button
             type="button"
-            disabled
-            className="cursor-not-allowed rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center opacity-70"
+            onClick={() => (mfaEnabled ? setMfaStep("disable") : void startMfaSetup())}
+            disabled={mfaBusy}
+            className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center transition hover:border-brand-500/40 hover:bg-brand-500/10 disabled:opacity-60"
           >
-            <div className="font-semibold text-white">Enable MFA</div>
-            <div className="mt-1 text-sm text-slate-500">Roadmap item shown clearly instead of a broken button.</div>
+            <div className="font-semibold text-white">{mfaEnabled ? "Disable MFA" : "Enable MFA"}</div>
+            <div className="mt-1 text-sm text-slate-500">
+              {mfaEnabled ? "Turn off multi-factor authentication." : "Protect this account with an authenticator app."}
+            </div>
           </button>
         </div>
 

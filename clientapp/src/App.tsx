@@ -27,6 +27,7 @@ import Login from "./pages/Login";
 import MicrosoftAuth from "./pages/MicrosoftAuth";
 import NotificationsCenter from "./pages/NotificationsCenter";
 import NotFound from "./pages/NotFound";
+import PhishingAwareness from "./pages/PhishingAwareness";
 import PhishingSimulation from "./pages/PhishingSimulation";
 import PolicyAudit from "./pages/PolicyAudit";
 import Profile from "./pages/Profile";
@@ -55,6 +56,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/tenant-registration" element={<TenantRegistration />} />
+      <Route path="/phishing-awareness" element={<PhishingAwareness />} />
 
       <Route
         element={

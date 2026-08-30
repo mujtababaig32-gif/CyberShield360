@@ -7,6 +7,17 @@ export interface AuthResponse {
   roles: string[];
 }
 
+export interface MfaRequiredResponse {
+  mfaRequired: true;
+  mfaToken: string;
+}
+
+export type LoginResult = AuthResponse | MfaRequiredResponse;
+
+export function isMfaRequired(result: LoginResult): result is MfaRequiredResponse {
+  return (result as MfaRequiredResponse).mfaRequired === true;
+}
+
 export interface DashboardTrendPoint {
   date: string;
   score: number;

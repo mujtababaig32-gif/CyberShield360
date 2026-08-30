@@ -1,6 +1,7 @@
 import { api } from "./client";
 import type {
   AuthResponse,
+  LoginResult,
   PostureDashboard,
   Vulnerability,
   Paginated,
@@ -30,7 +31,10 @@ const SEVERITY_TO_VALUE: Record<string, number> = {
 
 export const AuthApi = {
   login: (email: string, password: string) =>
-    api.post<AuthResponse>("/auth/login", { email, password }).then((r) => r.data),
+    api.post<LoginResult>("/auth/login", { email, password }).then((r) => r.data),
+
+  loginMfa: (mfaToken: string, code: string) =>
+    api.post<AuthResponse>("/auth/login/mfa", { mfaToken, code }).then((r) => r.data),
 
   register: (
     tenantName: string,
@@ -46,6 +50,21 @@ export const AuthApi = {
         fullName,
       })
       .then((r) => r.data),
+};
+
+export const MfaApi = {
+  setup: () =>
+    api
+      .post<{ manualEntryKey: string; qrCodePngBase64: string; otpAuthUri: string }>("/mfa/setup")
+      .then((r) => r.data),
+
+  verify: (code: string) =>
+    api
+      .post<{ enabled: boolean; recoveryCodes: string[]; message: string }>("/mfa/verify", { code })
+      .then((r) => r.data),
+
+  disable: (password?: string) =>
+    api.post<{ enabled: boolean }>("/mfa/disable", { password }).then((r) => r.data),
 };
 
 export const DashboardApi = {
@@ -271,6 +290,33 @@ export const SecurityAwarenessApi = {
 export const PhishingSimulationApi = {
   summary: () =>
     api.get("/phishingsimulation/summary").then((r) => r.data),
+};
+
+export const PhishingApi = {
+  templates: () =>
+    api
+      .get<{ name: string; category: string; difficulty: string; subject: string }[]>("/phishing/templates")
+      .then((r) => r.data),
+
+  createCampaign: (data: {
+    name: string;
+    templateName: string;
+    targetUserIds: string[];
+    authorizationConfirmed: boolean;
+  }) =>
+    api
+      .post<{ id: string; targetCount: number }>("/phishing/campaigns", {
+        name: data.name,
+        templateName: data.templateName,
+        targetUserIds: data.targetUserIds,
+        authorizationConfirmed: data.authorizationConfirmed,
+      })
+      .then((r) => r.data),
+
+  launch: (campaignId: string) =>
+    api
+      .post<{ sent: number; failed: number; status: string }>(`/phishing/campaigns/${campaignId}/launch`)
+      .then((r) => r.data),
 };
 
 export const PolicyAuditApi = {
