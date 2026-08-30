@@ -1,4 +1,5 @@
 import axios from "axios";
+import { clearAuthStorage, getAuthStorage } from "../auth/storage";
 
 const rawApiBase = import.meta.env.VITE_API_BASE ?? "/api/v1";
 const API_BASE = rawApiBase.replace(/\/+$/, "");
@@ -9,7 +10,7 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("cs360_token");
+  const token = getAuthStorage().getItem("cs360_token");
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -24,8 +25,7 @@ api.interceptors.response.use(
   (r) => r,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("cs360_token");
-      localStorage.removeItem("cs360_user");
+      clearAuthStorage(["cs360_token", "cs360_user"]);
 
       if (location.pathname !== "/login") {
         window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));

@@ -19,6 +19,7 @@ import DarkWebMonitoring from "./pages/DarkWebMonitoring";
 import Dashboard from "./pages/Dashboard";
 import ExecutiveScorecard from "./pages/ExecutiveScorecard";
 import FixPlan from "./pages/FixPlan";
+import ForgotPassword from "./pages/ForgotPassword";
 import FrameworkMapping from "./pages/FrameworkMapping";
 import GlobalSearch from "./pages/GlobalSearch";
 import GoogleAuth from "./pages/GoogleAuth";
@@ -33,6 +34,7 @@ import PolicyAudit from "./pages/PolicyAudit";
 import Profile from "./pages/Profile";
 import Rbac from "./pages/Rbac";
 import ReportBuilder from "./pages/ReportBuilder";
+import ResetPassword from "./pages/ResetPassword";
 import Risks from "./pages/Risks";
 import SaasAdmin from "./pages/SaasAdmin";
 import ScheduledScans from "./pages/ScheduledScans";
@@ -55,6 +57,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/tenant-registration" element={<TenantRegistration />} />
       <Route path="/phishing-awareness" element={<PhishingAwareness />} />
 

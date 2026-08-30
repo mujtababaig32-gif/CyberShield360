@@ -1,12 +1,53 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { NotificationsApi, ProfileApi } from "../api/endpoints";
+import SecurityMeshBackground from "./SecurityMeshBackground";
+import {
+  IconAlertTriangle,
+  IconBell,
+  IconBriefcase,
+  IconBuilding,
+  IconChalkboard,
+  IconCheck,
+  IconClipboardList,
+  IconClock,
+  IconClose,
+  IconCloud,
+  IconCompass,
+  IconCraneBuild,
+  IconCard,
+  IconEyeOff,
+  IconFileText,
+  IconFireExtinguisher,
+  IconFishHook,
+  IconFolder,
+  IconGlobe,
+  IconGraduationCap,
+  IconGrid,
+  IconHandshake,
+  IconLock,
+  IconMenu,
+  IconPackage,
+  IconPuzzle,
+  IconReceipt,
+  IconSearch,
+  IconSettings,
+  IconShareNetwork,
+  IconShieldAlert,
+  IconSiren,
+  IconSparkAI,
+  IconTarget,
+  IconTrendUp,
+  IconUser,
+  IconUsers,
+  IconWrench,
+} from "./icons";
 
 type NavItem = {
   to: string;
   label: string;
-  icon: string;
+  icon: ReactNode;
   hint: string;
 };
 
@@ -17,16 +58,18 @@ type NavSection = {
   items: NavItem[];
 };
 
+const NAV_ICON_CLASS = "h-4 w-4";
+
 const NAV_SECTIONS: NavSection[] = [
   {
     title: "Command Center",
     icon: "⌘",
     description: "Executive visibility",
     items: [
-      { to: "/", label: "Dashboard", icon: "📊", hint: "Command center" },
-      { to: "/executive-scorecard", label: "Executive Scorecard", icon: "📈", hint: "Board view" },
-      { to: "/ai-copilot", label: "AI Copilot", icon: "🤖", hint: "Security advisor" },
-      { to: "/search", label: "Global Search", icon: "🔍", hint: "Find anything" },
+      { to: "/", label: "Dashboard", icon: <IconGrid className={NAV_ICON_CLASS} />, hint: "Command center" },
+      { to: "/executive-scorecard", label: "Executive Scorecard", icon: <IconTrendUp className={NAV_ICON_CLASS} />, hint: "Board view" },
+      { to: "/ai-copilot", label: "AI Copilot", icon: <IconSparkAI className={NAV_ICON_CLASS} />, hint: "Security advisor" },
+      { to: "/search", label: "Global Search", icon: <IconSearch className={NAV_ICON_CLASS} />, hint: "Find anything" },
     ],
   },
   {
@@ -34,10 +77,10 @@ const NAV_SECTIONS: NavSection[] = [
     icon: "◆",
     description: "Assess, explain, fix",
     items: [
-      { to: "/service-overview", label: "Service Overview", icon: "🧭", hint: "Service model" },
-      { to: "/client-onboarding", label: "Client Onboarding", icon: "🤝", hint: "Client intake" },
-      { to: "/client-packages", label: "Client Packages", icon: "📦", hint: "One-time offers" },
-      { to: "/fix-plan", label: "Fix Plan", icon: "🛠️", hint: "Remediation" },
+      { to: "/service-overview", label: "Service Overview", icon: <IconCompass className={NAV_ICON_CLASS} />, hint: "Service model" },
+      { to: "/client-onboarding", label: "Client Onboarding", icon: <IconHandshake className={NAV_ICON_CLASS} />, hint: "Client intake" },
+      { to: "/client-packages", label: "Client Packages", icon: <IconPackage className={NAV_ICON_CLASS} />, hint: "One-time offers" },
+      { to: "/fix-plan", label: "Fix Plan", icon: <IconWrench className={NAV_ICON_CLASS} />, hint: "Remediation" },
     ],
   },
   {
@@ -45,9 +88,9 @@ const NAV_SECTIONS: NavSection[] = [
     icon: "◇",
     description: "Quote, report, close",
     items: [
-      { to: "/client-quotation", label: "Client Quotation", icon: "💼", hint: "Proposal" },
-      { to: "/report-builder", label: "Report Builder", icon: "📄", hint: "Client report" },
-      { to: "/billing", label: "Billing", icon: "💳", hint: "Payment" },
+      { to: "/client-quotation", label: "Client Quotation", icon: <IconBriefcase className={NAV_ICON_CLASS} />, hint: "Proposal" },
+      { to: "/report-builder", label: "Report Builder", icon: <IconFileText className={NAV_ICON_CLASS} />, hint: "Client report" },
+      { to: "/billing", label: "Billing", icon: <IconCard className={NAV_ICON_CLASS} />, hint: "Payment" },
     ],
   },
   {
@@ -55,12 +98,12 @@ const NAV_SECTIONS: NavSection[] = [
     icon: "◈",
     description: "Assets, scans, exposure",
     items: [
-      { to: "/assets", label: "Assets & Scans", icon: "🌐", hint: "ASM" },
-      { to: "/asset-inventory", label: "Asset Inventory", icon: "🗂️", hint: "Inventory" },
-      { to: "/scheduled-scans", label: "Scheduled Scans", icon: "⏰", hint: "Automation" },
-      { to: "/vulnerabilities", label: "Vulnerabilities", icon: "🛡️", hint: "Findings" },
-      { to: "/cloud-posture", label: "Cloud Posture", icon: "☁️", hint: "Cloud" },
-      { to: "/attack-path", label: "Attack Path", icon: "🕸️", hint: "Paths" },
+      { to: "/assets", label: "Assets & Scans", icon: <IconGlobe className={NAV_ICON_CLASS} />, hint: "ASM" },
+      { to: "/asset-inventory", label: "Asset Inventory", icon: <IconFolder className={NAV_ICON_CLASS} />, hint: "Inventory" },
+      { to: "/scheduled-scans", label: "Scheduled Scans", icon: <IconClock className={NAV_ICON_CLASS} />, hint: "Automation" },
+      { to: "/vulnerabilities", label: "Vulnerabilities", icon: <IconShieldAlert className={NAV_ICON_CLASS} />, hint: "Findings" },
+      { to: "/cloud-posture", label: "Cloud Posture", icon: <IconCloud className={NAV_ICON_CLASS} />, hint: "Cloud" },
+      { to: "/attack-path", label: "Attack Path", icon: <IconShareNetwork className={NAV_ICON_CLASS} />, hint: "Paths" },
     ],
   },
   {
@@ -68,11 +111,11 @@ const NAV_SECTIONS: NavSection[] = [
     icon: "◒",
     description: "GRC and business risk",
     items: [
-      { to: "/risks", label: "Risk Register", icon: "⚠️", hint: "Business risk" },
-      { to: "/compliance", label: "Compliance Center", icon: "📋", hint: "GRC" },
-      { to: "/policy-audit", label: "Policy & Audit", icon: "📑", hint: "Audit" },
-      { to: "/framework-mapping", label: "Framework Mapping", icon: "🧩", hint: "Controls" },
-      { to: "/vendor-risk", label: "Vendor Risk", icon: "🏢", hint: "Third party" },
+      { to: "/risks", label: "Risk Register", icon: <IconAlertTriangle className={NAV_ICON_CLASS} />, hint: "Business risk" },
+      { to: "/compliance", label: "Compliance Center", icon: <IconClipboardList className={NAV_ICON_CLASS} />, hint: "GRC" },
+      { to: "/policy-audit", label: "Policy & Audit", icon: <IconFileText className={NAV_ICON_CLASS} />, hint: "Audit" },
+      { to: "/framework-mapping", label: "Framework Mapping", icon: <IconPuzzle className={NAV_ICON_CLASS} />, hint: "Controls" },
+      { to: "/vendor-risk", label: "Vendor Risk", icon: <IconBuilding className={NAV_ICON_CLASS} />, hint: "Third party" },
     ],
   },
   {
@@ -80,9 +123,9 @@ const NAV_SECTIONS: NavSection[] = [
     icon: "◐",
     description: "Training and awareness",
     items: [
-      { to: "/security-awareness", label: "Security Awareness", icon: "🎓", hint: "Awareness" },
-      { to: "/phishing-simulation", label: "Phishing Simulation", icon: "🎣", hint: "Testing" },
-      { to: "/client-training", label: "Client Training", icon: "🧑‍🏫", hint: "Client education" },
+      { to: "/security-awareness", label: "Security Awareness", icon: <IconGraduationCap className={NAV_ICON_CLASS} />, hint: "Awareness" },
+      { to: "/phishing-simulation", label: "Phishing Simulation", icon: <IconFishHook className={NAV_ICON_CLASS} />, hint: "Testing" },
+      { to: "/client-training", label: "Client Training", icon: <IconChalkboard className={NAV_ICON_CLASS} />, hint: "Client education" },
     ],
   },
   {
@@ -90,12 +133,12 @@ const NAV_SECTIONS: NavSection[] = [
     icon: "✦",
     description: "Monitor and respond",
     items: [
-      { to: "/soc", label: "SOC Center", icon: "🚨", hint: "Alerts" },
-      { to: "/threat-intelligence", label: "Threat Intelligence", icon: "🎯", hint: "Intel" },
-      { to: "/dark-web", label: "Dark Web", icon: "🕶️", hint: "Exposure" },
-      { to: "/incident-playbooks", label: "Incident Playbooks", icon: "🧯", hint: "Response" },
-      { to: "/ai-remediation", label: "AI Remediation", icon: "🛠️", hint: "Fix guidance" },
-      { to: "/audit-logs", label: "Audit Logs", icon: "🧾", hint: "Evidence" },
+      { to: "/soc", label: "SOC Center", icon: <IconSiren className={NAV_ICON_CLASS} />, hint: "Alerts" },
+      { to: "/threat-intelligence", label: "Threat Intelligence", icon: <IconTarget className={NAV_ICON_CLASS} />, hint: "Intel" },
+      { to: "/dark-web", label: "Dark Web", icon: <IconEyeOff className={NAV_ICON_CLASS} />, hint: "Exposure" },
+      { to: "/incident-playbooks", label: "Incident Playbooks", icon: <IconFireExtinguisher className={NAV_ICON_CLASS} />, hint: "Response" },
+      { to: "/ai-remediation", label: "AI Remediation", icon: <IconWrench className={NAV_ICON_CLASS} />, hint: "Fix guidance" },
+      { to: "/audit-logs", label: "Audit Logs", icon: <IconReceipt className={NAV_ICON_CLASS} />, hint: "Evidence" },
     ],
   },
   {
@@ -103,12 +146,12 @@ const NAV_SECTIONS: NavSection[] = [
     icon: "⚙",
     description: "Platform administration",
     items: [
-      { to: "/saas-admin", label: "SaaS Admin", icon: "🏗️", hint: "Tenants" },
-      { to: "/user-management", label: "User Management", icon: "👥", hint: "Users" },
-      { to: "/rbac", label: "RBAC Engine", icon: "🔐", hint: "Access" },
-      { to: "/notifications", label: "Notifications", icon: "🔔", hint: "Updates" },
-      { to: "/profile", label: "My Profile", icon: "👤", hint: "Account" },
-      { to: "/settings", label: "Settings", icon: "⚙️", hint: "System" },
+      { to: "/saas-admin", label: "SaaS Admin", icon: <IconCraneBuild className={NAV_ICON_CLASS} />, hint: "Tenants" },
+      { to: "/user-management", label: "User Management", icon: <IconUsers className={NAV_ICON_CLASS} />, hint: "Users" },
+      { to: "/rbac", label: "RBAC Engine", icon: <IconLock className={NAV_ICON_CLASS} />, hint: "Access" },
+      { to: "/notifications", label: "Notifications", icon: <IconBell className={NAV_ICON_CLASS} />, hint: "Updates" },
+      { to: "/profile", label: "My Profile", icon: <IconUser className={NAV_ICON_CLASS} />, hint: "Account" },
+      { to: "/settings", label: "Settings", icon: <IconSettings className={NAV_ICON_CLASS} />, hint: "System" },
     ],
   },
 ];
@@ -495,7 +538,7 @@ function ProfileMenu({ onViewProfile }: { onViewProfile: () => void }) {
         title="Profile"
         aria-expanded={open}
       >
-        <span aria-hidden>👤</span>
+        <IconUser className="h-4 w-4" aria-hidden />
         <span className="hidden sm:inline">Profile</span>
       </button>
 
@@ -664,7 +707,7 @@ function NotificationBell({ onViewAll }: { onViewAll: () => void }) {
         aria-label="Notifications"
         aria-expanded={open}
       >
-        🔔
+        <IconBell className="h-4 w-4" aria-hidden />
         {(unread > 0 || critical > 0) && (
           <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white ring-2 ring-slate-950">
             {critical > 0 ? critical : unread}
@@ -719,7 +762,7 @@ function NotificationBell({ onViewAll }: { onViewAll: () => void }) {
 
             {!loading && !error && recent.length === 0 && (
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center">
-                <div className="text-2xl">✅</div>
+                <IconCheck className="mx-auto h-6 w-6 text-brand-400" aria-hidden />
                 <div className="mt-2 text-sm font-black text-white">No notifications yet</div>
                 <div className="mt-1 text-xs leading-5 text-slate-400">
                   New scan, risk, invitation, and delivery events will appear here once recorded.
@@ -809,6 +852,7 @@ export default function Layout() {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-slate-950 text-slate-100">
+      <SecurityMeshBackground intensity="minimal" className="app-shell-mesh" />
 
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-80 flex-col border-r border-slate-800 bg-slate-950/90 shadow-2xl shadow-black/20 backdrop-blur-xl lg:flex">
         <SidebarContent />
@@ -828,7 +872,7 @@ export default function Layout() {
                 onClick={() => setMobileOpen(false)}
                 className="rounded-xl border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
               >
-                <span aria-hidden>✕</span>
+                <IconClose className="h-4 w-4" aria-hidden />
                 <span className="sr-only">Close navigation</span>
               </button>
             </div>
@@ -838,7 +882,7 @@ export default function Layout() {
         </div>
       )}
 
-      <main className="min-h-screen lg:pl-80">
+      <main className="relative z-10 min-h-screen lg:pl-80">
         <header className="sticky top-0 z-[60] border-b border-slate-800/80 bg-slate-950/85 px-3 py-3 shadow-sm shadow-black/10 backdrop-blur-xl sm:px-6">
           <div className="flex items-center justify-between gap-2 sm:gap-4">
             <div className="flex min-w-0 items-center gap-3">
@@ -847,7 +891,7 @@ export default function Layout() {
                 className="rounded-2xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-semibold shadow-sm transition hover:bg-slate-800 lg:hidden"
                 aria-label="Open navigation"
               >
-                ☰
+                <IconMenu className="h-4 w-4" aria-hidden />
               </button>
 
               <div className="min-w-0">
@@ -873,7 +917,7 @@ export default function Layout() {
                 aria-label="Open global search"
                 title="Global Search"
               >
-                <span aria-hidden>🔍</span>
+                <IconSearch className="h-4 w-4" aria-hidden />
                 <span className="hidden sm:inline">Search</span>
               </button>
 

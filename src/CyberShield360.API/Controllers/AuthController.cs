@@ -17,10 +17,12 @@ public class AuthController : ApiControllerBase
     private readonly IJwtTokenService _jwt;
     private readonly ApplicationDbContext _db;
     private readonly ITenantProvider _tenant;
+    private readonly IEmailSender _emailSender;
+    private readonly IConfiguration _config;
 
     public AuthController(UserManager<ApplicationUser> users, IJwtTokenService jwt,
-        ApplicationDbContext db, ITenantProvider tenant)
-    { _users = users; _jwt = jwt; _db = db; _tenant = tenant; }
+        ApplicationDbContext db, ITenantProvider tenant, IEmailSender emailSender, IConfiguration config)
+    { _users = users; _jwt = jwt; _db = db; _tenant = tenant; _emailSender = emailSender; _config = config; }
 
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterTenantRequest req)
@@ -159,6 +161,123 @@ public class AuthController : ApiControllerBase
         await _db.SaveChangesAsync();
 
         return await BuildResponse(user);
+    }
+
+    public record ForgotPasswordRequest(string Email);
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest req, CancellationToken ct)
+    {
+        // Always return the same response whether or not the account exists, so this
+        // endpoint cannot be used to enumerate registered emails.
+        const string genericMessage = "If an account exists for that email, a reset link has been sent.";
+
+        if (string.IsNullOrWhiteSpace(req.Email))
+            return Ok(new { message = genericMessage });
+
+        var user = await _users.FindByEmailAsync(req.Email.Trim());
+
+        if (user is not null && user.IsActive)
+        {
+            var token = await _users.GeneratePasswordResetTokenAsync(user);
+            var resetLink = BuildResetLink(user.Email!, token);
+
+            var safeEmail = System.Net.WebUtility.HtmlEncode(user.Email);
+            var subject = "Reset your CyberShield360 password";
+            var body = $@"
+                <h2>Reset your password</h2>
+                <p>We received a request to reset the password for <b>{safeEmail}</b>.</p>
+                <p><a href='{resetLink}'>Choose a new password</a></p>
+                <p>This link expires soon. If you didn't request this, you can safely ignore this email.</p>
+            ";
+
+            var log = new NotificationLog
+            {
+                TenantId = user.TenantId,
+                Channel = NotificationChannel.Email,
+                Recipient = user.Email!,
+                Subject = subject,
+                Body = body
+            };
+
+            try
+            {
+                await _emailSender.SendAsync(user.Email!, subject, body, ct);
+                log.Sent = true;
+                log.SentAtUtc = DateTime.UtcNow;
+            }
+            catch (Exception ex)
+            {
+                log.Sent = false;
+                log.Error = ex.Message;
+            }
+
+            _db.Notifications.Add(log);
+            await _db.SaveChangesAsync(ct);
+        }
+
+        return Ok(new { message = genericMessage });
+    }
+
+    public record ResetPasswordRequest(string Email, string Token, string NewPassword);
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest req, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(req.Email) || string.IsNullOrWhiteSpace(req.Token) || string.IsNullOrWhiteSpace(req.NewPassword))
+            return BadRequest(new { message = "Email, token, and new password are required." });
+
+        var user = await _users.FindByEmailAsync(req.Email.Trim());
+        if (user is null || !user.IsActive)
+            return BadRequest(new { message = "This reset link is invalid or has expired." });
+
+        var result = await _users.ResetPasswordAsync(user, req.Token, req.NewPassword);
+        if (!result.Succeeded)
+        {
+            return BadRequest(new
+            {
+                message = "This reset link is invalid or has expired.",
+                errors = result.Errors.Select(e => e.Description)
+            });
+        }
+
+        user.PasswordLastChangedUtc = DateTime.UtcNow;
+        await _users.UpdateAsync(user);
+
+        _db.AuditLogs.Add(new AuditLog
+        {
+            TenantId = user.TenantId,
+            UserId = user.Id.ToString(),
+            UserEmail = user.Email,
+            Action = AuditAction.Update,
+            EntityType = "Authentication",
+            EntityId = user.Id.ToString(),
+            Description = $"{user.Email} reset their password.",
+            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+            UserAgent = Request.Headers.UserAgent.ToString()
+        });
+        await _db.SaveChangesAsync(ct);
+
+        return Ok(new { message = "Password updated. You can now sign in." });
+    }
+
+    private string BuildResetLink(string email, string token)
+    {
+        var frontendBaseUrl = ResolveFrontendBaseUrl().TrimEnd('/');
+        var query = $"email={Uri.EscapeDataString(email)}&token={Uri.EscapeDataString(token)}";
+        return $"{frontendBaseUrl}/reset-password?{query}";
+    }
+
+    private string ResolveFrontendBaseUrl()
+    {
+        var configured = _config["App:FrontendBaseUrl"];
+        if (!string.IsNullOrWhiteSpace(configured)) return configured;
+
+        var origins = _config.GetSection("Cors:Origins").Get<string[]>() ?? [];
+        var preferred = origins.FirstOrDefault(o => !o.Contains("localhost", StringComparison.OrdinalIgnoreCase))
+            ?? origins.FirstOrDefault();
+
+        return preferred ?? $"{Request.Scheme}://{Request.Host}";
     }
 
     public record RefreshTokenRequest(string RefreshToken);

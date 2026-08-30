@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { SESSION_EXPIRED_EVENT } from "../api/client";
+import { clearAuthStorage, getAuthStorage, setRemember } from "./storage";
 import type { AuthResponse } from "../types";
 
 type RawAuthResponse = {
@@ -19,7 +20,7 @@ type RawAuthResponse = {
 
 interface AuthState {
   user: AuthResponse | null;
-  login: (auth: RawAuthResponse) => void;
+  login: (auth: RawAuthResponse, remember?: boolean) => void;
   logout: () => void;
   hasRole: (role: string) => boolean;
 }
@@ -28,11 +29,10 @@ const AuthContext = createContext<AuthState | undefined>(undefined);
 
 function getSavedUser(): AuthResponse | null {
   try {
-    const raw = localStorage.getItem("cs360_user");
+    const raw = getAuthStorage().getItem("cs360_user");
     return raw ? JSON.parse(raw) : null;
   } catch {
-    localStorage.removeItem("cs360_user");
-    localStorage.removeItem("cs360_token");
+    clearAuthStorage(["cs360_token", "cs360_user"]);
     return null;
   }
 }
@@ -40,7 +40,7 @@ function getSavedUser(): AuthResponse | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthResponse | null>(() => getSavedUser());
 
-  const login = (auth: RawAuthResponse) => {
+  const login = (auth: RawAuthResponse, remember: boolean = true) => {
     const token = auth.accessToken ?? auth.AccessToken;
 
     if (!token) {
@@ -57,14 +57,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       roles: auth.roles ?? auth.Roles ?? [],
     };
 
-    localStorage.setItem("cs360_token", token);
-    localStorage.setItem("cs360_user", JSON.stringify(normalizedAuth));
+    setRemember(remember);
+    const storage = getAuthStorage();
+    storage.setItem("cs360_token", token);
+    storage.setItem("cs360_user", JSON.stringify(normalizedAuth));
     setUser(normalizedAuth);
   };
 
   const logout = () => {
-    localStorage.removeItem("cs360_token");
-    localStorage.removeItem("cs360_user");
+    clearAuthStorage(["cs360_token", "cs360_user"]);
     setUser(null);
   };
 

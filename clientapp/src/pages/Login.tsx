@@ -4,12 +4,7 @@ import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { AuthApi } from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext";
 import { isMfaRequired } from "../types";
-
-const HIGHLIGHTS = [
-  { label: "Security visibility", value: "360°" },
-  { label: "Guided remediation", value: "AI" },
-  { label: "Operational control", value: "SOC" },
-];
+import SecurityMeshBackground from "../components/SecurityMeshBackground";
 
 const API_BASE = (import.meta.env.VITE_API_BASE ?? "/api/v1").replace(/\/+$/, "");
 const GOOGLE_CLIENT_ID_CONFIGURED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
@@ -29,6 +24,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -55,7 +51,7 @@ export default function Login() {
         return;
       }
 
-      login(result);
+      login(result, remember);
       navigate("/");
     } catch (err: any) {
       const status = err?.response?.status;
@@ -81,7 +77,7 @@ export default function Login() {
 
     try {
       const auth = await AuthApi.loginMfa(mfaToken, mfaCode.trim());
-      login(auth);
+      login(auth, remember);
       navigate("/");
     } catch (err: any) {
       const status = err?.response?.status;
@@ -146,7 +142,7 @@ export default function Login() {
         roles: data?.roles ?? data?.Roles ?? [],
       };
 
-      login(normalizedAuth);
+      login(normalizedAuth, remember);
       navigate("/");
     } catch {
       setError("Google login could not connect to CyberShield360.");
@@ -157,7 +153,7 @@ export default function Login() {
 
   return (
     <div className="login-shell">
-      <div className="login-bg-grid" />
+      <SecurityMeshBackground intensity="vivid" className="login-hero-mesh" />
 
       <div className="login-page">
         <section className="login-hero">
@@ -192,39 +188,10 @@ export default function Login() {
                 one polished security workspace.
               </p>
 
-              <div className="login-highlight-grid">
-                {HIGHLIGHTS.map((item) => (
-                  <div key={item.label} className="login-highlight-card">
-                    <div>{item.value}</div>
-                    <span>{item.label}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="login-hero-visual" aria-hidden="true">
-                <div className="login-hero-visual-grid" />
-                <div className="login-hero-orbit login-hero-orbit-a" />
-                <div className="login-hero-orbit login-hero-orbit-b" />
-                <div className="login-hero-shield">
-                  <div className="login-hero-shield-face">
-                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path
-                        d="M5 12.5L9.5 17L19 7"
-                        stroke="white"
-                        strokeWidth="2.75"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              <div className="login-tag-row" aria-hidden="true">
-                <span>Full Posture Scan</span>
-                <span>Compliance Ready</span>
-                <span>Risk Intelligence</span>
-                <span>Executive Reports</span>
+              <div className="login-capability-row" aria-hidden="true">
+                <span>Real-time monitoring</span>
+                <span>AI-guided remediation</span>
+                <span>Audit-ready compliance</span>
               </div>
             </div>
           </main>
@@ -431,6 +398,25 @@ export default function Login() {
                         {showPassword ? "Hide" : "Show"}
                       </button>
                     </div>
+                  </div>
+
+                  <div className="login-remember-row">
+                    <label className="login-remember-check">
+                      <input
+                        type="checkbox"
+                        checked={remember}
+                        onChange={(e) => setRemember(e.target.checked)}
+                      />
+                      <span>Remember me</span>
+                    </label>
+
+                    <button
+                      type="button"
+                      className="login-forgot-link"
+                      onClick={() => navigate(email ? `/forgot-password?email=${encodeURIComponent(email)}` : "/forgot-password")}
+                    >
+                      Forgot password?
+                    </button>
                   </div>
 
                   <button className="btn-primary w-full" disabled={loading || googleLoading}>

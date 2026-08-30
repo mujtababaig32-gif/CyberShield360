@@ -50,6 +50,14 @@ export const AuthApi = {
         fullName,
       })
       .then((r) => r.data),
+
+  forgotPassword: (email: string) =>
+    api.post<{ message: string }>("/auth/forgot-password", { email }).then((r) => r.data),
+
+  resetPassword: (email: string, token: string, newPassword: string) =>
+    api
+      .post<{ message: string }>("/auth/reset-password", { email, token, newPassword })
+      .then((r) => r.data),
 };
 
 export const MfaApi = {

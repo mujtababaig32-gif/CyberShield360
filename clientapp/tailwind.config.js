@@ -21,12 +21,15 @@ export default {
           900: "#084F4A",
           950: "#062F2D",
         },
+        // Electric blue — a distinct secondary next to the teal/cyan brand,
+        // replacing an earlier violet accent that didn't match the
+        // enterprise SOC "cyan/blue" palette.
         accent: {
-          300: "#B8AAFF",
-          400: "#9B86FF",
-          500: "#7C5CFC",
-          600: "#6344E8",
-          700: "#4D32C9",
+          300: "#7DD3FC",
+          400: "#38BDF8",
+          500: "#0EA5E9",
+          600: "#0284C7",
+          700: "#0369A1",
         },
       },
       boxShadow: {
