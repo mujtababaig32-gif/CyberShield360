@@ -1,9 +1,28 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { GlobalSearchApi } from "../api/endpoints";
 import CyberStatCard from "../components/CyberStatCard";
 import CyberStatusBadge from "../components/CyberStatusBadge";
 import CyberTable from "../components/CyberTable";
+import {
+  IconAlertTriangle,
+  IconBuilding,
+  IconClipboardList,
+  IconClock,
+  IconEyeOff,
+  IconFileText,
+  IconGlobe,
+  IconGrid,
+  IconReceipt,
+  IconShieldAlert,
+  IconSettings,
+  IconSiren,
+  IconSparkAI,
+  IconTarget,
+  IconTrendUp,
+  IconUsers,
+  IconWrench,
+} from "../components/icons";
 
 type SearchResult = {
   id: string;
@@ -11,9 +30,11 @@ type SearchResult = {
   subtitle: string;
   category: string;
   route: string;
-  icon?: string;
+  icon?: ReactNode;
   score?: number | null;
 };
+
+const RESULT_ICON_CLASS = "h-4 w-4";
 
 type SearchResponse = {
   query: string;
@@ -25,24 +46,24 @@ type SearchResponse = {
 };
 
 const MODULE_RESULTS: SearchResult[] = [
-  { id: "dashboard", title: "Dashboard", subtitle: "Security overview and KPI scorecards", category: "Page", route: "/", icon: "📊", score: 100 },
-  { id: "executive-scorecard", title: "Executive Scorecard", subtitle: "Board-ready posture summary", category: "Page", route: "/executive-scorecard", icon: "📈", score: 100 },
-  { id: "assets", title: "Assets & Scans", subtitle: "Run full posture scans and download reports", category: "Page", route: "/assets", icon: "🌐", score: 100 },
-  { id: "scheduled-scans", title: "Scheduled Scans", subtitle: "Recurring posture assessments", category: "Page", route: "/scheduled-scans", icon: "⏰", score: 100 },
-  { id: "vulnerabilities", title: "Vulnerabilities", subtitle: "Technical findings and remediation", category: "Page", route: "/vulnerabilities", icon: "🛡️", score: 100 },
-  { id: "compliance", title: "Compliance Center", subtitle: "Compliance posture and audit readiness", category: "Page", route: "/compliance", icon: "📋", score: 100 },
-  { id: "risks", title: "Risk Register", subtitle: "Business risk tracking", category: "Page", route: "/risks", icon: "⚠️", score: 100 },
-  { id: "vendor-risk", title: "Vendor Risk", subtitle: "Third-party domain assessment", category: "Page", route: "/vendor-risk", icon: "🏢", score: 100 },
-  { id: "report-builder", title: "Report Builder", subtitle: "Executive PDF and Excel reports", category: "Page", route: "/report-builder", icon: "📑", score: 100 },
-  { id: "fix-plan", title: "Fix Plan", subtitle: "Prioritized remediation plan", category: "Page", route: "/fix-plan", icon: "🛠️", score: 100 },
-  { id: "ai-copilot", title: "AI Copilot", subtitle: "Security advisor", category: "Page", route: "/ai-copilot", icon: "🤖", score: 100 },
-  { id: "ai-remediation", title: "AI Remediation", subtitle: "Finding-based remediation guidance", category: "Page", route: "/ai-remediation", icon: "🛠️", score: 100 },
-  { id: "threat-intelligence", title: "Threat Intelligence", subtitle: "Domain and reputation intelligence", category: "Page", route: "/threat-intelligence", icon: "🎯", score: 100 },
-  { id: "soc", title: "SOC Center", subtitle: "Security operations queue", category: "Page", route: "/soc", icon: "🚨", score: 100 },
-  { id: "dark-web", title: "Dark Web", subtitle: "Breach and exposure monitoring", category: "Page", route: "/dark-web", icon: "🕶️", score: 100 },
-  { id: "audit-logs", title: "Audit Logs", subtitle: "System activity evidence", category: "Page", route: "/audit-logs", icon: "🧾", score: 100 },
-  { id: "user-management", title: "User Management", subtitle: "Users, roles and invitations", category: "Page", route: "/user-management", icon: "👥", score: 100 },
-  { id: "settings", title: "Settings", subtitle: "Branding and system settings", category: "Page", route: "/settings", icon: "⚙️", score: 100 },
+  { id: "dashboard", title: "Dashboard", subtitle: "Security overview and KPI scorecards", category: "Page", route: "/", icon: <IconGrid className={RESULT_ICON_CLASS} />, score: 100 },
+  { id: "executive-scorecard", title: "Executive Scorecard", subtitle: "Board-ready posture summary", category: "Page", route: "/executive-scorecard", icon: <IconTrendUp className={RESULT_ICON_CLASS} />, score: 100 },
+  { id: "assets", title: "Assets & Scans", subtitle: "Run full posture scans and download reports", category: "Page", route: "/assets", icon: <IconGlobe className={RESULT_ICON_CLASS} />, score: 100 },
+  { id: "scheduled-scans", title: "Scheduled Scans", subtitle: "Recurring posture assessments", category: "Page", route: "/scheduled-scans", icon: <IconClock className={RESULT_ICON_CLASS} />, score: 100 },
+  { id: "vulnerabilities", title: "Vulnerabilities", subtitle: "Technical findings and remediation", category: "Page", route: "/vulnerabilities", icon: <IconShieldAlert className={RESULT_ICON_CLASS} />, score: 100 },
+  { id: "compliance", title: "Compliance Center", subtitle: "Compliance posture and audit readiness", category: "Page", route: "/compliance", icon: <IconClipboardList className={RESULT_ICON_CLASS} />, score: 100 },
+  { id: "risks", title: "Risk Register", subtitle: "Business risk tracking", category: "Page", route: "/risks", icon: <IconAlertTriangle className={RESULT_ICON_CLASS} />, score: 100 },
+  { id: "vendor-risk", title: "Vendor Risk", subtitle: "Third-party domain assessment", category: "Page", route: "/vendor-risk", icon: <IconBuilding className={RESULT_ICON_CLASS} />, score: 100 },
+  { id: "report-builder", title: "Report Builder", subtitle: "Executive PDF and Excel reports", category: "Page", route: "/report-builder", icon: <IconFileText className={RESULT_ICON_CLASS} />, score: 100 },
+  { id: "fix-plan", title: "Fix Plan", subtitle: "Prioritized remediation plan", category: "Page", route: "/fix-plan", icon: <IconWrench className={RESULT_ICON_CLASS} />, score: 100 },
+  { id: "ai-copilot", title: "AI Copilot", subtitle: "Security advisor", category: "Page", route: "/ai-copilot", icon: <IconSparkAI className={RESULT_ICON_CLASS} />, score: 100 },
+  { id: "ai-remediation", title: "AI Remediation", subtitle: "Finding-based remediation guidance", category: "Page", route: "/ai-remediation", icon: <IconWrench className={RESULT_ICON_CLASS} />, score: 100 },
+  { id: "threat-intelligence", title: "Threat Intelligence", subtitle: "Domain and reputation intelligence", category: "Page", route: "/threat-intelligence", icon: <IconTarget className={RESULT_ICON_CLASS} />, score: 100 },
+  { id: "soc", title: "SOC Center", subtitle: "Security operations queue", category: "Page", route: "/soc", icon: <IconSiren className={RESULT_ICON_CLASS} />, score: 100 },
+  { id: "dark-web", title: "Dark Web", subtitle: "Breach and exposure monitoring", category: "Page", route: "/dark-web", icon: <IconEyeOff className={RESULT_ICON_CLASS} />, score: 100 },
+  { id: "audit-logs", title: "Audit Logs", subtitle: "System activity evidence", category: "Page", route: "/audit-logs", icon: <IconReceipt className={RESULT_ICON_CLASS} />, score: 100 },
+  { id: "user-management", title: "User Management", subtitle: "Users, roles and invitations", category: "Page", route: "/user-management", icon: <IconUsers className={RESULT_ICON_CLASS} />, score: 100 },
+  { id: "settings", title: "Settings", subtitle: "Branding and system settings", category: "Page", route: "/settings", icon: <IconSettings className={RESULT_ICON_CLASS} />, score: 100 },
 ];
 
 function categoryPriority(category: string) {
@@ -241,8 +262,8 @@ export default function GlobalSearch() {
                   onClick={() => openResult(result.route)}
                   className="mx-auto block min-w-80 text-center"
                 >
-                  <div className="font-semibold leading-6 text-white">
-                    {result.icon ? `${result.icon} ` : ""}
+                  <div className="flex items-center justify-center gap-2 font-semibold leading-6 text-white">
+                    {result.icon && <span className="text-brand-400" aria-hidden="true">{result.icon}</span>}
                     {result.title}
                   </div>
                   <div className="mt-1 text-xs text-slate-500">{result.subtitle}</div>

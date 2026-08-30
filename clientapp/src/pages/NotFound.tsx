@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { IconAlertTriangle } from "../components/icons";
 
 const QUICK_LINKS = [
   { label: "Dashboard", route: "/" },
@@ -14,8 +15,8 @@ export default function NotFound() {
     <div className="space-y-6">
       <section className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900/80 p-8 shadow-2xl shadow-black/20">
         <div className="mx-auto max-w-3xl text-center">
-          <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-3xl border border-brand-500/30 bg-brand-500/10 text-4xl shadow-2xl shadow-brand-500/10">
-            🛡️
+          <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-3xl border border-brand-500/30 bg-brand-500/10 text-brand-300 shadow-2xl shadow-brand-500/10">
+            <IconAlertTriangle className="h-9 w-9" />
           </div>
 
           <div className="mb-3 inline-flex rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-orange-300">

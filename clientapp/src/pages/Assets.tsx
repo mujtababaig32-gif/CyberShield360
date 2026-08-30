@@ -4,6 +4,7 @@ import { AssetApi } from "../api/endpoints";
 import CommercialJourney from "../components/CommercialJourney";
 import CyberStatCard from "../components/CyberStatCard";
 import CyberStatusBadge from "../components/CyberStatusBadge";
+import { IconGlobe } from "../components/icons";
 import type { Asset } from "../types";
 import { loadCommercialWorkflow, saveCommercialWorkflow } from "../lib/commercialWorkflow";
 
@@ -453,8 +454,8 @@ export default function Assets() {
 
       {!loading && assets.length === 0 && (
         <div className="rounded-3xl border border-white/10 bg-slate-900/70 p-8 text-center shadow-2xl shadow-black/10">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-brand-500/10 text-3xl">
-            🌐
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-brand-500/10 text-brand-300">
+            <IconGlobe className="h-7 w-7" />
           </div>
 
           <h2 className="text-xl font-black text-white">No Assets Added Yet</h2>

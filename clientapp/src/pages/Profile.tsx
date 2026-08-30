@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { MfaApi, ProfileApi } from "../api/endpoints";
 import CyberStatCard from "../components/CyberStatCard";
 import CyberStatusBadge from "../components/CyberStatusBadge";
+import { IconLock } from "../components/icons";
 
 type MfaFlowStep = "idle" | "setup" | "recovery-codes" | "disable";
 type MfaSetupData = { manualEntryKey: string; qrCodePngBase64: string; otpAuthUri: string };
@@ -298,7 +299,9 @@ export default function Profile() {
         <section className="space-y-5">
           <div className="rounded-3xl border border-orange-500/20 bg-orange-500/10 p-5 shadow-2xl shadow-black/10">
             <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-500/15 text-xl">🔐</div>
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-500/15 text-orange-300">
+                <IconLock className="h-5 w-5" />
+              </div>
               <div>
                 <h2 className="text-lg font-black tracking-tight text-white">MFA Readiness</h2>
                 <p className="mt-2 text-sm leading-6 text-orange-100/85">

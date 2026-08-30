@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { IconCheck, IconFishHook } from "../components/icons";
 
 const TIPS = [
   "Hover over links before clicking to see where they actually go.",
@@ -21,11 +22,11 @@ export default function PhishingAwareness() {
     <div className="flex min-h-screen items-center justify-center bg-slate-950 p-6">
       <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900/80 p-8 text-center shadow-2xl shadow-black/40">
         <div
-          className={`mx-auto flex h-16 w-16 items-center justify-center rounded-3xl text-3xl ${
-            reported ? "bg-emerald-500/15" : "bg-orange-500/15"
+          className={`mx-auto flex h-16 w-16 items-center justify-center rounded-3xl ${
+            reported ? "bg-emerald-500/15 text-emerald-300" : "bg-orange-500/15 text-orange-300"
           }`}
         >
-          {reported ? "✅" : "🎣"}
+          {reported ? <IconCheck className="h-7 w-7" /> : <IconFishHook className="h-7 w-7" />}
         </div>
 
         <h1 className="mt-5 text-2xl font-black tracking-tight text-white">
