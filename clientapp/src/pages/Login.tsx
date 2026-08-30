@@ -201,26 +201,30 @@ export default function Login() {
                 ))}
               </div>
 
-              <div className="login-showcase" aria-hidden="true">
-                <div className="login-showcase-item">
-                  <div className="login-showcase-icon">🛡️</div>
-                  <span className="login-showcase-label">Full Posture Scan</span>
+              <div className="login-hero-visual" aria-hidden="true">
+                <div className="login-hero-visual-grid" />
+                <div className="login-hero-orbit login-hero-orbit-a" />
+                <div className="login-hero-orbit login-hero-orbit-b" />
+                <div className="login-hero-shield">
+                  <div className="login-hero-shield-face">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path
+                        d="M5 12.5L9.5 17L19 7"
+                        stroke="white"
+                        strokeWidth="2.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
                 </div>
+              </div>
 
-                <div className="login-showcase-item">
-                  <div className="login-showcase-icon">📋</div>
-                  <span className="login-showcase-label">Compliance Ready</span>
-                </div>
-
-                <div className="login-showcase-item">
-                  <div className="login-showcase-icon">⚠️</div>
-                  <span className="login-showcase-label">Risk Intelligence</span>
-                </div>
-
-                <div className="login-showcase-item">
-                  <div className="login-showcase-icon">📊</div>
-                  <span className="login-showcase-label">Executive Reports</span>
-                </div>
+              <div className="login-tag-row" aria-hidden="true">
+                <span>Full Posture Scan</span>
+                <span>Compliance Ready</span>
+                <span>Risk Intelligence</span>
+                <span>Executive Reports</span>
               </div>
             </div>
           </main>
