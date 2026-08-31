@@ -24,16 +24,39 @@ public class AuthController : ApiControllerBase
         ApplicationDbContext db, ITenantProvider tenant, IEmailSender emailSender, IConfiguration config)
     { _users = users; _jwt = jwt; _db = db; _tenant = tenant; _emailSender = emailSender; _config = config; }
 
+    // Every wizard tier maps to a real plan tier with real limits (stored on
+    // the Subscription even though nothing enforces them yet), plus a
+    // 14-day trial for all of them — there's no payment collection wired up
+    // yet, so charging isn't possible at signup regardless of tier chosen.
+    private static readonly Dictionary<string, (SubscriptionPlan Plan, int MaxAssets, int MaxUsers, int MaxScansPerMonth)> PlanTiers = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Starter"] = (SubscriptionPlan.Starter, 25, 3, 50),
+        ["Professional"] = (SubscriptionPlan.Professional, 100, 10, 250),
+        ["Enterprise"] = (SubscriptionPlan.Enterprise, 500, 25, 1000),
+        ["Agency"] = (SubscriptionPlan.Agency, 5000, 100, 10000),
+    };
+
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterTenantRequest req)
     {
+        var tier = req.Plan is not null && PlanTiers.TryGetValue(req.Plan, out var found)
+            ? found
+            : (Plan: SubscriptionPlan.Free, MaxAssets: 1, MaxUsers: 3, MaxScansPerMonth: 10);
+
+        // Tenant/Subscription/User creation must succeed or fail together —
+        // otherwise a rejected password or duplicate email (both routine,
+        // user-triggered failures below) would leave an orphaned tenant and
+        // subscription behind with no user ever attached to them.
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+
         var slug = req.TenantName.ToLowerInvariant().Replace(" ", "-");
         var tenant = new Tenant { Name = req.TenantName, Slug = $"{slug}-{Guid.NewGuid():N}".Substring(0, slug.Length + 5) };
         _db.Tenants.Add(tenant);
         _db.Subscriptions.Add(new Subscription
         {
-            TenantId = tenant.Id, Plan = SubscriptionPlan.Free, Status = SubscriptionStatus.Trialing,
-            TrialEndsUtc = DateTime.UtcNow.AddDays(14)
+            TenantId = tenant.Id, Plan = tier.Plan, Status = SubscriptionStatus.Trialing,
+            TrialEndsUtc = DateTime.UtcNow.AddDays(14),
+            MaxAssets = tier.MaxAssets, MaxUsers = tier.MaxUsers, MaxScansPerMonth = tier.MaxScansPerMonth
         });
         await _db.SaveChangesAsync();
 
@@ -49,9 +72,13 @@ public class AuthController : ApiControllerBase
         };
         var result = await _users.CreateAsync(user, req.Password);
         if (!result.Succeeded)
+        {
+            await transaction.RollbackAsync();
             return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
+        }
 
         await _users.AddToRoleAsync(user, AppRoles.TenantAdmin);
+        await transaction.CommitAsync();
         return Ok(await BuildResponse(user));
     }
 

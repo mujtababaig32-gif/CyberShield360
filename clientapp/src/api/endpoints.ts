@@ -40,7 +40,8 @@ export const AuthApi = {
     tenantName: string,
     email: string,
     password: string,
-    fullName: string
+    fullName: string,
+    plan?: string
   ) =>
     api
       .post<AuthResponse>("/auth/register", {
@@ -48,6 +49,7 @@ export const AuthApi = {
         email,
         password,
         fullName,
+        plan,
       })
       .then((r) => r.data),
 
@@ -398,14 +400,6 @@ export const BillingApi = {
 export const TenantRegistrationApi = {
   summary: () =>
     api.get("/tenantregistration/summary").then((r) => r.data),
-
-  preview: (data: {
-    companyName: string;
-    adminName: string;
-    adminEmail: string;
-    plan: string;
-  }) =>
-    api.post("/tenantregistration/preview", data).then((r) => r.data),
 };
 
 export const AiCopilotApi = {
