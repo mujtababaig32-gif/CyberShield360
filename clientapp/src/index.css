@@ -252,12 +252,13 @@ select option {
   stroke-width: 1;
 }
 
-.mesh-flow {
-  fill: none;
-  stroke: rgba(103, 232, 249, 0.6);
-  stroke-width: 1.4;
-  stroke-dasharray: 5 11;
-  animation: meshFlow 5.5s linear infinite;
+/* A dot traveling from one sensor node to another. Animates only
+   transform + opacity (both compositor-friendly) instead of
+   stroke-dashoffset, which forces a main-thread repaint every frame. */
+.mesh-flow-dot {
+  fill: #67e8f9;
+  opacity: 0;
+  animation: meshFlowTravel 3.2s ease-in-out infinite;
 }
 
 .mesh-node-ring {
@@ -300,9 +301,23 @@ select option {
   animation: none;
 }
 
-@keyframes meshFlow {
-  to {
-    stroke-dashoffset: -160;
+@keyframes meshFlowTravel {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+
+  12% {
+    opacity: 1;
+  }
+
+  85% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(var(--flow-dx), var(--flow-dy));
+    opacity: 0;
   }
 }
 
@@ -336,7 +351,7 @@ select option {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mesh-flow,
+  .mesh-flow-dot,
   .mesh-node-group--pulse .mesh-node-ring,
   .mesh-particle-group {
     animation: none;
@@ -2460,12 +2475,13 @@ table {
   }
 }
 
-/* Short phones must remain scroll-first so the form is never clipped. */
-@media screen and (max-width: 767px) and (max-height: 740px) {
-  .login-form-side {
-    justify-content: flex-start !important;
-  }
-}
+/* Previously: short *devices* forced the card to the top via a max-height
+   media query, to keep the (taller) post-"Get Started" form from being
+   clipped. That also flattened the much shorter pre-click card to the top
+   on those same devices, regardless of whether it actually needed the
+   room. Device height and content height are different axes — a media
+   query can't tell them apart. Flexbox auto-margins can: see the
+   authoritative rule at the end of this file. */
 
 /* =========================================================
    CyberShield360 Desktop Login Polish
@@ -2777,5 +2793,33 @@ table {
     margin-top: 0.85rem;
     padding-top: 0.8rem;
     font-size: 0.61rem;
+  }
+}
+
+/* =========================================================
+   Mobile login vertical centering — authoritative, final.
+   Uses flexbox auto-margins on the card instead of
+   justify-content on the container. Auto margins center the
+   card when there's spare room (the short pre-"Get Started"
+   state) and collapse to 0 the moment content is taller than
+   the viewport (the full post-click form), which keeps the
+   card's top reachable by scrolling instead of clipping it —
+   the same rule handles both states and every device height,
+   so no max-height breakpoint is needed to choose between them.
+========================================================= */
+@media screen and (max-width: 767px) {
+  .login-form-side {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  .login-card {
+    flex-shrink: 0 !important;
+    margin: auto 0 !important;
   }
 }

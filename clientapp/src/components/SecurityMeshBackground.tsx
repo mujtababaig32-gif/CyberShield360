@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 
 // A reusable "threat network topology" background — a sparse field of
 // endpoint particles plus a small graph of sensor/server nodes with thin
@@ -207,16 +207,30 @@ export default function SecurityMeshBackground({
             />
           ))}
 
-          {pulseEdges.map(([a, b]) => (
-            <line
-              key={`p-${a}-${b}`}
-              x1={nodes[a][0]}
-              y1={nodes[a][1]}
-              x2={nodes[b][0]}
-              y2={nodes[b][1]}
-              className="mesh-flow"
-            />
-          ))}
+          {pulseEdges.map(([a, b], i) => {
+            const [x1, y1] = nodes[a];
+            const [x2, y2] = nodes[b];
+            // A small dot traveling along the edge, animated via transform +
+            // opacity only (both compositor-friendly) instead of animating
+            // stroke-dashoffset, which forces a main-thread repaint every
+            // frame and shows up as a "non-composited animation" in audits.
+            return (
+              <circle
+                key={`p-${a}-${b}`}
+                cx={x1}
+                cy={y1}
+                r={2.2}
+                className="mesh-flow-dot"
+                style={
+                  {
+                    "--flow-dx": `${x2 - x1}px`,
+                    "--flow-dy": `${y2 - y1}px`,
+                    animationDelay: `${i * 0.9}s`,
+                  } as CSSProperties
+                }
+              />
+            );
+          })}
 
           {nodes.map(([x, y], i) => (
             <g
