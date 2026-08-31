@@ -1710,23 +1710,27 @@ table {
   max-width: 100%;
 }
 
+/* Recharts bakes its last-measured width/height directly onto the <svg>
+   itself as width/height attributes (and a matching viewBox), and sets a
+   matching inline width on .recharts-wrapper. If that measurement goes
+   stale — e.g. a web-font swap reflows the layout right after Recharts'
+   first measurement, which is exactly the kind of resize a device
+   rotation also happens to trigger and "fix" — both the wrapper and the
+   SVG keep sitting at the old pixel width regardless of how narrow the
+   card actually is: the excess either gets clipped, or (once only the
+   SVG is forced to scale) the now-narrower-than-its-wrapper SVG drifts
+   off-center. Forcing width:100% on both the wrapper and the SVG — plus
+   display:block on the SVG, which defaults to inline like <img> and can
+   pick up stray inline-flow alignment — keeps everything locked to the
+   real container width no matter what Recharts last measured. */
 .recharts-wrapper,
 .recharts-responsive-container {
+  width: 100% !important;
   max-width: 100% !important;
 }
 
-/* Recharts bakes its last-measured width/height directly onto the <svg>
-   itself as width/height attributes (and a matching viewBox). If that
-   measurement goes stale — e.g. a web-font swap reflows the layout right
-   after Recharts' first measurement, which is exactly the kind of resize
-   a device rotation also happens to trigger and "fix" — the SVG keeps
-   rendering at the old pixel size regardless of how narrow its parent
-   card actually is, and the excess gets clipped instead of scaling down.
-   CSS width/height on an SVG override its own attributes, so forcing
-   both here makes it always match the real container and lets the
-   viewBox scale the chart contents to fit, independent of whatever
-   Recharts last measured. */
 .recharts-wrapper svg.recharts-surface {
+  display: block !important;
   width: 100% !important;
   height: 100% !important;
   max-width: 100%;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { NotificationsApi, ProfileApi } from "../api/endpoints";
@@ -824,6 +824,31 @@ export default function Layout() {
   const hint = useMemo(() => getPageHint(location.pathname), [location.pathname]);
   const section = useMemo(() => getActiveSection(location.pathname), [location.pathname]);
 
+  // The header is `position: fixed` (see below) so it's guaranteed to stay
+  // visible on scroll everywhere, unlike `sticky`, which silently breaks if
+  // any ancestor ever picks up a transform/filter/overflow. Fixed removes it
+  // from normal flow, so page content needs a spacer reserving its exact,
+  // live-measured height — it changes across breakpoints (the hint line
+  // only shows at sm+) and when safe-area insets apply on notched phones.
+  const headerRef = useRef<HTMLElement>(null);
+  // A reasonable estimate for the very first paint, before the
+  // ResizeObserver below has measured anything — avoids a brief flash of
+  // content peeking out from under the header on initial load.
+  const [headerHeight, setHeaderHeight] = useState(72);
+
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) setHeaderHeight(entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height);
+    });
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     forceDarkMode();
   }, []);
@@ -883,7 +908,10 @@ export default function Layout() {
       )}
 
       <main className="relative z-10 min-h-screen lg:pl-80">
-        <header className="sticky top-0 z-[60] border-b border-slate-800/80 bg-slate-950/85 px-3 py-3 shadow-sm shadow-black/10 backdrop-blur-xl sm:px-6">
+        <header
+          ref={headerRef}
+          className="fixed inset-x-0 top-0 z-[60] border-b border-slate-800/80 bg-slate-950/85 px-3 py-3 shadow-sm shadow-black/10 backdrop-blur-xl sm:px-6 lg:left-80"
+        >
           <div className="flex items-center justify-between gap-2 sm:gap-4">
             <div className="flex min-w-0 items-center gap-3">
               <button
@@ -927,6 +955,8 @@ export default function Layout() {
             </div>
           </div>
         </header>
+
+        <div style={{ height: headerHeight }} aria-hidden="true" />
 
         <div className="page-shell p-4 sm:p-6 lg:p-8">
           <Outlet />
