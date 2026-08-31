@@ -27,6 +27,31 @@ type RegistrationSummary = {
 
 const PASSWORD_MIN_LENGTH = 10;
 
+const FREE_EMAIL_DOMAINS = new Set([
+  "gmail.com", "googlemail.com",
+  "yahoo.com", "yahoo.co.uk", "yahoo.co.in", "yahoo.co.jp", "yahoo.com.au",
+  "yahoo.ca", "yahoo.fr", "yahoo.de", "ymail.com", "rocketmail.com",
+  "hotmail.com", "hotmail.co.uk", "hotmail.fr", "hotmail.de", "hotmail.it",
+  "outlook.com", "outlook.co.uk", "outlook.in", "outlook.fr", "outlook.de",
+  "live.com", "live.co.uk", "live.fr", "msn.com",
+  "icloud.com", "me.com", "mac.com",
+  "aol.com", "aim.com",
+  "protonmail.com", "proton.me", "pm.me",
+  "gmx.com", "gmx.net", "gmx.de", "mail.com", "web.de",
+  "zoho.com",
+  "yandex.com", "yandex.ru",
+  "qq.com", "163.com", "126.com", "sina.com", "sohu.com",
+  "naver.com", "hanmail.net", "daum.net",
+  "rediffmail.com",
+  "inbox.com", "fastmail.com", "tutanota.com",
+  "mailinator.com", "guerrillamail.com", "10minutemail.com", "yopmail.com",
+]);
+
+function isFreeEmailDomain(email: string) {
+  const domain = email.trim().toLowerCase().split("@")[1];
+  return !!domain && FREE_EMAIL_DOMAINS.has(domain);
+}
+
 function passwordIssues(password: string) {
   const issues: string[] = [];
   if (password.length < PASSWORD_MIN_LENGTH) issues.push(`at least ${PASSWORD_MIN_LENGTH} characters`);
@@ -220,6 +245,13 @@ export default function TenantRegistration() {
                 onChange={(e) => setAdminEmail(e.target.value)}
                 placeholder="admin@yourcompany.com"
               />
+              {adminEmail.trim() && isFreeEmailDomain(adminEmail) ? (
+                <p className="mt-1 text-xs text-red-400">
+                  Please use your company email address — free providers like Gmail, Yahoo, and Outlook aren't accepted for company signup.
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-slate-500">Use a company email address, not a personal Gmail/Yahoo/Outlook account.</p>
+              )}
             </div>
 
             <div>
@@ -262,7 +294,13 @@ export default function TenantRegistration() {
 
             <button
               className="btn-primary"
-              disabled={!adminName.trim() || !adminEmail.trim() || !password || !confirmPassword}
+              disabled={
+                !adminName.trim() ||
+                !adminEmail.trim() ||
+                isFreeEmailDomain(adminEmail) ||
+                !password ||
+                !confirmPassword
+              }
               onClick={() => setStep(3)}
             >
               Continue to Plan Selection

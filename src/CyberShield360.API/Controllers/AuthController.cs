@@ -1,4 +1,5 @@
 using CyberShield360.Application.Common.Interfaces;
+using CyberShield360.Application.Common.Validation;
 using CyberShield360.Application.Features.Auth.Dtos;
 using CyberShield360.Domain.Entities;
 using CyberShield360.Domain.Enums;
@@ -39,6 +40,17 @@ public class AuthController : ApiControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterTenantRequest req)
     {
+        if (FreeEmailDomains.IsFreeOrConsumerDomain(req.Email))
+        {
+            return BadRequest(new
+            {
+                errors = new[]
+                {
+                    "Please register with your company email address. Free email providers (Gmail, Yahoo, Outlook, iCloud, etc.) aren't accepted for company signup."
+                }
+            });
+        }
+
         var tier = req.Plan is not null && PlanTiers.TryGetValue(req.Plan, out var found)
             ? found
             : (Plan: SubscriptionPlan.Free, MaxAssets: 1, MaxUsers: 3, MaxScansPerMonth: 10);

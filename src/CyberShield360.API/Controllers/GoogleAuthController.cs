@@ -1,4 +1,5 @@
 using CyberShield360.Application.Common.Interfaces;
+using CyberShield360.Application.Common.Validation;
 using CyberShield360.Application.Features.Auth.Dtos;
 using CyberShield360.Domain.Entities;
 using CyberShield360.Domain.Enums;
@@ -108,6 +109,14 @@ public class GoogleAuthController : ApiControllerBase
 
         if (user is null)
         {
+            if (FreeEmailDomains.IsFreeOrConsumerDomain(email))
+            {
+                return BadRequest(new
+                {
+                    message = "Please sign in with your company Google account. Personal Gmail addresses can't create a new company workspace."
+                });
+            }
+
             var tenant = new Tenant
             {
                 Name = $"{name}'s Workspace",
