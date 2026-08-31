@@ -34,6 +34,21 @@ public class RunScanCommandHandler : IRequestHandler<RunScanCommand, Result<Scan
         var asset = await _db.Assets.FirstOrDefaultAsync(a => a.Id == request.AssetId, ct);
         if (asset is null) return Result<ScanDto>.Failure("Asset not found.");
 
+        var maxScansPerMonth = await _db.Subscriptions
+            .Where(s => s.TenantId == asset.TenantId)
+            .Select(s => (int?)s.MaxScansPerMonth)
+            .FirstOrDefaultAsync(ct);
+
+        if (maxScansPerMonth is int scanLimit)
+        {
+            var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var scansThisMonth = await _db.Scans
+                .CountAsync(s => s.TenantId == asset.TenantId && s.CreatedAtUtc >= monthStart, ct);
+
+            if (scansThisMonth >= scanLimit)
+                return Result<ScanDto>.Failure("Your plan's monthly scan limit has been reached. Upgrade your plan to run more scans.");
+        }
+
         var scan = new SecurityScan
         {
             AssetId = asset.Id,

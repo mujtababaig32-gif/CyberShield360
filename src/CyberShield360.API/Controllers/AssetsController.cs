@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using CyberShield360.Application.Common.Exceptions;
 using CyberShield360.Application.Common.Interfaces;
 using CyberShield360.Domain.Entities;
 using CyberShield360.Domain.Enums;
@@ -125,6 +126,8 @@ public class AssetsController : ApiControllerBase
             });
         }
 
+        await EnsureAssetCapacityAsync(tid, additional: 1);
+
         var asset = new MonitoredAsset
         {
             TenantId = tid,
@@ -163,6 +166,7 @@ public class AssetsController : ApiControllerBase
 
         var discovered = new List<object>();
         var created = 0;
+        var remainingCapacity = await GetRemainingAssetCapacityAsync(tid);
 
         foreach (var prefix in prefixes)
         {
@@ -184,7 +188,7 @@ public class AssetsController : ApiControllerBase
                     a.TenantId == tid &&
                     a.Domain == subdomain, ct);
 
-                if (!alreadyExists)
+                if (!alreadyExists && remainingCapacity > 0)
                 {
                     _db.Assets.Add(new MonitoredAsset
                     {
@@ -196,6 +200,7 @@ public class AssetsController : ApiControllerBase
                     });
 
                     created++;
+                    remainingCapacity--;
                 }
 
                 discovered.Add(new
@@ -219,6 +224,7 @@ public class AssetsController : ApiControllerBase
             checkedCount = prefixes.Length,
             discoveredCount = discovered.Count,
             createdCount = created,
+            planLimitReached = remainingCapacity <= 0,
             discovered
         });
     }
@@ -235,19 +241,44 @@ public class AssetsController : ApiControllerBase
             .Select(a => new { a.Id, a.Domain })
             .ToListAsync(ct);
 
+        var maxScansPerMonth = await _db.Subscriptions
+            .AsNoTracking()
+            .Where(s => s.TenantId == tid)
+            .Select(s => (int?)s.MaxScansPerMonth)
+            .FirstOrDefaultAsync(ct);
+
+        var toQueue = assets.AsEnumerable();
+        var planLimitReached = false;
+
+        if (maxScansPerMonth is int scanLimit)
+        {
+            var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var scansThisMonth = await _db.Scans
+                .CountAsync(s => s.TenantId == tid && s.CreatedAtUtc >= monthStart, ct);
+
+            var remaining = Math.Max(0, scanLimit - scansThisMonth);
+            planLimitReached = assets.Count > remaining;
+            toQueue = assets.Take(remaining);
+        }
+
         // Queue each asset's scan as its own background job instead of running them
         // sequentially inside this request: a tenant with 20+ assets would otherwise
         // make this request run long enough to hit a reverse-proxy/load-balancer
         // timeout, killing the connection with scans left in an unknown partial state.
-        foreach (var asset in assets)
+        var queued = 0;
+        foreach (var asset in toQueue)
         {
             _jobs.Enqueue(() => _scanJobRunner.RunAdHocScanAsync(tid, asset.Id, ScanType.FullPosture, CancellationToken.None));
+            queued++;
         }
 
         return Accepted(new
         {
-            queuedCount = assets.Count,
-            message = "Full Posture scans have been queued for all monitored assets. Check each asset for updated results as scans complete."
+            queuedCount = queued,
+            planLimitReached,
+            message = planLimitReached
+                ? "Your plan's monthly scan limit was reached. Some assets were not queued — upgrade your plan to scan the rest."
+                : "Full Posture scans have been queued for all monitored assets. Check each asset for updated results as scans complete."
         });
     }
 
@@ -266,6 +297,28 @@ public class AssetsController : ApiControllerBase
         await _db.SaveChangesAsync();
 
         return NoContent();
+    }
+
+    private async Task<int> GetRemainingAssetCapacityAsync(Guid tid, CancellationToken ct = default)
+    {
+        var maxAssets = await _db.Subscriptions
+            .AsNoTracking()
+            .Where(s => s.TenantId == tid)
+            .Select(s => (int?)s.MaxAssets)
+            .FirstOrDefaultAsync(ct);
+
+        if (maxAssets is not int limit) return int.MaxValue;
+
+        var currentCount = await _db.Assets.CountAsync(a => a.TenantId == tid, ct);
+        return Math.Max(0, limit - currentCount);
+    }
+
+    private async Task EnsureAssetCapacityAsync(Guid tid, int additional, CancellationToken ct = default)
+    {
+        var remaining = await GetRemainingAssetCapacityAsync(tid, ct);
+        if (additional > remaining)
+            throw new ForbiddenAccessException(
+                $"Your plan's asset limit has been reached. Upgrade your plan to monitor more assets.");
     }
 
     private static string NormalizeDomain(string? domain)

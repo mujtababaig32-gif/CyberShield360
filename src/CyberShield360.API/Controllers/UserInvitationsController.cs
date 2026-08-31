@@ -1,3 +1,4 @@
+using CyberShield360.Application.Common.Exceptions;
 using CyberShield360.Application.Common.Interfaces;
 using CyberShield360.Domain.Entities;
 using CyberShield360.Domain.Enums;
@@ -47,6 +48,19 @@ public class UserInvitationsController : ApiControllerBase
             {
                 message = $"Role must be one of: {string.Join(", ", allowedInviteRoles)}."
             });
+        }
+
+        var maxUsers = await _db.Subscriptions
+            .Where(s => s.TenantId == tid)
+            .Select(s => (int?)s.MaxUsers)
+            .FirstOrDefaultAsync(ct);
+
+        if (maxUsers is int userLimit)
+        {
+            var currentUserCount = await _db.Users.CountAsync(u => u.TenantId == tid, ct);
+            if (currentUserCount >= userLimit)
+                throw new ForbiddenAccessException(
+                    "Your plan's user limit has been reached. Upgrade your plan to invite more team members.");
         }
 
         var tenant = await _db.Tenants
