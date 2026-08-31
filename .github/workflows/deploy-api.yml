@@ -1,0 +1,33 @@
+name: Deploy API to Azure
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - '.github/workflows/deploy-api.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore
+      run: dotnet restore src/CyberShield360.API/CyberShield360.API.csproj
+
+    - name: Publish
+      run: dotnet publish src/CyberShield360.API/CyberShield360.API.csproj -c Release -o ./publish_output
+
+    - name: Deploy to Azure App Service
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: cybershield360-api-58523
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        package: ./publish_output
