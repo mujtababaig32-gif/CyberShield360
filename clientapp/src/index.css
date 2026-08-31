@@ -1715,6 +1715,23 @@ table {
   max-width: 100% !important;
 }
 
+/* Recharts bakes its last-measured width/height directly onto the <svg>
+   itself as width/height attributes (and a matching viewBox). If that
+   measurement goes stale — e.g. a web-font swap reflows the layout right
+   after Recharts' first measurement, which is exactly the kind of resize
+   a device rotation also happens to trigger and "fix" — the SVG keeps
+   rendering at the old pixel size regardless of how narrow its parent
+   card actually is, and the excess gets clipped instead of scaling down.
+   CSS width/height on an SVG override its own attributes, so forcing
+   both here makes it always match the real container and lets the
+   viewBox scale the chart contents to fit, independent of whatever
+   Recharts last measured. */
+.recharts-wrapper svg.recharts-surface {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100%;
+}
+
 /* =========================================================
    Login desktop alignment
    Header, hero copy, and footer share one centered column so the
