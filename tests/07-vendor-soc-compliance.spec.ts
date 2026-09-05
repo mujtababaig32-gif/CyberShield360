@@ -33,6 +33,6 @@ test.describe('Compliance Center', () => {
     await expect(page.getByText('Framework Readiness').first()).toBeVisible();
 
     await page.getByRole('button', { name: 'Controls', exact: true }).click();
-    await expect(page.getByText(/Controls|Control/i).first()).toBeVisible();
+    await expect(page.getByText('Priority Controls Requiring Review')).toBeVisible();
   });
 });
