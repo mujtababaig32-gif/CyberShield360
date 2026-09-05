@@ -31,3 +31,20 @@ jobs:
         app-name: cybershield360-api-58523
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
         package: ./publish_output
+
+    # Catches a deploy that "succeeded" per Azure but actually shipped a broken
+    # binary (seen once: a corrupted assembly that 500'd on every request) —
+    # fail the job loudly instead of leaving a silently-broken app live.
+    - name: Verify deployment health
+      run: |
+        for i in $(seq 1 12); do
+          status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 https://cybershield360-api-58523.azurewebsites.net/health)
+          if [ "$status" = "200" ]; then
+            echo "Health check passed."
+            exit 0
+          fi
+          echo "Attempt $i: health check returned $status, retrying..."
+          sleep 10
+        done
+        echo "Health check failed after deploy — app is not responding correctly."
+        exit 1
