@@ -5,7 +5,8 @@ export default function Terms() {
     <LegalPageShell title="Terms of Service" effectiveDate="September 6, 2026">
       <p>
         These Terms of Service ("Terms") govern access to and use of CyberShield360 (the "Service"),
-        provided by <strong>[Company Legal Name]</strong> ("CyberShield360," "we," "us," or "our"). By
+        provided by <strong>Muhammad Mujtaba Baig</strong>, operating as CyberShield360 ("CyberShield360,"
+        "we," "us," or "our"). By
         creating an account, starting a trial, or otherwise using the Service, you ("Customer," "you")
         agree to be bound by these Terms. If you are entering into these Terms on behalf of a company or
         other legal entity, you represent that you have the authority to bind that entity.
@@ -132,13 +133,13 @@ export default function Terms() {
 
       <h2>13. Governing Law</h2>
       <p>
-        These Terms are governed by the laws of <strong>[State/Country of Incorporation]</strong>, without
-        regard to its conflict-of-laws principles.
+        These Terms are governed by the laws of <strong>Pakistan</strong>, without regard to its
+        conflict-of-laws principles.
       </p>
 
       <h2>14. Contact</h2>
       <p>
-        Questions about these Terms can be sent to <strong>[support/legal contact email]</strong>.
+        Questions about these Terms can be sent to <strong>admin@cybershield360.com</strong>.
       </p>
     </LegalPageShell>
   );

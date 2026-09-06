@@ -4,8 +4,8 @@ export default function PrivacyPolicy() {
   return (
     <LegalPageShell title="Privacy Policy" effectiveDate="September 6, 2026">
       <p>
-        This Privacy Policy explains how <strong>[Company Legal Name]</strong> ("CyberShield360," "we,"
-        "us," or "our") collects, uses, and shares information when you use our cybersecurity posture
+        This Privacy Policy explains how <strong>Muhammad Mujtaba Baig</strong>, operating as CyberShield360
+        ("CyberShield360," "we," "us," or "our") collects, uses, and shares information when you use our cybersecurity posture
         management platform (the "Service"). This policy applies to visitors, trial users, and paying
         customers of the Service.
       </p>
@@ -87,7 +87,7 @@ export default function PrivacyPolicy() {
       <p>
         Depending on your location, you may have rights to access, correct, export, or delete the personal
         information we hold about you, and to object to or restrict certain processing. To exercise these
-        rights, contact us at <strong>[privacy contact email]</strong>. We will respond within a reasonable
+        rights, contact us at <strong>admin@cybershield360.com</strong>. We will respond within a reasonable
         timeframe and in accordance with applicable law.
       </p>
 
@@ -118,7 +118,7 @@ export default function PrivacyPolicy() {
 
       <h2>12. Contact Us</h2>
       <p>
-        Questions about this Privacy Policy can be sent to <strong>[privacy contact email]</strong>.
+        Questions about this Privacy Policy can be sent to <strong>admin@cybershield360.com</strong>.
       </p>
     </LegalPageShell>
   );
