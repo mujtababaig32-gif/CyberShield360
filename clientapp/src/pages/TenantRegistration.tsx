@@ -90,6 +90,7 @@ export default function TenantRegistration() {
   const [submitting, setSubmitting] = useState(false);
   const [submitErrors, setSubmitErrors] = useState<string[]>([]);
   const [created, setCreated] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   useEffect(() => {
     TenantRegistrationApi.summary()
@@ -368,6 +369,26 @@ export default function TenantRegistration() {
             </div>
           </div>
 
+          <label className="mt-5 flex items-start gap-3 text-sm text-slate-400">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/20 bg-slate-900"
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+            />
+            <span>
+              I agree to the{" "}
+              <a href="/terms" target="_blank" rel="noreferrer" className="text-brand-400 underline hover:text-brand-300">
+                Terms of Service
+              </a>{" "}
+              and{" "}
+              <a href="/privacy" target="_blank" rel="noreferrer" className="text-brand-400 underline hover:text-brand-300">
+                Privacy Policy
+              </a>
+              , including that I'm only authorized to scan assets I own or have permission to test.
+            </span>
+          </label>
+
           {submitErrors.length > 0 && (
             <div className="login-error mt-4" role="alert" aria-live="assertive">
               {submitErrors.map((e) => (
@@ -376,7 +397,7 @@ export default function TenantRegistration() {
             </div>
           )}
 
-          <button className="btn-primary mt-5" disabled={submitting} onClick={createWorkspace}>
+          <button className="btn-primary mt-5" disabled={submitting || !agreedToTerms} onClick={createWorkspace}>
             {submitting ? "Creating workspace..." : "Create Workspace"}
           </button>
         </div>

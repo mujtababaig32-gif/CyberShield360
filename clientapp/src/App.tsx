@@ -31,6 +31,7 @@ import NotFound from "./pages/NotFound";
 import PhishingAwareness from "./pages/PhishingAwareness";
 import PhishingSimulation from "./pages/PhishingSimulation";
 import PolicyAudit from "./pages/PolicyAudit";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Profile from "./pages/Profile";
 import Rbac from "./pages/Rbac";
 import ReportBuilder from "./pages/ReportBuilder";
@@ -43,6 +44,7 @@ import ServiceOverview from "./pages/ServiceOverview";
 import Settings from "./pages/Settings";
 import SocCenter from "./pages/SocCenter";
 import TenantRegistration from "./pages/TenantRegistration";
+import Terms from "./pages/Terms";
 import ThreatIntelligence from "./pages/ThreatIntelligence";
 import UserManagement from "./pages/UserManagement";
 import VendorRisk from "./pages/VendorRisk";
@@ -61,6 +63,8 @@ export default function App() {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/tenant-registration" element={<TenantRegistration />} />
       <Route path="/phishing-awareness" element={<PhishingAwareness />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
 
       <Route
         element={

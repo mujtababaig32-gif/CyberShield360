@@ -198,7 +198,11 @@ export default function Login() {
 
           <footer className="login-footer">
             <span>© 2026 CyberShield360. Built for modern security teams.</span>
-            <span>Secure • Tenant-aware • Audit-ready</span>
+            <span>
+              <a href="/terms" className="underline hover:text-white">Terms</a>
+              {" · "}
+              <a href="/privacy" className="underline hover:text-white">Privacy</a>
+            </span>
           </footer>
         </section>
 
@@ -443,6 +447,10 @@ export default function Login() {
 
           <div className="login-mobile-footer">
             © 2026 CyberShield360. Built for modern security teams.
+            <br />
+            <a href="/terms" className="underline hover:text-white">Terms</a>
+            {" · "}
+            <a href="/privacy" className="underline hover:text-white">Privacy</a>
           </div>
         </section>
       </div>
