@@ -26,6 +26,7 @@ public class SubscriptionsController : ApiControllerBase
 
         var url = await _lemonSqueezy.CreateCheckoutSessionAsync(
             tid,
+            req.Plan,
             req.SuccessUrl,
             req.CancelUrl,
             _user.Email);
@@ -47,4 +48,4 @@ public class SubscriptionsController : ApiControllerBase
     }
 }
 
-public record LemonSqueezyCheckoutRequest(string SuccessUrl, string CancelUrl);
+public record LemonSqueezyCheckoutRequest(string Plan, string SuccessUrl, string CancelUrl);

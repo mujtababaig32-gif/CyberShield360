@@ -10,13 +10,14 @@ type BillingSummary = {
   currentPlan: {
     name: string;
     status: string;
-    trialEndsUtc: string;
+    trialEndsUtc: string | null;
+    currentPeriodEndUtc: string | null;
     billingProvider: string;
   };
   configuration: {
     apiKey: string;
     storeId: string;
-    variantId: string;
+    variantIds: string;
     webhookSecret: string;
     status: string;
   };
@@ -27,10 +28,13 @@ type BillingSummary = {
   recommendations: string[];
 };
 
+const PLAN_OPTIONS = ["Starter", "Professional", "Enterprise", "Agency"];
+
 export default function Billing() {
   const [data, setData] = useState<BillingSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState("Professional");
   const [error, setError] = useState<string | null>(null);
 
   const load = () => {
@@ -53,6 +57,7 @@ export default function Billing() {
       setError(null);
 
       const result = await BillingApi.checkout({
+        plan: selectedPlan,
         successUrl: `${window.location.origin}/billing?success=true`,
         cancelUrl: `${window.location.origin}/billing?cancelled=true`,
       });
@@ -149,19 +154,34 @@ export default function Billing() {
             </p>
             {!isReady && (
               <div className="mt-3 text-xs text-slate-500">
-                Checkout is disabled until API Key, Store ID, and Variant ID are configured.
+                Checkout is disabled until the API Key, Store ID, and all plan Variant IDs are configured.
               </div>
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={startCheckout}
-            disabled={!isReady || checkoutLoading}
-            className="btn-primary justify-center disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {checkoutLoading ? "Starting checkout..." : "Upgrade Plan"}
-          </button>
+          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+            <select
+              className="input"
+              value={selectedPlan}
+              onChange={(e) => setSelectedPlan(e.target.value)}
+              disabled={!isReady || checkoutLoading}
+            >
+              {PLAN_OPTIONS.map((plan) => (
+                <option key={plan} value={plan}>
+                  {plan}
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="button"
+              onClick={startCheckout}
+              disabled={!isReady || checkoutLoading}
+              className="btn-primary justify-center whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {checkoutLoading ? "Starting checkout..." : `Upgrade to ${selectedPlan}`}
+            </button>
+          </div>
         </div>
       </section>
 

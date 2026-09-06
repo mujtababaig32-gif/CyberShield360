@@ -1,3 +1,4 @@
+using CyberShield360.Application.Common;
 using CyberShield360.Application.Common.Interfaces;
 using CyberShield360.Application.Common.Validation;
 using CyberShield360.Application.Features.Auth.Dtos;
@@ -25,18 +26,6 @@ public class AuthController : ApiControllerBase
         ApplicationDbContext db, ITenantProvider tenant, IEmailSender emailSender, IConfiguration config)
     { _users = users; _jwt = jwt; _db = db; _tenant = tenant; _emailSender = emailSender; _config = config; }
 
-    // Every wizard tier maps to a real plan tier with real limits (stored on
-    // the Subscription even though nothing enforces them yet), plus a
-    // 14-day trial for all of them — there's no payment collection wired up
-    // yet, so charging isn't possible at signup regardless of tier chosen.
-    private static readonly Dictionary<string, (SubscriptionPlan Plan, int MaxAssets, int MaxUsers, int MaxScansPerMonth)> PlanTiers = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Starter"] = (SubscriptionPlan.Starter, 25, 3, 50),
-        ["Professional"] = (SubscriptionPlan.Professional, 100, 10, 250),
-        ["Enterprise"] = (SubscriptionPlan.Enterprise, 500, 25, 1000),
-        ["Agency"] = (SubscriptionPlan.Agency, 5000, 100, 10000),
-    };
-
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterTenantRequest req)
     {
@@ -51,9 +40,7 @@ public class AuthController : ApiControllerBase
             });
         }
 
-        var tier = req.Plan is not null && PlanTiers.TryGetValue(req.Plan, out var found)
-            ? found
-            : (Plan: SubscriptionPlan.Free, MaxAssets: 1, MaxUsers: 3, MaxScansPerMonth: 10);
+        var tier = PlanCatalog.Resolve(req.Plan);
 
         // Tenant/Subscription/User creation must succeed or fail together —
         // otherwise a rejected password or duplicate email (both routine,

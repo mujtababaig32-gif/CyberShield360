@@ -393,7 +393,7 @@ export const BillingApi = {
   summary: () =>
     api.get("/billing/summary").then((r) => r.data),
 
-  checkout: (data: { successUrl: string; cancelUrl: string }) =>
+  checkout: (data: { plan: string; successUrl: string; cancelUrl: string }) =>
     api.post("/subscriptions/checkout", data).then((r) => r.data),
 };
 

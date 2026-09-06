@@ -85,6 +85,7 @@ public interface ILemonSqueezyService
 {
     Task<string> CreateCheckoutSessionAsync(
         Guid tenantId,
+        string plan,
         string successUrl,
         string cancelUrl,
         string? customerEmail = null,
