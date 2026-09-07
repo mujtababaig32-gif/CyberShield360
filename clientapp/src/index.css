@@ -737,6 +737,11 @@ select option {
   display: none;
 }
 
+.login-mobile-footer-links {
+  margin-top: 0.35rem;
+  text-align: center;
+}
+
 .auth-standalone-shell {
   position: relative;
   display: flex;

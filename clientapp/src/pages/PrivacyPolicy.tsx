@@ -87,7 +87,7 @@ export default function PrivacyPolicy() {
       <p>
         Depending on your location, you may have rights to access, correct, export, or delete the personal
         information we hold about you, and to object to or restrict certain processing. To exercise these
-        rights, contact us at <strong>admin@cybershield360.com</strong>. We will respond within a reasonable
+        rights, contact us at <strong>admin@cybershield360ai.com</strong>. We will respond within a reasonable
         timeframe and in accordance with applicable law.
       </p>
 
@@ -118,7 +118,7 @@ export default function PrivacyPolicy() {
 
       <h2>12. Contact Us</h2>
       <p>
-        Questions about this Privacy Policy can be sent to <strong>admin@cybershield360.com</strong>.
+        Questions about this Privacy Policy can be sent to <strong>admin@cybershield360ai.com</strong>.
       </p>
     </LegalPageShell>
   );

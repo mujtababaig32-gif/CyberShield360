@@ -139,7 +139,7 @@ export default function Terms() {
 
       <h2>14. Contact</h2>
       <p>
-        Questions about these Terms can be sent to <strong>admin@cybershield360.com</strong>.
+        Questions about these Terms can be sent to <strong>admin@cybershield360ai.com</strong>.
       </p>
     </LegalPageShell>
   );

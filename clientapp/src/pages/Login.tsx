@@ -446,11 +446,12 @@ export default function Login() {
           </form>
 
           <div className="login-mobile-footer">
-            © 2026 CyberShield360. Built for modern security teams.
-            <br />
-            <a href="/terms" className="underline hover:text-white">Terms</a>
-            {" · "}
-            <a href="/privacy" className="underline hover:text-white">Privacy</a>
+            <div>© 2026 CyberShield360. Built for modern security teams.</div>
+            <div className="login-mobile-footer-links">
+              <a href="/terms" className="underline hover:text-white">Terms</a>
+              {" · "}
+              <a href="/privacy" className="underline hover:text-white">Privacy</a>
+            </div>
           </div>
         </section>
       </div>
