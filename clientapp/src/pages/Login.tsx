@@ -320,7 +320,7 @@ export default function Login() {
                         }}
                         useOneTap={false}
                         auto_select={false}
-                        theme="outline"
+                        theme="filled_blue"
                         size="large"
                         text="signin_with"
                         shape="rectangular"
