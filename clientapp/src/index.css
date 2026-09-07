@@ -1850,6 +1850,12 @@ table {
 .google-login-official > div {
   width: 360px !important;
   max-width: 100% !important;
+  border-radius: 0.75rem !important;
+  overflow: hidden !important;
+}
+
+.google-login-official iframe {
+  border-radius: 0.75rem !important;
 }
 
 /* CyberShield360 standardized secondary action button */
