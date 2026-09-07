@@ -11,11 +11,13 @@ public class DarkWebController : ApiControllerBase
 {
     private readonly ApplicationDbContext _db;
     private readonly ICurrentUser _user;
+    private readonly IHibpService _hibp;
 
-    public DarkWebController(ApplicationDbContext db, ICurrentUser user)
+    public DarkWebController(ApplicationDbContext db, ICurrentUser user, IHibpService hibp)
     {
         _db = db;
         _user = user;
+        _hibp = hibp;
     }
 
     [HttpGet("summary")]
@@ -35,6 +37,36 @@ public class DarkWebController : ApiControllerBase
             .OrderBy(x => x)
             .ToList();
 
+        var tenantEmails = await _db.Users
+            .AsNoTracking()
+            .Where(u => u.TenantId == tid && u.IsActive && u.Email != null)
+            .Select(u => u.Email!)
+            .ToListAsync(ct);
+
+        var hibp = await _hibp.CheckEmailsAsync(tenantEmails, ct);
+
+        var credentialLeaks = hibp.Accounts
+            .Where(a => a.Breaches.Count > 0)
+            .SelectMany(a => a.Breaches.Select(b => new
+            {
+                email = a.Email,
+                breachName = b.Name,
+                breachDomain = b.Domain,
+                breachDate = b.BreachDate,
+                dataClasses = b.DataClasses,
+                sensitive = b.IsSensitive
+            }))
+            .OrderByDescending(x => x.breachDate)
+            .ToList();
+
+        var leakedCredentialSignals = credentialLeaks.Count;
+        var breachMentions = credentialLeaks.Select(x => x.breachName).Distinct().Count();
+
+        var breachedDomains = credentialLeaks
+            .Select(x => x.email.Contains('@') ? x.email[(x.email.IndexOf('@') + 1)..].ToLowerInvariant() : string.Empty)
+            .Where(d => !string.IsNullOrEmpty(d))
+            .ToHashSet();
+
         var exposures = domains.Select(domain =>
         {
             var sensitive = SensitiveSignal(domain);
@@ -49,25 +81,40 @@ public class DarkWebController : ApiControllerBase
                 _ => 10
             };
 
+            var domainCredentialLeaks = credentialLeaks.Count(x =>
+                x.email.EndsWith("@" + domain, StringComparison.OrdinalIgnoreCase));
+
+            var hasVerifiedBreach = breachedDomains.Contains(domain.ToLowerInvariant()) || domainCredentialLeaks > 0;
+            if (hasVerifiedBreach)
+                exposureScore = Math.Max(exposureScore, 85);
+
             var risk = exposureScore >= 60 ? "High" : exposureScore >= 35 ? "Medium" : "Low";
 
             return new
             {
                 domain,
-                exposureType = sensitive,
-                leakedCredentialSignals = 0,
-                breachMentions = 0,
+                exposureType = hasVerifiedBreach ? "Verified credential breach" : sensitive,
+                leakedCredentialSignals = domainCredentialLeaks,
+                breachMentions = credentialLeaks
+                    .Where(x => x.email.EndsWith("@" + domain, StringComparison.OrdinalIgnoreCase))
+                    .Select(x => x.breachName)
+                    .Distinct()
+                    .Count(),
                 exposureScore,
                 riskLevel = risk,
                 status = risk == "High" ? "Investigate" : "Monitoring",
                 lastSeenUtc = DateTime.UtcNow,
-                recommendation = risk == "High"
-                    ? "Review exposed administrative, remote access, mail, login, or development assets and enforce MFA. This is a surface signal, not verified dark-web breach evidence."
-                    : "Continue monitoring domain exposure. Configure a breach-intelligence provider for verified leak evidence."
+                recommendation = hasVerifiedBreach
+                    ? "Verified credential breach found for this domain. Force a password reset and enforce MFA for affected accounts immediately."
+                    : risk == "High"
+                        ? "Review exposed administrative, remote access, mail, login, or development assets and enforce MFA. This is a surface signal, not verified dark-web breach evidence."
+                        : "Continue monitoring domain exposure."
             };
         })
         .OrderByDescending(x => x.exposureScore)
         .ToList();
+
+        var integrationStatus = hibp.Configured ? "Connected" : "Not Configured";
 
         return Ok(new
         {
@@ -77,15 +124,17 @@ public class DarkWebController : ApiControllerBase
             highRiskExposures = exposures.Count(x => x.riskLevel == "High"),
             mediumRiskExposures = exposures.Count(x => x.riskLevel == "Medium"),
             lowRiskExposures = exposures.Count(x => x.riskLevel == "Low"),
-            leakedCredentialSignals = 0,
-            breachMentions = 0,
+            leakedCredentialSignals,
+            breachMentions,
             darkWebRiskScore = exposures.Any()
                 ? (int)Math.Round(exposures.Average(x => x.exposureScore))
                 : 0,
-            connectorMode = "Dark-web provider not configured",
-            evidenceQuality = "No verified breached credential data is displayed because no breach-intelligence provider is connected. Domain exposure signals are derived from tenant asset names only.",
+            connectorMode = hibp.Configured ? "Have I Been Pwned (live)" : "Dark-web provider not configured",
+            evidenceQuality = hibp.Configured
+                ? $"Credential leak data is verified against Have I Been Pwned for {tenantEmails.Count} monitored account(s). Domain exposure signals beyond confirmed breaches are still derived from tenant asset names. {hibp.ProviderStatus}"
+                : "No verified breached credential data is displayed because no breach-intelligence provider is connected. Domain exposure signals are derived from tenant asset names only.",
             exposures,
-            credentialLeaks = Array.Empty<object>(),
+            credentialLeaks,
             executiveActions = exposures
                 .Where(x => x.riskLevel == "High")
                 .Select(x => x.recommendation)
@@ -93,7 +142,7 @@ public class DarkWebController : ApiControllerBase
                 .Take(5),
             integrations = new[]
             {
-                new { name = "HaveIBeenPwned", status = "Not Configured" },
+                new { name = "HaveIBeenPwned", status = integrationStatus },
                 new { name = "DeHashed", status = "Not Configured" },
                 new { name = "LeakCheck", status = "Not Configured" },
                 new { name = "IntelX", status = "Not Configured" }

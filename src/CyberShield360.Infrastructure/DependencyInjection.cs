@@ -94,6 +94,8 @@ public static class DependencyInjection
 
         services.AddHttpClient<ILemonSqueezyService, LemonSqueezyService>();
 
+        services.AddHttpClient<IHibpService, HibpService>();
+
         services.AddHttpClient("scanner", client =>
         {
             client.Timeout = TimeSpan.FromSeconds(15);

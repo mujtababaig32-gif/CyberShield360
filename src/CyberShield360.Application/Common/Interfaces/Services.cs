@@ -81,6 +81,20 @@ public record AiRemediationPlanDto(
     IReadOnlyList<string> VerificationSteps,
     DateTime GeneratedUtc);
 
+public interface IHibpService
+{
+    Task<HibpCheckResultDto> CheckEmailsAsync(IEnumerable<string> emails, CancellationToken ct = default);
+}
+
+public record HibpBreachDto(string Name, string Domain, DateOnly BreachDate, IReadOnlyList<string> DataClasses, bool IsSensitive);
+
+public record HibpAccountResultDto(string Email, IReadOnlyList<HibpBreachDto> Breaches);
+
+public record HibpCheckResultDto(
+    bool Configured,
+    string ProviderStatus,
+    IReadOnlyList<HibpAccountResultDto> Accounts);
+
 public interface ILemonSqueezyService
 {
     Task<string> CreateCheckoutSessionAsync(
